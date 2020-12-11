@@ -1,0 +1,2 @@
+include LICENSE
+include snuba_sdk/py.typed
