@@ -10,6 +10,17 @@
 [![PyPi page link -- version](https://img.shields.io/pypi/v/sentry-sdk.svg)](https://pypi.python.org/pypi/sentry-sdk)
 [![Discord](https://img.shields.io/discord/621778831602221064)](https://discord.gg/cWnMQeA)
 
+# TODO List
+
+- Add missing clauses: having, orderby, limitby, totals
+- Curried function calls
+- Handle array/tuple literals by converting to `array(...)` and `tuple(...)` functions implicitly
+- Join support
+- Complex boolean conditions (AND/OR)
+- Have the Entity object take a set of columns
+- Syntactic sugar
+
+
 # Contributing to the SDK
 
 Please refer to [CONTRIBUTING.md](https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.md).
