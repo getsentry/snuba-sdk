@@ -13,6 +13,7 @@
 # TODO List
 
 - Add missing clauses: having, orderby, limitby, totals
+- Subscriptable support (measurements\[fcp.first\])
 - Curried function calls
 - Handle array/tuple literals by converting to `array(...)` and `tuple(...)` functions implicitly
 - Join support

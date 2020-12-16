@@ -16,7 +16,7 @@ from snuba_sdk.expressions import (
 
 
 @dataclass(frozen=True)
-class SnQLQuery(Expression):
+class Query(Expression):
     dataset: str
     match: Entity
     select: Optional[List[Union[Column, Function]]] = None
@@ -26,37 +26,37 @@ class SnQLQuery(Expression):
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
 
-    def set_match(self, match: Entity) -> SnQLQuery:
+    def set_match(self, match: Entity) -> Query:
         new = replace(self, match=match)
         new.validate()
         return new
 
-    def set_select(self, select: List[Union[Column, Function]]) -> SnQLQuery:
+    def set_select(self, select: List[Union[Column, Function]]) -> Query:
         new = replace(self, select=select)
         new.validate()
         return new
 
-    def set_groupby(self, groupby: List[Union[Column, Function]]) -> SnQLQuery:
+    def set_groupby(self, groupby: List[Union[Column, Function]]) -> Query:
         new = replace(self, groupby=groupby)
         new.validate()
         return new
 
-    def set_where(self, conditions: List[Condition]) -> SnQLQuery:
+    def set_where(self, conditions: List[Condition]) -> Query:
         new = replace(self, conditions=conditions)
         new.validate()
         return new
 
-    def set_limit(self, limit: int) -> SnQLQuery:
+    def set_limit(self, limit: int) -> Query:
         new = replace(self, limit=Limit(limit))
         new.validate()
         return new
 
-    def set_offset(self, offset: int) -> SnQLQuery:
+    def set_offset(self, offset: int) -> Query:
         new = replace(self, offset=Offset(offset))
         new.validate()
         return new
 
-    def set_granularity(self, granularity: int) -> SnQLQuery:
+    def set_granularity(self, granularity: int) -> Query:
         new = replace(self, granularity=Granularity(granularity))
         new.validate()
         return new
@@ -97,7 +97,3 @@ class SnQLQuery(Expression):
             clauses.append(f"GRANULARITY {self.granularity.translate()}")
 
         return "\n".join(clauses)
-
-
-def Query(dataset: str, match: Entity) -> SnQLQuery:
-    return SnQLQuery(dataset=dataset, match=match)

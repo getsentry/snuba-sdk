@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import List, Union
@@ -58,12 +59,16 @@ class Granularity(Expression):
         return f"{self.granularity:d}"
 
 
+column_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_\.]*")
+
+
 @dataclass(frozen=True)
 class Column(Expression):
     name: str
 
     def validate(self) -> None:
-        raise InvalidExpression(f"'{self}' is not a valid column")
+        if not column_name_re.match(self.name):
+            raise InvalidExpression(f"'{self}' contains invalid characters")
 
     def translate(self) -> str:
         return str(self)
