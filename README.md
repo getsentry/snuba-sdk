@@ -12,12 +12,14 @@
 
 # TODO List
 
+- Update build/dev tooling to use github actions
 - Add missing clauses: having, orderby, limitby, totals
 - Subscriptable support (measurements\[fcp.first\])
 - Curried function calls
+- unary conditions
 - Handle array/tuple literals by converting to `array(...)` and `tuple(...)` functions implicitly
-- Join support
 - Complex boolean conditions (AND/OR)
+- Join support
 - Have the Entity object take a set of columns
 - Syntactic sugar
 

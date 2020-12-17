@@ -7,12 +7,12 @@ from snuba_sdk import Expression
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
-    Condition,
     Function,
     Granularity,
     Limit,
     Offset,
 )
+from snuba_sdk.conditions import Condition
 
 
 @dataclass(frozen=True)
