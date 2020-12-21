@@ -1,4 +1,4 @@
-import pytest  # type: ignore
+import pytest
 from typing import Optional
 
 from snuba_sdk import Expression
@@ -6,13 +6,6 @@ from snuba_sdk.expressions import Column, InvalidExpression
 
 tests = [
     pytest.param("valid", Column("valid"), "valid", None, id="basic column test"),
-    pytest.param(
-        "..valid",
-        None,
-        None,
-        InvalidExpression("'..valid' contains invalid characters"),
-        id="invalid column",
-    ),
     pytest.param(
         "_valid", Column("_valid"), "_valid", None, id="underscore column test"
     ),
@@ -22,6 +15,27 @@ tests = [
         "_valid.stuff",
         None,
         id="dot column test",
+    ),
+    pytest.param(
+        "..valid",
+        None,
+        None,
+        InvalidExpression("column '..valid' is empty or contains invalid characters"),
+        id="invalid column",
+    ),
+    pytest.param(
+        10,
+        None,
+        None,
+        InvalidExpression("column '10' must be a string"),
+        id="invalid column type",
+    ),
+    pytest.param(
+        "",
+        None,
+        None,
+        InvalidExpression("column '' is empty or contains invalid characters"),
+        id="empty column",
     ),
 ]
 

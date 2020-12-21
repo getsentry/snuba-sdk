@@ -47,12 +47,9 @@ class Condition(Expression):
             )
 
     def translate(self) -> str:
-        return str(self)
-
-    def __str__(self) -> str:
         if isinstance(self.rhs, (Column, Function)):
             rhs = self.rhs.translate()
-        elif isinstance(self.rhs, *Scalar):
+        elif isinstance(self.rhs, tuple(Scalar)):
             rhs = _stringify_scalar(self.rhs)
 
         return f"{self.lhs.translate()} {self.op.value} {rhs}"

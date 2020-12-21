@@ -1,4 +1,4 @@
-import pytest  # type: ignore
+import pytest
 from datetime import date, datetime, timezone, timedelta
 
 from snuba_sdk.expressions import _stringify_scalar, ScalarType
