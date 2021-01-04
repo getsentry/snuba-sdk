@@ -46,12 +46,3 @@ lint: .venv
 		false)
 
 .PHONY: lint
-
-install-zeus-cli:
-	npm install -g @zeus-ci/cli
-.PHONY: install-zeus-cli
-
-travis-upload-dist: dist install-zeus-cli
-	zeus upload -t "application/zip+wheel" dist/* \
-		|| [[ ! "$(TRAVIS_BRANCH)" =~ ^release/ ]]
-.PHONY: travis-upload-dist
