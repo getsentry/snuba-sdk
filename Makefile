@@ -13,8 +13,12 @@ help:
 	@false
 
 .venv:
-	virtualenv -ppython3 $(VENV_PATH)
+	virtualenv -ppython3.9 $(VENV_PATH)
 	$(VENV_PATH)/bin/pip install tox
+
+setup-git:
+	pip install 'pre-commit==2.9.3'
+	pre-commit install --install-hooks
 
 dist: .venv
 	rm -rf dist build
@@ -42,12 +46,3 @@ lint: .venv
 		false)
 
 .PHONY: lint
-
-install-zeus-cli:
-	npm install -g @zeus-ci/cli
-.PHONY: install-zeus-cli
-
-travis-upload-dist: dist install-zeus-cli
-	zeus upload -t "application/zip+wheel" dist/* \
-		|| [[ ! "$(TRAVIS_BRANCH)" =~ ^release/ ]]
-.PHONY: travis-upload-dist
