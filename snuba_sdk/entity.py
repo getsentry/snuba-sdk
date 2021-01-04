@@ -1,6 +1,13 @@
+import re
 from dataclasses import dataclass
 
 from snuba_sdk import Expression
+
+entity_name_re = re.compile(r"[a-zA-Z_]+")
+
+
+class InvalidEntity(Exception):
+    pass
 
 
 @dataclass(frozen=True)
@@ -8,11 +15,9 @@ class Entity(Expression):
     name: str
 
     def validate(self) -> None:
-        # TODO: Validate something about this
-        return
+        # TODO: There should be a whitelist of entity names at some point
+        if not entity_name_re.match(self.name):
+            raise InvalidEntity(f"{self.name} is not a valid entity name")
 
     def translate(self) -> str:
-        return f"{self}"
-
-    def __repr__(self) -> str:
         return f"{self.name}"
