@@ -1,0 +1,38 @@
+name: Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  make-test:
+    name: Run tests
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      # - name: Cache multiple paths
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ~/.cache/pip
+      #     key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-
+      # - name: Set environment variables
+      #   run: |
+      #     echo "AIRFLOW_CONN_GITHUB=http://github:access_token@https%3A%2F%2Fapi.github.com%2F" >> $GITHUB_ENV
+      #     echo "PYTHONPATH=${PWD}" >> $GITHUB_ENV
+      #     echo "AIRFLOW__CORE__DAGS_FOLDER=${PWD}/workspace/dags" >> $GITHUB_ENV
+      # - name: Install dependencies
+      #   env:
+      #     AIRFLOW_GPL_UNIDECODE: yes
+      #     PIP_DISABLE_PIP_VERSION_CHECK: on
+      #   run: |
+      #     make requirements-local
+      - name: Run tests
+        env:
+          # SKIP_LOCALHOST_TESTS: true
+        run: make tests
