@@ -8,13 +8,11 @@
 
 [![PyPi page link -- version](https://img.shields.io/pypi/v/sentry-sdk.svg)](https://pypi.python.org/pypi/sentry-sdk)
 [![Discord](https://img.shields.io/discord/621778831602221064)](https://discord.gg/cWnMQeA)
-
-### Build Status
-![Tests](https://github.com/sentry/snuba-sdk/workflows/tests/badge.svg)
+[![Tests](https://github.com/getsentry/snuba-sdk/workflows/tests/badge.svg)](https://github.com/getsentry/snuba-sdk/actions)
 
 # TODO List
 
-- Update build/dev tooling to use github actions
+- ~~Update build/dev tooling to use github actions~~
 - Add missing clauses: having, orderby, limitby, totals
 - Subscriptable support (measurements\[fcp.first\])
 - Curried function calls
@@ -32,4 +30,4 @@ Please refer to [CONTRIBUTING.md](https://github.com/getsentry/snuba-sdk/blob/ma
 
 # License
 
-Licensed under the BSD license, see [`LICENSE`](https://github.com/getsentry/snuba-sdk/blob/master/LICENSE)
+Licensed under BSL with Apache-2.0 conversion in 36 months, see [`LICENSE`](https://github.com/getsentry/snuba-sdk/blob/master/LICENSE)
