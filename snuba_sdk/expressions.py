@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import List, Optional, Set, Union
 
 from snuba_sdk import Expression
+from snuba_sdk.clickhouse import is_aggregation_function
 
 
 class InvalidExpression(Exception):
@@ -125,6 +126,9 @@ class Function(Expression):
     function: str
     parameters: List[Union[ScalarType, Column, Function]]
     alias: Optional[str] = None
+
+    def is_aggregate(self) -> bool:
+        return is_aggregation_function(self.function)
 
     def validate(self) -> None:
         if not isinstance(self.function, str):

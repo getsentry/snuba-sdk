@@ -20,4 +20,4 @@ class Entity(Expression):
             raise InvalidEntity(f"{self.name} is not a valid entity name")
 
     def translate(self) -> str:
-        return f"{self.name}"
+        return f"({self.name})"
