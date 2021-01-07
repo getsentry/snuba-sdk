@@ -19,7 +19,8 @@ class InvalidQuery(Exception):
 
 
 def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
-    return not isinstance(vals, list) or not all(
+    print("1", isinstance(vals, list))
+    return isinstance(vals, list) and all(
         isinstance(v, tuple(type_classes)) for v in vals
     )
 
@@ -48,7 +49,6 @@ class Query:
 
     def _replace(self, field: str, value: Any) -> Query:
         new = replace(self, **{field: value})
-        new.validate()
         return new
 
     def set_match(self, match: Entity) -> Query:
@@ -57,6 +57,7 @@ class Query:
         return self._replace("match", match)
 
     def set_select(self, select: List[Union[Column, Function]]) -> Query:
+        print("SELECT", select)
         if not list_type(select, (Column, Function)):
             raise InvalidQuery("select clause must be a list of Column and/or Function")
         return self._replace("select", select)
@@ -71,10 +72,10 @@ class Query:
     def set_where(self, conditions: List[Condition]) -> Query:
         if not list_type(conditions, (Condition,)):
             raise InvalidQuery("where clause must be a list of Condition")
-        return self._replace("conditions", conditions)
+        return self._replace("where", conditions)
 
     def set_limit(self, limit: int) -> Query:
-        return self._replace("limit", limit)
+        return self._replace("limit", Limit(limit))
 
     def set_offset(self, offset: int) -> Query:
         return self._replace("offset", Offset(offset))
@@ -83,18 +84,56 @@ class Query:
         return self._replace("granularity", Granularity(granularity))
 
     def validate(self) -> None:
-        # TODO: Contextual validation. E.g. top level functions in select
-        # require aliases
-        self.match.validate()
-        clauses = [self.select, self.groupby, self.where]
-        for exps in clauses:
-            if exps is not None:
-                for exp in exps:
-                    exp.validate()
+        # TODO: Contextual validations:
+        # - Must have certain conditions (project, timestamp, organization etc.)
 
-        self.limit.validate() if self.limit is not None else None
-        self.offset.validate() if self.offset is not None else None
-        self.granularity.validate() if self.granularity is not None else None
+        if not self.select or len(self.select) == 0:
+            raise InvalidQuery("query must have at least one column in select")
+
+        # Top level functions in the select clause must have an alias
+        non_aggregates = []
+        has_aggregates = False
+        for exp in self.select:
+            if isinstance(exp, Function) and not exp.alias:
+                raise InvalidQuery(
+                    f"{exp.translate()} must have an alias in the select"
+                )
+
+            if not isinstance(exp, Function) or not exp.is_aggregate():
+                non_aggregates.append(exp)
+            else:
+                has_aggregates = True
+
+        # Non-aggregate expressions must be in the groupby if there is an aggregate
+        if has_aggregates and len(non_aggregates) > 0:
+            if not self.groupby or len(self.groupby) == 0:
+                raise InvalidQuery(
+                    "groupby must be included if there are aggregations in the select"
+                )
+
+            for group_exp in non_aggregates:
+                if group_exp not in self.groupby:
+                    raise InvalidQuery(
+                        f"{group_exp.translate()} missing from the groupby"
+                    )
+
+        # TODO - It's not clear if this is worth doing. Each of these components was validated
+        # when they were created, so do we need to validate again? It is possible for someone
+        # to override a component with something invalid, but if there is only so much
+        # idiot proofing that can be done with Python.
+        try:
+            self.match.validate()
+            clauses = [self.select, self.groupby, self.where]
+            for exps in clauses:
+                if exps is not None:
+                    for expr in exps:
+                        expr.validate()
+
+            self.limit.validate() if self.limit is not None else None
+            self.offset.validate() if self.offset is not None else None
+            self.granularity.validate() if self.granularity is not None else None
+        except Exception as e:
+            raise InvalidQuery(f"invalid query: {str(e)}")
 
     def translate(self) -> str:
         self.validate()
@@ -108,7 +147,7 @@ class Query:
             clauses.append(f"BY {', '.join(g.translate() for g in self.groupby)}")
 
         if self.where is not None:
-            clauses.append(f"WHERE {', '.join(w.translate() for w in self.where)}")
+            clauses.append(f"WHERE {' AND '.join(w.translate() for w in self.where)}")
 
         if self.limit is not None:
             clauses.append(f"LIMIT {self.limit.translate()}")
@@ -119,4 +158,4 @@ class Query:
         if self.granularity is not None:
             clauses.append(f"GRANULARITY {self.granularity.translate()}")
 
-        return "\n".join(clauses)
+        return " ".join(clauses)
