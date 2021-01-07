@@ -3,15 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, List, Optional, Sequence, Union
 
-from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    Condition,
+    Entity,
     Function,
     Granularity,
     Limit,
     Offset,
+    Translation,
+    Validation,
 )
-from snuba_sdk.conditions import Condition
 
 
 class InvalidQuery(Exception):
@@ -19,10 +21,13 @@ class InvalidQuery(Exception):
 
 
 def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
-    print("1", isinstance(vals, list))
     return isinstance(vals, list) and all(
         isinstance(v, tuple(type_classes)) for v in vals
     )
+
+
+TRANSLATOR = Translation()
+VALIDATOR = Validation()
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,10 @@ class Query:
         right away since the select columns can be added later.
 
         """
+        # TODO: Whitelist of Datasets and possible entities
+        if not isinstance(self.dataset, str) or self.dataset == "":
+            raise InvalidQuery("queries must have a valid dataset")
+
         if not isinstance(self.match, Entity):
             raise InvalidQuery("queries must have a valid Entity")
 
@@ -57,9 +66,10 @@ class Query:
         return self._replace("match", match)
 
     def set_select(self, select: List[Union[Column, Function]]) -> Query:
-        print("SELECT", select)
-        if not list_type(select, (Column, Function)):
-            raise InvalidQuery("select clause must be a list of Column and/or Function")
+        if not list_type(select, (Column, Function)) or not select:
+            raise InvalidQuery(
+                "select clause must be a non-empty list of Column and/or Function"
+            )
         return self._replace("select", select)
 
     def set_groupby(self, groupby: List[Union[Column, Function]]) -> Query:
@@ -87,7 +97,7 @@ class Query:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 
-        if not self.select or len(self.select) == 0:
+        if not self.select:
             raise InvalidQuery("query must have at least one column in select")
 
         # Top level functions in the select clause must have an alias
@@ -96,7 +106,7 @@ class Query:
         for exp in self.select:
             if isinstance(exp, Function) and not exp.alias:
                 raise InvalidQuery(
-                    f"{exp.translate()} must have an alias in the select"
+                    f"{exp.accept(TRANSLATOR)} must have an alias in the select"
                 )
 
             if not isinstance(exp, Function) or not exp.is_aggregate():
@@ -114,7 +124,7 @@ class Query:
             for group_exp in non_aggregates:
                 if group_exp not in self.groupby:
                     raise InvalidQuery(
-                        f"{group_exp.translate()} missing from the groupby"
+                        f"{group_exp.accept(TRANSLATOR)} missing from the groupby"
                     )
 
         # TODO - It's not clear if this is worth doing. Each of these components was validated
@@ -122,16 +132,16 @@ class Query:
         # to override a component with something invalid, but if there is only so much
         # idiot proofing that can be done with Python.
         try:
-            self.match.validate()
+            self.match.accept(VALIDATOR)
             clauses = [self.select, self.groupby, self.where]
             for exps in clauses:
                 if exps is not None:
                     for expr in exps:
-                        expr.validate()
+                        expr.accept(VALIDATOR)
 
-            self.limit.validate() if self.limit is not None else None
-            self.offset.validate() if self.offset is not None else None
-            self.granularity.validate() if self.granularity is not None else None
+            self.limit.accept(VALIDATOR) if self.limit is not None else None
+            self.offset.accept(VALIDATOR) if self.offset is not None else None
+            self.granularity.accept(VALIDATOR) if self.granularity is not None else None
         except Exception as e:
             raise InvalidQuery(f"invalid query: {str(e)}")
 
@@ -139,23 +149,29 @@ class Query:
         self.validate()
 
         clauses = []
-        clauses.append(f"MATCH {self.match.translate()}")
+        clauses.append(f"MATCH {self.match.accept(TRANSLATOR)}")
         if self.select is not None:
-            clauses.append(f"SELECT {', '.join(s.translate() for s in self.select)}")
+            clauses.append(
+                f"SELECT {', '.join(s.accept(TRANSLATOR) for s in self.select)}"
+            )
 
         if self.groupby is not None:
-            clauses.append(f"BY {', '.join(g.translate() for g in self.groupby)}")
+            clauses.append(
+                f"BY {', '.join(g.accept(TRANSLATOR) for g in self.groupby)}"
+            )
 
         if self.where is not None:
-            clauses.append(f"WHERE {' AND '.join(w.translate() for w in self.where)}")
+            clauses.append(
+                f"WHERE {' AND '.join(w.accept(TRANSLATOR) for w in self.where)}"
+            )
 
         if self.limit is not None:
-            clauses.append(f"LIMIT {self.limit.translate()}")
+            clauses.append(f"LIMIT {self.limit.accept(TRANSLATOR)}")
 
         if self.offset is not None:
-            clauses.append(f"OFFSET {self.offset.translate()}")
+            clauses.append(f"OFFSET {self.offset.accept(TRANSLATOR)}")
 
         if self.granularity is not None:
-            clauses.append(f"GRANULARITY {self.granularity.translate()}")
+            clauses.append(f"GRANULARITY {self.granularity.accept(TRANSLATOR)}")
 
         return " ".join(clauses)

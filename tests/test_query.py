@@ -3,14 +3,15 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
-from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    Condition,
+    Entity,
     Function,
     Granularity,
     Limit,
     Offset,
+    Op,
 )
 from snuba_sdk.query import Query, InvalidQuery
 

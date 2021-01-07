@@ -1,16 +1,52 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import List, Optional, Set, Union
+from enum import Enum
+from typing import Generic, List, Optional, Set, TypeVar, Union
 
-from snuba_sdk import Expression
 from snuba_sdk.clickhouse import is_aggregation_function
 
 
-class InvalidExpression(Exception):
-    pass
+TVisited = TypeVar("TVisited")
+
+
+class Visitor(ABC, Generic[TVisited]):
+    @abstractmethod
+    def visit_column(self, column: Column) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_function(self, func: Function) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_int_literal(
+        self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
+    ) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_entity(self, entity: Entity) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_condition(self, cond: Condition) -> TVisited:
+        raise NotImplementedError
+
+
+class Expression(ABC):
+    def __post_init__(self) -> None:
+        self.accept(Validation())
+
+    def __str__(self) -> str:
+        return self.accept(Translation())
+
+    @abstractmethod
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        raise NotImplementedError
 
 
 # For type hinting
@@ -21,7 +57,6 @@ Scalar: Set[type] = {type(None), bool, str, bytes, float, int, date, datetime}
 # validation regexes
 unescaped_quotes = re.compile(r"(?<!\\)'")
 unescaped_newline = re.compile(r"(?<!\\)\n")
-column_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_\.]*")
 
 
 def _stringify_scalar(value: ScalarType) -> str:
@@ -58,67 +93,32 @@ def _stringify_scalar(value: ScalarType) -> str:
 class Limit(Expression):
     limit: int
 
-    def validate(self) -> None:
-        if not isinstance(self.limit, int):
-            raise InvalidExpression(f"limit '{self.limit}' must be an integer")
-        if self.limit < 0:
-            raise InvalidExpression(f"limit '{self.limit}' cannot be negative")
-        elif self.limit > 10000:
-            raise InvalidExpression(f"limit '{self.limit}' is capped at 10,000")
-
-    def translate(self) -> str:
-        return f"{self.limit:d}"
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_int_literal(self.limit, 0, 10000, "limit")
 
 
 @dataclass(frozen=True)
 class Offset(Expression):
     offset: int
 
-    def validate(self) -> None:
-        if not isinstance(self.offset, int):
-            raise InvalidExpression(f"offset '{self.offset}' must be an integer")
-        if self.offset < 0:
-            raise InvalidExpression(f"offset '{self.offset}' cannot be negative")
-        elif self.offset > 10000:
-            raise InvalidExpression(f"offset '{self.offset}' is capped at 10,000")
-
-    def translate(self) -> str:
-        return f"{self.offset:d}"
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_int_literal(self.offset, 0, 10000, "offset")
 
 
 @dataclass(frozen=True)
 class Granularity(Expression):
     granularity: int
 
-    def validate(self) -> None:
-        if not isinstance(self.granularity, int):
-            raise InvalidExpression(
-                f"granularity '{self.granularity}' must be an integer"
-            )
-        if self.granularity <= 0:
-            raise InvalidExpression(
-                f"granularity '{self.granularity}' must be greater than 0"
-            )
-
-    def translate(self) -> str:
-        return f"{self.granularity:d}"
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_int_literal(self.granularity, 1, None, "granularity")
 
 
 @dataclass(frozen=True)
 class Column(Expression):
     name: str
 
-    def validate(self) -> None:
-        if not isinstance(self.name, str):
-            raise InvalidExpression(f"column '{self.name}' must be a string")
-            self.name = str(self.name)
-        if not column_name_re.match(self.name):
-            raise InvalidExpression(
-                f"column '{self}' is empty or contains invalid characters"
-            )
-
-    def translate(self) -> str:
-        return self.name
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_column(self)
 
 
 @dataclass(frozen=True)
@@ -130,44 +130,163 @@ class Function(Expression):
     def is_aggregate(self) -> bool:
         return is_aggregation_function(self.function)
 
-    def validate(self) -> None:
-        if not isinstance(self.function, str):
-            raise InvalidExpression(f"function '{self.function}' must be a string")
-        if self.function == "":
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_function(self)
+
+
+class Op(Enum):
+    GT = ">"
+    LT = "<"
+    GTE = ">="
+    LTE = "<="
+    EQ = "="
+    NEQ = "!="
+    IN = "IN"
+    NOT_IN = "NOT IN"
+    LIKE = "LIKE"
+    NOT_LIKE = "NOT LIKE"
+
+
+@dataclass(frozen=True)
+class Condition(Expression):
+    lhs: Union[Column, Function]
+    op: Op
+    rhs: Union[Column, Function, ScalarType]
+
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_condition(self)
+
+
+@dataclass(frozen=True)
+class Entity(Expression):
+    name: str
+    name_validator: re.Pattern[str] = field(
+        init=False, repr=False, compare=False, default=re.compile(r"[a-zA-Z_]+")
+    )
+
+    def accept(self, visitor: Visitor[TVisited]) -> TVisited:
+        return visitor.visit_entity(self)
+
+
+class InvalidExpression(Exception):
+    pass
+
+
+class InvalidEntity(Exception):
+    pass
+
+
+class Validation(Visitor[bool]):
+    entity_name_re = re.compile(r"[a-zA-Z_]+")
+    column_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_\.]*")
+
+    def visit_column(self, column: Column) -> bool:
+        if not isinstance(column.name, str):
+            raise InvalidExpression(f"column '{column.name}' must be a string")
+            column.name = str(column.name)
+        if not self.column_name_re.match(column.name):
+            raise InvalidExpression(
+                f"column '{column.name}' is empty or contains invalid characters"
+            )
+
+        return True
+
+    def visit_function(self, func: Function) -> bool:
+        if not isinstance(func.function, str):
+            raise InvalidExpression(f"function '{func.function}' must be a string")
+        if func.function == "":
             # TODO: Have a whitelist of valid functions to check, maybe even with more
             # specific parameter type checking
             raise InvalidExpression("function cannot be empty")
-        if not column_name_re.match(self.function):
+        if not self.column_name_re.match(func.function):
             raise InvalidExpression(
-                f"function '{self.function}' contains invalid characters"
+                f"function '{func.function}' contains invalid characters"
             )
 
-        if self.alias is not None:
-            if not isinstance(self.alias, str) or self.alias == "":
+        if func.alias is not None:
+            if not isinstance(func.alias, str) or func.alias == "":
                 raise InvalidExpression(
-                    f"alias '{self.alias}' of function {self.function} must be None or a non-empty string"
+                    f"alias '{func.alias}' of function {func.function} must be None or a non-empty string"
                 )
-            if not column_name_re.match(self.alias):
+            if not self.column_name_re.match(func.alias):
                 raise InvalidExpression(
-                    f"alias '{self.alias}' of function {self.function} contains invalid characters"
+                    f"alias '{func.alias}' of function {func.function} contains invalid characters"
                 )
 
-        for param in self.parameters:
+        for param in func.parameters:
             if isinstance(param, (Column, Function, *Scalar)):
                 continue
             else:
                 assert not isinstance(param, bytes)  # mypy
                 raise InvalidExpression(
-                    f"parameter '{param}' of function {self.function} is an invalid type"
+                    f"parameter '{param}' of function {func.function} is an invalid type"
                 )
 
-    def translate(self) -> str:
-        alias = "" if self.alias is None else f" AS {self.alias}"
+        return True
+
+    def visit_int_literal(
+        self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
+    ) -> bool:
+        if not isinstance(literal, int):
+            raise InvalidExpression(f"{name} '{literal}' must be an integer")
+        if minn is not None and literal < minn:
+            raise InvalidExpression(f"{name} '{literal}' must be at least {minn:,}")
+        elif maxn is not None and literal > maxn:
+            raise InvalidExpression(f"{name} '{literal}' is capped at {maxn:,}")
+
+        return True
+
+    def visit_entity(self, entity: Entity) -> bool:
+        # TODO: There should be a whitelist of entity names at some point
+        if not self.entity_name_re.match(entity.name):
+            raise InvalidEntity(f"{entity.name} is not a valid entity name")
+
+        return True
+
+    def visit_condition(self, cond: Condition) -> bool:
+        if not isinstance(cond.lhs, (Column, Function)):
+            raise InvalidExpression(
+                f"invalid condition: LHS of a condition must be a Column or Function, not {type(cond.lhs)}"
+            )
+        if not isinstance(cond.rhs, (Column, Function, *Scalar)):
+            raise InvalidExpression(
+                f"invalid condition: RHS of a condition must be a Column, Function or Scalar not {type(cond.rhs)}"
+            )
+        if not isinstance(cond.op, Op):
+            raise InvalidExpression(
+                "invalid condition: operator of a condition must be an Op"
+            )
+
+        return True
+
+
+class Translation(Visitor[str]):
+    def visit_column(self, column: Column) -> str:
+        return column.name
+
+    def visit_function(self, func: Function) -> str:
+        alias = "" if func.alias is None else f" AS {func.alias}"
         params = []
-        for param in self.parameters:
+        for param in func.parameters:
             if isinstance(param, (Column, Function)):
-                params.append(param.translate())
+                params.append(param.accept(self))
             elif isinstance(param, tuple(Scalar)):
                 params.append(_stringify_scalar(param))
 
-        return f"{self.function}({', '.join(params)}){alias}"
+        return f"{func.function}({', '.join(params)}){alias}"
+
+    def visit_int_literal(
+        self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
+    ) -> str:
+        return f"{literal:d}"
+
+    def visit_entity(self, entity: Entity) -> str:
+        return f"({entity.name})"
+
+    def visit_condition(self, cond: Condition) -> str:
+        if isinstance(cond.rhs, (Column, Function)):
+            rhs = cond.rhs.accept(self)
+        elif isinstance(cond.rhs, tuple(Scalar)):
+            rhs = _stringify_scalar(cond.rhs)
+
+        return f"{cond.lhs.accept(self)} {cond.op.value} {rhs}"

@@ -1,11 +1,12 @@
 import pytest
 from typing import Any, Callable, Optional
 
-from snuba_sdk.conditions import Op
 from snuba_sdk.expressions import (
     Function,
     Column,
     InvalidExpression,
+    Op,
+    Translation,
 )
 from tests import col, func
 
@@ -115,6 +116,9 @@ tests = [
 ]
 
 
+TRANSLATOR = Translation()
+
+
 @pytest.mark.parametrize("func_wrapper, valid, translated, exception", tests)
 def test_functions(
     func_wrapper: Callable[[], Any],
@@ -125,7 +129,7 @@ def test_functions(
     def verify() -> None:
         exp = func_wrapper()
         assert exp == valid
-        assert exp.translate() == translated
+        assert exp.accept(TRANSLATOR) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):
