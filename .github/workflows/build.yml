@@ -1,0 +1,28 @@
+name: build
+
+on:
+  push:
+    branches:
+      - release/**
+
+jobs:
+  dist:
+    name: distribution packages
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install virtualenv wheel
+          python setup.py sdist bdist_wheel
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.sha }}
+          path: dist/*

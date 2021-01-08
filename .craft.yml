@@ -1,0 +1,12 @@
+minVersion: "0.15.0"
+github:
+  owner: getsentry
+  repo: snuba-sdk
+releaseBranchPrefix: releases
+changelog: CHANGES
+changelogPolicy: auto
+artifactProvider:
+  name: github
+targets:
+  - name: github
+  - name: pypi
