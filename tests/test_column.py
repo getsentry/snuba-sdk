@@ -5,8 +5,8 @@ from snuba_sdk.expressions import (
     Column,
     Expression,
     InvalidExpression,
-    Translation,
 )
+from snuba_sdk.visitors import Translation
 
 tests = [
     pytest.param("valid", Column("valid"), "valid", None, id="basic column test"),

@@ -6,8 +6,8 @@ from snuba_sdk.expressions import (
     Column,
     InvalidExpression,
     Op,
-    Translation,
 )
+from snuba_sdk.visitors import Translation
 from tests import col, func
 
 

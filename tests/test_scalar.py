@@ -1,7 +1,8 @@
 import pytest
 from datetime import date, datetime, timezone, timedelta
 
-from snuba_sdk.expressions import _stringify_scalar, ScalarType
+from snuba_sdk.expressions import ScalarType
+from snuba_sdk.visitors import _stringify_scalar
 
 tests = [
     pytest.param(None, "NULL"),

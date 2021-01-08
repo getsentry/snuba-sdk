@@ -7,9 +7,9 @@ from snuba_sdk.expressions import (
     Condition,
     InvalidExpression,
     Op,
-    Translation,
 )
 from tests import cond
+from snuba_sdk.visitors import Translation
 
 tests = [
     pytest.param(

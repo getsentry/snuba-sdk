@@ -11,9 +11,9 @@ from snuba_sdk.expressions import (
     Granularity,
     Limit,
     Offset,
-    Translation,
     Validation,
 )
+from snuba_sdk.visitors import Translation
 
 
 class InvalidQuery(Exception):

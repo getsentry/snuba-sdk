@@ -41,9 +41,6 @@ class Expression(ABC):
     def __post_init__(self) -> None:
         self.accept(Validation())
 
-    def __str__(self) -> str:
-        return self.accept(Translation())
-
     @abstractmethod
     def accept(self, visitor: Visitor[TVisited]) -> TVisited:
         raise NotImplementedError
@@ -53,40 +50,6 @@ class Expression(ABC):
 ScalarType = Union[None, bool, str, bytes, float, int, date, datetime]
 # For type checking
 Scalar: Set[type] = {type(None), bool, str, bytes, float, int, date, datetime}
-
-# validation regexes
-unescaped_quotes = re.compile(r"(?<!\\)'")
-unescaped_newline = re.compile(r"(?<!\\)\n")
-
-
-def _stringify_scalar(value: ScalarType) -> str:
-    if value is None:
-        return "NULL"
-    elif isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    if isinstance(value, (str, bytes)):
-        if isinstance(value, bytes):
-            decoded = value.decode()
-        else:
-            decoded = value
-
-        decoded = unescaped_quotes.sub("\\'", decoded)
-        decoded = unescaped_newline.sub("\\\\n", decoded)
-        return f"'{decoded}'"
-    elif isinstance(value, (int, float)):
-        return f"{value}"
-    elif isinstance(value, datetime):
-        # Snuba expects naive UTC datetimes, so convert to that
-        if value.tzinfo is not None:
-            delta = value.utcoffset()
-            assert delta is not None
-            value = value - delta
-            value = value.replace(tzinfo=None)
-        return f"toDateTime('{value.isoformat()}')"
-    elif isinstance(value, date):
-        return f"toDateTime('{value.isoformat()}')"
-
-    raise InvalidExpression(f"'{value}' is not a valid scalar")
 
 
 @dataclass(frozen=True)
@@ -176,11 +139,11 @@ class InvalidEntity(Exception):
     pass
 
 
-class Validation(Visitor[bool]):
+class Validation(Visitor[None]):
     entity_name_re = re.compile(r"[a-zA-Z_]+")
     column_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_\.]*")
 
-    def visit_column(self, column: Column) -> bool:
+    def visit_column(self, column: Column) -> None:
         if not isinstance(column.name, str):
             raise InvalidExpression(f"column '{column.name}' must be a string")
             column.name = str(column.name)
@@ -189,9 +152,7 @@ class Validation(Visitor[bool]):
                 f"column '{column.name}' is empty or contains invalid characters"
             )
 
-        return True
-
-    def visit_function(self, func: Function) -> bool:
+    def visit_function(self, func: Function) -> None:
         if not isinstance(func.function, str):
             raise InvalidExpression(f"function '{func.function}' must be a string")
         if func.function == "":
@@ -222,11 +183,9 @@ class Validation(Visitor[bool]):
                     f"parameter '{param}' of function {func.function} is an invalid type"
                 )
 
-        return True
-
     def visit_int_literal(
         self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
-    ) -> bool:
+    ) -> None:
         if not isinstance(literal, int):
             raise InvalidExpression(f"{name} '{literal}' must be an integer")
         if minn is not None and literal < minn:
@@ -234,16 +193,12 @@ class Validation(Visitor[bool]):
         elif maxn is not None and literal > maxn:
             raise InvalidExpression(f"{name} '{literal}' is capped at {maxn:,}")
 
-        return True
-
-    def visit_entity(self, entity: Entity) -> bool:
+    def visit_entity(self, entity: Entity) -> None:
         # TODO: There should be a whitelist of entity names at some point
         if not self.entity_name_re.match(entity.name):
             raise InvalidEntity(f"{entity.name} is not a valid entity name")
 
-        return True
-
-    def visit_condition(self, cond: Condition) -> bool:
+    def visit_condition(self, cond: Condition) -> None:
         if not isinstance(cond.lhs, (Column, Function)):
             raise InvalidExpression(
                 f"invalid condition: LHS of a condition must be a Column or Function, not {type(cond.lhs)}"
@@ -256,37 +211,3 @@ class Validation(Visitor[bool]):
             raise InvalidExpression(
                 "invalid condition: operator of a condition must be an Op"
             )
-
-        return True
-
-
-class Translation(Visitor[str]):
-    def visit_column(self, column: Column) -> str:
-        return column.name
-
-    def visit_function(self, func: Function) -> str:
-        alias = "" if func.alias is None else f" AS {func.alias}"
-        params = []
-        for param in func.parameters:
-            if isinstance(param, (Column, Function)):
-                params.append(param.accept(self))
-            elif isinstance(param, tuple(Scalar)):
-                params.append(_stringify_scalar(param))
-
-        return f"{func.function}({', '.join(params)}){alias}"
-
-    def visit_int_literal(
-        self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
-    ) -> str:
-        return f"{literal:d}"
-
-    def visit_entity(self, entity: Entity) -> str:
-        return f"({entity.name})"
-
-    def visit_condition(self, cond: Condition) -> str:
-        if isinstance(cond.rhs, (Column, Function)):
-            rhs = cond.rhs.accept(self)
-        elif isinstance(cond.rhs, tuple(Scalar)):
-            rhs = _stringify_scalar(cond.rhs)
-
-        return f"{cond.lhs.accept(self)} {cond.op.value} {rhs}"
