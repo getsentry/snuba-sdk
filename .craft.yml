@@ -2,7 +2,6 @@ minVersion: "0.15.0"
 github:
   owner: getsentry
   repo: snuba-sdk
-releaseBranchPrefix: releases
 changelog: CHANGES
 changelogPolicy: auto
 artifactProvider:
@@ -10,3 +9,6 @@ artifactProvider:
 targets:
   - name: github
   - name: pypi
+
+requireNames:
+  - /^snuba_sdk-.+-py2.py3-none-any.whl$/

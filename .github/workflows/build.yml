@@ -19,9 +19,8 @@ jobs:
           python-version: 3.9
 
       - run: |
-          python -m pip install --upgrade pip
-          pip install virtualenv wheel
-          python setup.py sdist bdist_wheel
+          pip install wheel
+          python setup.py bdist_wheel
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ github.sha }}
