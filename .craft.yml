@@ -4,6 +4,8 @@ github:
   repo: snuba-sdk
 changelog: CHANGES.md
 changelogPolicy: auto
+statusProvider:
+  name: github
 artifactProvider:
   name: github
 targets:
