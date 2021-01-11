@@ -3,15 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, List, Optional, Sequence, Union
 
+from snuba_sdk.conditions import Condition
+from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
-    Condition,
-    Entity,
     Function,
     Granularity,
     Limit,
     Offset,
-    Validation,
 )
 from snuba_sdk.visitors import Translation
 
@@ -27,7 +26,6 @@ def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
 
 
 TRANSLATOR = Translation()
-VALIDATOR = Validation()
 
 
 @dataclass(frozen=True)
@@ -106,7 +104,7 @@ class Query:
         for exp in self.select:
             if isinstance(exp, Function) and not exp.alias:
                 raise InvalidQuery(
-                    f"{exp.accept(TRANSLATOR)} must have an alias in the select"
+                    f"{TRANSLATOR.visit(exp)} must have an alias in the select"
                 )
 
             if not isinstance(exp, Function) or not exp.is_aggregate():
@@ -124,7 +122,7 @@ class Query:
             for group_exp in non_aggregates:
                 if group_exp not in self.groupby:
                     raise InvalidQuery(
-                        f"{group_exp.accept(TRANSLATOR)} missing from the groupby"
+                        f"{TRANSLATOR.visit(group_exp)} missing from the groupby"
                     )
 
         # TODO - It's not clear if this is worth doing. Each of these components was validated
@@ -132,16 +130,16 @@ class Query:
         # to override a component with something invalid, but if there is only so much
         # idiot proofing that can be done with Python.
         try:
-            self.match.accept(VALIDATOR)
+            self.match.validate()
             clauses = [self.select, self.groupby, self.where]
             for exps in clauses:
                 if exps is not None:
                     for expr in exps:
-                        expr.accept(VALIDATOR)
+                        expr.validate()
 
-            self.limit.accept(VALIDATOR) if self.limit is not None else None
-            self.offset.accept(VALIDATOR) if self.offset is not None else None
-            self.granularity.accept(VALIDATOR) if self.granularity is not None else None
+            self.limit.validate() if self.limit is not None else None
+            self.offset.validate() if self.offset is not None else None
+            self.granularity.validate() if self.granularity is not None else None
         except Exception as e:
             raise InvalidQuery(f"invalid query: {str(e)}")
 
@@ -149,29 +147,27 @@ class Query:
         self.validate()
 
         clauses = []
-        clauses.append(f"MATCH {self.match.accept(TRANSLATOR)}")
+        clauses.append(f"MATCH {TRANSLATOR.visit(self.match)}")
         if self.select is not None:
             clauses.append(
-                f"SELECT {', '.join(s.accept(TRANSLATOR) for s in self.select)}"
+                f"SELECT {', '.join(TRANSLATOR.visit(s) for s in self.select)}"
             )
 
         if self.groupby is not None:
-            clauses.append(
-                f"BY {', '.join(g.accept(TRANSLATOR) for g in self.groupby)}"
-            )
+            clauses.append(f"BY {', '.join(TRANSLATOR.visit(g) for g in self.groupby)}")
 
         if self.where is not None:
             clauses.append(
-                f"WHERE {' AND '.join(w.accept(TRANSLATOR) for w in self.where)}"
+                f"WHERE {' AND '.join(TRANSLATOR.visit(w) for w in self.where)}"
             )
 
         if self.limit is not None:
-            clauses.append(f"LIMIT {self.limit.accept(TRANSLATOR)}")
+            clauses.append(f"LIMIT {TRANSLATOR.visit(self.limit)}")
 
         if self.offset is not None:
-            clauses.append(f"OFFSET {self.offset.accept(TRANSLATOR)}")
+            clauses.append(f"OFFSET {TRANSLATOR.visit(self.offset)}")
 
         if self.granularity is not None:
-            clauses.append(f"GRANULARITY {self.granularity.accept(TRANSLATOR)}")
+            clauses.append(f"GRANULARITY {TRANSLATOR.visit(self.granularity)}")
 
         return " ".join(clauses)

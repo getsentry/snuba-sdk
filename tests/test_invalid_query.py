@@ -1,7 +1,8 @@
 import pytest
 import re
 
-from snuba_sdk.expressions import Entity, InvalidExpression
+from snuba_sdk.entity import Entity
+from snuba_sdk.expressions import InvalidExpression
 from snuba_sdk.query import Query, InvalidQuery
 
 

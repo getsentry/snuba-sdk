@@ -1,7 +1,8 @@
 import types
 from typing import Any, Callable, List
 
-from snuba_sdk.expressions import Column, Condition, Function
+from snuba_sdk.conditions import Condition
+from snuba_sdk.expressions import Column, Function
 
 
 # Wrappers to lazily build the expressions

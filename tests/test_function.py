@@ -1,11 +1,11 @@
 import pytest
 from typing import Any, Callable, Optional
 
+from snuba_sdk.conditions import Op
 from snuba_sdk.expressions import (
     Function,
     Column,
     InvalidExpression,
-    Op,
 )
 from snuba_sdk.visitors import Translation
 from tests import col, func
@@ -129,7 +129,7 @@ def test_functions(
     def verify() -> None:
         exp = func_wrapper()
         assert exp == valid
-        assert exp.accept(TRANSLATOR) == translated
+        assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):

@@ -1,15 +1,14 @@
 import pytest
 from typing import Any, Callable, Optional
 
+from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.expressions import (
     Function,
     Column,
-    Condition,
     InvalidExpression,
-    Op,
 )
-from tests import cond
 from snuba_sdk.visitors import Translation
+from tests import cond
 
 tests = [
     pytest.param(
@@ -85,7 +84,7 @@ def test_functions(
     def verify() -> None:
         exp = cond_wrapper()
         assert exp == valid
-        assert exp.accept(TRANSLATOR) == translated
+        assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):

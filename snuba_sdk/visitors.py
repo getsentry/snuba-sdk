@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, date
-from typing import Optional
+from abc import ABC, abstractmethod
+from datetime import date, datetime
+from typing import Generic, TypeVar
 
 from snuba_sdk.expressions import (
     Column,
+    Expression,
     Function,
-    Entity,
-    Condition,
+    Granularity,
     InvalidExpression,
+    Limit,
+    Offset,
     Scalar,
     ScalarType,
-    Visitor,
 )
+from snuba_sdk.entity import Entity
+from snuba_sdk.conditions import Condition
 
 
 # validation regexes
@@ -51,33 +55,74 @@ def _stringify_scalar(value: ScalarType) -> str:
     raise InvalidExpression(f"'{value}' is not a valid scalar")
 
 
+TVisited = TypeVar("TVisited")
+
+
+class Visitor(ABC, Generic[TVisited]):
+    def visit(self, node: Expression) -> TVisited:
+        if isinstance(node, Column):
+            return self._visit_column(node)
+        elif isinstance(node, Function):
+            return self._visit_function(node)
+        elif isinstance(node, Entity):
+            return self._visit_entity(node)
+        elif isinstance(node, Condition):
+            return self._visit_condition(node)
+        elif isinstance(node, Limit):
+            return self._visit_int_literal(node.limit)
+        elif isinstance(node, Offset):
+            return self._visit_int_literal(node.offset)
+        elif isinstance(node, Granularity):
+            return self._visit_int_literal(node.granularity)
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_column(self, column: Column) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_function(self, func: Function) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_int_literal(self, literal: int) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_entity(self, entity: Entity) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_condition(self, cond: Condition) -> TVisited:
+        raise NotImplementedError
+
+
 class Translation(Visitor[str]):
-    def visit_column(self, column: Column) -> str:
+    def _visit_column(self, column: Column) -> str:
         return column.name
 
-    def visit_function(self, func: Function) -> str:
+    def _visit_function(self, func: Function) -> str:
         alias = "" if func.alias is None else f" AS {func.alias}"
         params = []
         for param in func.parameters:
             if isinstance(param, (Column, Function)):
-                params.append(param.accept(self))
+                params.append(self.visit(param))
             elif isinstance(param, tuple(Scalar)):
                 params.append(_stringify_scalar(param))
 
         return f"{func.function}({', '.join(params)}){alias}"
 
-    def visit_int_literal(
-        self, literal: int, minn: Optional[int], maxn: Optional[int], name: str
-    ) -> str:
+    def _visit_int_literal(self, literal: int) -> str:
         return f"{literal:d}"
 
-    def visit_entity(self, entity: Entity) -> str:
+    def _visit_entity(self, entity: Entity) -> str:
         return f"({entity.name})"
 
-    def visit_condition(self, cond: Condition) -> str:
+    def _visit_condition(self, cond: Condition) -> str:
         if isinstance(cond.rhs, (Column, Function)):
-            rhs = cond.rhs.accept(self)
+            rhs = self.visit(cond.rhs)
         elif isinstance(cond.rhs, tuple(Scalar)):
             rhs = _stringify_scalar(cond.rhs)
 
-        return f"{cond.lhs.accept(self)} {cond.op.value} {rhs}"
+        return f"{self.visit(cond.lhs)} {cond.op.value} {rhs}"

@@ -57,7 +57,7 @@ def test_columns(
     def verify() -> None:
         exp = Column(column_name)
         assert exp == valid
-        assert exp.accept(TRANSLATOR) == translated
+        assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):

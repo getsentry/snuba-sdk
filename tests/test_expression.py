@@ -4,9 +4,9 @@ from typing import Any, Optional
 from snuba_sdk.expressions import Granularity, InvalidExpression, Limit, Offset
 
 limit_tests = [
-    pytest.param(0, None),
+    pytest.param(1, None),
     pytest.param(10, None),
-    pytest.param(-1, InvalidExpression("limit '-1' must be at least 0")),
+    pytest.param(-1, InvalidExpression("limit '-1' must be at least 1")),
     pytest.param("5", InvalidExpression("limit '5' must be an integer")),
     pytest.param(1.5, InvalidExpression("limit '1.5' must be an integer")),
     pytest.param(10.0, InvalidExpression("limit '10.0' must be an integer")),
@@ -30,7 +30,6 @@ offset_tests = [
     pytest.param("5", InvalidExpression("offset '5' must be an integer")),
     pytest.param(1.5, InvalidExpression("offset '1.5' must be an integer")),
     pytest.param(10.0, InvalidExpression("offset '10.0' must be an integer")),
-    pytest.param(1000000, InvalidExpression("offset '1000000' is capped at 10,000")),
 ]
 
 
