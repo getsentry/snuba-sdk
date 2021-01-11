@@ -75,7 +75,7 @@ class Visitor(ABC, Generic[TVisited]):
         elif isinstance(node, Granularity):
             return self._visit_int_literal(node.granularity)
 
-        raise NotImplementedError
+        assert False, f"Unhandled Expression: {node}"
 
     @abstractmethod
     def _visit_column(self, column: Column) -> TVisited:
