@@ -1,8 +1,12 @@
 import pytest
 from typing import Optional
 
-from snuba_sdk import Expression
-from snuba_sdk.expressions import Column, InvalidExpression
+from snuba_sdk.expressions import (
+    Column,
+    Expression,
+    InvalidExpression,
+)
+from snuba_sdk.visitors import Translation
 
 tests = [
     pytest.param("valid", Column("valid"), "valid", None, id="basic column test"),
@@ -40,6 +44,9 @@ tests = [
 ]
 
 
+TRANSLATOR = Translation()
+
+
 @pytest.mark.parametrize("column_name, valid, translated, exception", tests)
 def test_columns(
     column_name: str,
@@ -50,7 +57,7 @@ def test_columns(
     def verify() -> None:
         exp = Column(column_name)
         assert exp == valid
-        assert exp.translate() == translated
+        assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):

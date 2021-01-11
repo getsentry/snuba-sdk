@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import re
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import List, Optional, Set, Union
 
-from snuba_sdk import Expression
 from snuba_sdk.clickhouse import is_aggregation_function
 
 
@@ -13,45 +13,32 @@ class InvalidExpression(Exception):
     pass
 
 
+class Expression(ABC):
+    def __post_init__(self) -> None:
+        self.validate()
+
+    @abstractmethod
+    def validate(self) -> None:
+        raise NotImplementedError
+
+
 # For type hinting
 ScalarType = Union[None, bool, str, bytes, float, int, date, datetime]
 # For type checking
 Scalar: Set[type] = {type(None), bool, str, bytes, float, int, date, datetime}
 
-# validation regexes
-unescaped_quotes = re.compile(r"(?<!\\)'")
-unescaped_newline = re.compile(r"(?<!\\)\n")
-column_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_\.]*")
+column_name_re = re.compile(r"[a-zA-Z_]+")
 
 
-def _stringify_scalar(value: ScalarType) -> str:
-    if value is None:
-        return "NULL"
-    elif isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    if isinstance(value, (str, bytes)):
-        if isinstance(value, bytes):
-            decoded = value.decode()
-        else:
-            decoded = value
-
-        decoded = unescaped_quotes.sub("\\'", decoded)
-        decoded = unescaped_newline.sub("\\\\n", decoded)
-        return f"'{decoded}'"
-    elif isinstance(value, (int, float)):
-        return f"{value}"
-    elif isinstance(value, datetime):
-        # Snuba expects naive UTC datetimes, so convert to that
-        if value.tzinfo is not None:
-            delta = value.utcoffset()
-            assert delta is not None
-            value = value - delta
-            value = value.replace(tzinfo=None)
-        return f"toDateTime('{value.isoformat()}')"
-    elif isinstance(value, date):
-        return f"toDateTime('{value.isoformat()}')"
-
-    raise InvalidExpression(f"'{value}' is not a valid scalar")
+def _validate_int_literal(
+    name: str, literal: int, minn: Optional[int], maxn: Optional[int]
+) -> None:
+    if not isinstance(literal, int):
+        raise InvalidExpression(f"{name} '{literal}' must be an integer")
+    if minn is not None and literal < minn:
+        raise InvalidExpression(f"{name} '{literal}' must be at least {minn:,}")
+    elif maxn is not None and literal > maxn:
+        raise InvalidExpression(f"{name} '{literal}' is capped at {maxn:,}")
 
 
 @dataclass(frozen=True)
@@ -59,15 +46,7 @@ class Limit(Expression):
     limit: int
 
     def validate(self) -> None:
-        if not isinstance(self.limit, int):
-            raise InvalidExpression(f"limit '{self.limit}' must be an integer")
-        if self.limit < 0:
-            raise InvalidExpression(f"limit '{self.limit}' cannot be negative")
-        elif self.limit > 10000:
-            raise InvalidExpression(f"limit '{self.limit}' is capped at 10,000")
-
-    def translate(self) -> str:
-        return f"{self.limit:d}"
+        _validate_int_literal("limit", self.limit, 1, 10000)
 
 
 @dataclass(frozen=True)
@@ -75,15 +54,7 @@ class Offset(Expression):
     offset: int
 
     def validate(self) -> None:
-        if not isinstance(self.offset, int):
-            raise InvalidExpression(f"offset '{self.offset}' must be an integer")
-        if self.offset < 0:
-            raise InvalidExpression(f"offset '{self.offset}' cannot be negative")
-        elif self.offset > 10000:
-            raise InvalidExpression(f"offset '{self.offset}' is capped at 10,000")
-
-    def translate(self) -> str:
-        return f"{self.offset:d}"
+        _validate_int_literal("offset", self.offset, 0, None)
 
 
 @dataclass(frozen=True)
@@ -91,17 +62,7 @@ class Granularity(Expression):
     granularity: int
 
     def validate(self) -> None:
-        if not isinstance(self.granularity, int):
-            raise InvalidExpression(
-                f"granularity '{self.granularity}' must be an integer"
-            )
-        if self.granularity <= 0:
-            raise InvalidExpression(
-                f"granularity '{self.granularity}' must be greater than 0"
-            )
-
-    def translate(self) -> str:
-        return f"{self.granularity:d}"
+        _validate_int_literal("granularity", self.granularity, 1, None)
 
 
 @dataclass(frozen=True)
@@ -114,11 +75,8 @@ class Column(Expression):
             self.name = str(self.name)
         if not column_name_re.match(self.name):
             raise InvalidExpression(
-                f"column '{self}' is empty or contains invalid characters"
+                f"column '{self.name}' is empty or contains invalid characters"
             )
-
-    def translate(self) -> str:
-        return self.name
 
 
 @dataclass(frozen=True)
@@ -153,21 +111,8 @@ class Function(Expression):
                 )
 
         for param in self.parameters:
-            if isinstance(param, (Column, Function, *Scalar)):
-                continue
-            else:
+            if not isinstance(param, (Column, Function, *Scalar)):
                 assert not isinstance(param, bytes)  # mypy
                 raise InvalidExpression(
                     f"parameter '{param}' of function {self.function} is an invalid type"
                 )
-
-    def translate(self) -> str:
-        alias = "" if self.alias is None else f" AS {self.alias}"
-        params = []
-        for param in self.parameters:
-            if isinstance(param, (Column, Function)):
-                params.append(param.translate())
-            elif isinstance(param, tuple(Scalar)):
-                params.append(_stringify_scalar(param))
-
-        return f"{self.function}({', '.join(params)}){alias}"

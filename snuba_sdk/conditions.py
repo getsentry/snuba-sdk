@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Union
 
-from snuba_sdk import Expression
 from snuba_sdk.expressions import (
     Column,
+    Expression,
     Function,
     InvalidExpression,
     Scalar,
     ScalarType,
-    _stringify_scalar,
 )
 
 
@@ -45,11 +46,3 @@ class Condition(Expression):
             raise InvalidExpression(
                 "invalid condition: operator of a condition must be an Op"
             )
-
-    def translate(self) -> str:
-        if isinstance(self.rhs, (Column, Function)):
-            rhs = self.rhs.translate()
-        elif isinstance(self.rhs, tuple(Scalar)):
-            rhs = _stringify_scalar(self.rhs)
-
-        return f"{self.lhs.translate()} {self.op.value} {rhs}"

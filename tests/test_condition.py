@@ -7,6 +7,7 @@ from snuba_sdk.expressions import (
     Column,
     InvalidExpression,
 )
+from snuba_sdk.visitors import Translation
 from tests import cond
 
 tests = [
@@ -70,6 +71,9 @@ tests = [
 ]
 
 
+TRANSLATOR = Translation()
+
+
 @pytest.mark.parametrize("cond_wrapper, valid, translated, exception", tests)
 def test_functions(
     cond_wrapper: Callable[[], Any],
@@ -80,7 +84,7 @@ def test_functions(
     def verify() -> None:
         exp = cond_wrapper()
         assert exp == valid
-        assert exp.translate() == translated
+        assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
         with pytest.raises(type(exception), match=str(exception)):
