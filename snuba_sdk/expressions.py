@@ -132,7 +132,7 @@ class Column(Expression):
 @dataclass(frozen=True)
 class Function(Expression):
     function: str
-    parameters: List[Union[ScalarType, Column, Function]]
+    parameters: Sequence[Union[ScalarType, Column, Function]]
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:
