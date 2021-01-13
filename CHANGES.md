@@ -2,7 +2,11 @@
 
 ## 0.0.2
 
-- No documented changes.
+- It is now possible to create a functioning Query, with basic validation. Also CI and release tools have all been set up.
+
+## 0.0.1
+
+- Created blank repo with basic bootstrapping
 
 ## Versioning Policy
 
@@ -23,7 +27,3 @@ snuba-sdk==0.10.1
 ```
 
 A major release `N` implies the previous release `N-1` will no longer receive updates. We generally do not backport bugfixes to older versions unless they are security relevant. However, feel free to ask for backports of specific commits on the bugtracker.
-
-## 0.0.1
-
-- Created blank repo with basic bootstrapping

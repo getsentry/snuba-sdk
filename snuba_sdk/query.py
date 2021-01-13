@@ -10,13 +10,12 @@ from snuba_sdk.expressions import (
     Function,
     Granularity,
     Limit,
+    LimitBy,
     Offset,
+    OrderBy,
+    Totals,
 )
-from snuba_sdk.visitors import Translation
-
-
-class InvalidQuery(Exception):
-    pass
+from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
 
 
 def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
@@ -25,7 +24,10 @@ def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
     )
 
 
-TRANSLATOR = Translation()
+PRINTER = Printer()
+PRETTY_PRINTER = Printer(pretty=True)
+VALIDATOR = Validator()
+TRANSLATOR = Translator()
 
 
 @dataclass(frozen=True)
@@ -35,9 +37,13 @@ class Query:
     select: Optional[List[Union[Column, Function]]] = None
     groupby: Optional[List[Union[Column, Function]]] = None
     where: Optional[List[Condition]] = None
+    having: Optional[List[Condition]] = None
+    orderby: Optional[List[OrderBy]] = None
+    limitby: Optional[LimitBy] = None
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
+    totals: Optional[Totals] = None
 
     def __post_init__(self) -> None:
         """
@@ -82,6 +88,21 @@ class Query:
             raise InvalidQuery("where clause must be a list of Condition")
         return self._replace("where", conditions)
 
+    def set_having(self, conditions: List[Condition]) -> Query:
+        if not list_type(conditions, (Condition,)):
+            raise InvalidQuery("having clause must be a list of Condition")
+        return self._replace("having", conditions)
+
+    def set_orderby(self, orderby: List[OrderBy]) -> Query:
+        if not list_type(orderby, (OrderBy,)):
+            raise InvalidQuery("orderby clause must be a list of OrderBy")
+        return self._replace("orderby", orderby)
+
+    def set_limitby(self, limitby: LimitBy) -> Query:
+        if not isinstance(limitby, LimitBy):
+            raise InvalidQuery("limitby clause must be a LimitBy")
+        return self._replace("limitby", limitby)
+
     def set_limit(self, limit: int) -> Query:
         return self._replace("limit", Limit(limit))
 
@@ -91,83 +112,20 @@ class Query:
     def set_granularity(self, granularity: int) -> Query:
         return self._replace("granularity", Granularity(granularity))
 
+    def set_totals(self, totals: bool) -> Query:
+        return self._replace("totals", Totals(totals))
+
     def validate(self) -> None:
-        # TODO: Contextual validations:
-        # - Must have certain conditions (project, timestamp, organization etc.)
+        VALIDATOR.visit(self)
 
-        if not self.select:
-            raise InvalidQuery("query must have at least one column in select")
-
-        # Top level functions in the select clause must have an alias
-        non_aggregates = []
-        has_aggregates = False
-        for exp in self.select:
-            if isinstance(exp, Function) and not exp.alias:
-                raise InvalidQuery(
-                    f"{TRANSLATOR.visit(exp)} must have an alias in the select"
-                )
-
-            if not isinstance(exp, Function) or not exp.is_aggregate():
-                non_aggregates.append(exp)
-            else:
-                has_aggregates = True
-
-        # Non-aggregate expressions must be in the groupby if there is an aggregate
-        if has_aggregates and len(non_aggregates) > 0:
-            if not self.groupby or len(self.groupby) == 0:
-                raise InvalidQuery(
-                    "groupby must be included if there are aggregations in the select"
-                )
-
-            for group_exp in non_aggregates:
-                if group_exp not in self.groupby:
-                    raise InvalidQuery(
-                        f"{TRANSLATOR.visit(group_exp)} missing from the groupby"
-                    )
-
-        # TODO - It's not clear if this is worth doing. Each of these components was validated
-        # when they were created, so do we need to validate again? It is possible for someone
-        # to override a component with something invalid, but if there is only so much
-        # idiot proofing that can be done with Python.
-        try:
-            self.match.validate()
-            clauses = [self.select, self.groupby, self.where]
-            for exps in clauses:
-                if exps is not None:
-                    for expr in exps:
-                        expr.validate()
-
-            self.limit.validate() if self.limit is not None else None
-            self.offset.validate() if self.offset is not None else None
-            self.granularity.validate() if self.granularity is not None else None
-        except Exception as e:
-            raise InvalidQuery(f"invalid query: {str(e)}")
-
-    def translate(self) -> str:
+    def __str__(self) -> str:
         self.validate()
+        return PRINTER.visit(self)
 
-        clauses = []
-        clauses.append(f"MATCH {TRANSLATOR.visit(self.match)}")
-        if self.select is not None:
-            clauses.append(
-                f"SELECT {', '.join(TRANSLATOR.visit(s) for s in self.select)}"
-            )
+    def print(self) -> str:
+        self.validate()
+        return PRETTY_PRINTER.visit(self)
 
-        if self.groupby is not None:
-            clauses.append(f"BY {', '.join(TRANSLATOR.visit(g) for g in self.groupby)}")
-
-        if self.where is not None:
-            clauses.append(
-                f"WHERE {' AND '.join(TRANSLATOR.visit(w) for w in self.where)}"
-            )
-
-        if self.limit is not None:
-            clauses.append(f"LIMIT {TRANSLATOR.visit(self.limit)}")
-
-        if self.offset is not None:
-            clauses.append(f"OFFSET {TRANSLATOR.visit(self.offset)}")
-
-        if self.granularity is not None:
-            clauses.append(f"GRANULARITY {TRANSLATOR.visit(self.granularity)}")
-
-        return " ".join(clauses)
+    def snuba(self) -> str:
+        self.validate()
+        return TRANSLATOR.visit(self)

@@ -1,9 +1,11 @@
 import pytest
 import re
+from typing import Any, Mapping, Sequence
 
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import InvalidExpression
-from snuba_sdk.query import Query, InvalidQuery
+from snuba_sdk.query import Query
+from snuba_sdk.query_visitors import InvalidQuery
 
 
 def test_invalid_query() -> None:
@@ -26,7 +28,7 @@ def test_invalid_query() -> None:
 def test_invalid_query_set() -> None:
     query = Query("discover", Entity("events"))
 
-    tests = {
+    tests: Mapping[str, Sequence[Any]] = {
         "match": (0, "0 must be a valid Entity"),
         "select": (
             (0, [], [0]),
@@ -37,6 +39,9 @@ def test_invalid_query_set() -> None:
             "groupby clause must be a list of Column and/or Function",
         ),
         "where": ([0, [0]], "where clause must be a list of Condition"),
+        "having": ([0, [0]], "having clause must be a list of Condition"),
+        "orderby": ([0, [0]], "orderby clause must be a list of OrderBy"),
+        "limitby": ("a", "limitby clause must be a LimitBy"),
         "limit": (100000, "limit '100000' is capped at 10,000"),
         "offset": ("", "offset '' must be an integer"),
         "granularity": (-1, "granularity '-1' must be at least 1"),
@@ -44,25 +49,36 @@ def test_invalid_query_set() -> None:
 
     match, err = tests["match"]
     with pytest.raises(InvalidQuery, match=re.escape(err)):
-        query.set_match(match)  # type: ignore
+        query.set_match(match)
 
-    for val in tests["select"]:
+    for val in tests["select"][0]:
         with pytest.raises(InvalidQuery, match=re.escape(tests["select"][1])):
-            query.set_select(val)  # type: ignore
+            query.set_select(val)
 
-    for val in tests["groupby"]:
+    for val in tests["groupby"][0]:
         with pytest.raises(InvalidQuery, match=re.escape(tests["groupby"][1])):
-            query.set_groupby(val)  # type: ignore
+            query.set_groupby(val)
 
-    for val in tests["where"]:
+    for val in tests["where"][0]:
         with pytest.raises(InvalidQuery, match=re.escape(tests["where"][1])):
-            query.set_where(val)  # type: ignore
+            query.set_where(val)
+
+    for val in tests["having"][0]:
+        with pytest.raises(InvalidQuery, match=re.escape(tests["having"][1])):
+            query.set_having(val)
+
+    for val in tests["orderby"][0]:
+        with pytest.raises(InvalidQuery, match=re.escape(tests["orderby"][1])):
+            query.set_orderby(val)
+
+    with pytest.raises(InvalidQuery, match=re.escape(tests["limitby"][1])):
+        query.set_limitby(tests["limitby"][0])
 
     with pytest.raises(InvalidExpression, match=re.escape(tests["limit"][1])):
-        query.set_limit(tests["limit"][0])  # type: ignore
+        query.set_limit(tests["limit"][0])
 
     with pytest.raises(InvalidExpression, match=re.escape(tests["offset"][1])):
-        query.set_offset(tests["offset"][0])  # type: ignore
+        query.set_offset(tests["offset"][0])
 
     with pytest.raises(InvalidExpression, match=re.escape(tests["granularity"][1])):
-        query.set_granularity(tests["granularity"][0])  # type: ignore
+        query.set_granularity(tests["granularity"][0])
