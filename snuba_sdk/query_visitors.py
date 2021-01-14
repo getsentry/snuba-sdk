@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import (
     Generic,
     List,
-    MutableMapping,
+    Mapping,
     Optional,
     TypeVar,
     TYPE_CHECKING,
@@ -39,29 +39,15 @@ QVisited = TypeVar("QVisited")
 
 class QueryVisitor(ABC, Generic[QVisited]):
     def visit(self, query: Query) -> QVisited:
-        returns = {
-            "dataset": self._visit_dataset(query.dataset),
-            "match": self._visit_match(query.match),
-            "select": self._visit_select(query.select),
-            "groupby": self._visit_groupby(query.groupby),
-            "where": self._visit_where(query.where),
-            "having": self._visit_having(query.having),
-            "orderby": self._visit_orderby(query.orderby),
-            "limitby": self._visit_limitby(query.limitby),
-            "limit": self._visit_limit(query.limit),
-            "offset": self._visit_offset(query.offset),
-            "granularity": self._visit_granularity(query.granularity),
-            "totals": self._visit_totals(query.totals),
-        }
+        fields = query.get_fields()
+        returns = {}
+        for field in fields:
+            returns[field] = getattr(self, f"_visit_{field}")(getattr(query, field))
 
         return self._combine(query, returns)
 
     @abstractmethod
-    def _combine(
-        self,
-        query: Query,
-        returns: MutableMapping[str, QVisited],
-    ) -> QVisited:
+    def _combine(self, query: Query, returns: Mapping[str, QVisited]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -122,20 +108,8 @@ class Printer(QueryVisitor[str]):
         self.translator = Translation()
         self.pretty = pretty
 
-    def _combine(self, query: Query, returns: MutableMapping[str, str]) -> str:
-        clauses = [
-            "match",
-            "select",
-            "groupby",
-            "where",
-            "having",
-            "orderby",
-            "limitby",
-            "limit",
-            "offset",
-            "granularity",
-            "totals",
-        ]
+    def _combine(self, query: Query, returns: Mapping[str, str]) -> str:
+        clauses = query.get_fields()[1:]  # Ignore dataset for now
         separator = "\n" if self.pretty else " "
         formatted = separator.join([returns[c] for c in clauses if returns[c]])
         if self.pretty:
@@ -166,7 +140,7 @@ class Printer(QueryVisitor[str]):
 
     def _visit_having(self, having: Optional[List[Condition]]) -> str:
         if having is not None:
-            return f"HAVING {', '.join(self.translator.visit(h) for h in having)}"
+            return f"HAVING {' AND '.join(self.translator.visit(h) for h in having)}"
         return ""
 
     def _visit_orderby(self, orderby: Optional[List[OrderBy]]) -> str:
@@ -204,7 +178,7 @@ class Translator(Printer):
     def __init__(self) -> None:
         super().__init__(False)
 
-    def _combine(self, query: Query, returns: MutableMapping[str, str]) -> str:
+    def _combine(self, query: Query, returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
         body = {"dataset": query.dataset, "query": formatted_query}
 
@@ -212,26 +186,12 @@ class Translator(Printer):
 
 
 class Validator(QueryVisitor[None]):
-    def _combine(self, query: Query, returns: MutableMapping[str, None]) -> None:
+    def _combine(self, query: Query, returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 
         if query.select is None:
             raise InvalidQuery("query must have at least one column in select")
-
-        # - Orderby must be a field in select
-        if query.orderby is not None:
-            for o in query.orderby:
-                found = False
-                for s in query.select:
-                    if s == o.exp:
-                        found = True
-                        break
-
-                if not found:
-                    raise InvalidQuery(
-                        f"{o.exp} in orderby clause is missing from select clause"
-                    )
 
         # - limit by must be a field in select
         if query.limitby is not None:

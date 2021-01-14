@@ -103,6 +103,37 @@ tests = [
         ),
         id="multiple ORDER BY",
     ),
+    pytest.param(
+        Query("discover", Entity("events"))
+        .set_select([Column("event_id"), Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
+        .set_having(
+            [
+                Condition(Function("uniq", [Column("users")]), Op.GT, 1),
+                Condition(Function("count", []), Op.LTE, 1000),
+            ]
+        )
+        .set_orderby(
+            [
+                OrderBy(Column("event_id"), Direction.ASC),
+                OrderBy(Column("title"), Direction.DESC),
+            ]
+        )
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH (events)",
+            "SELECT event_id, title",
+            "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
+            "HAVING uniq(users) > 1 AND count() <= 1000",
+            "ORDER BY event_id ASC, title DESC",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        id="multiple HAVING",
+    ),
 ]
 
 

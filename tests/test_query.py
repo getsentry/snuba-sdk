@@ -180,6 +180,27 @@ tests = [
         Query(
             dataset="discover",
             match=Entity("events"),
+            select=[
+                Column("title"),
+                Function(
+                    "plus", [Function("count", []), Function("count", [])], "added"
+                ),
+            ],
+            groupby=None,
+            where=[Condition(Column("timestamp"), Op.GT, NOW)],
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+        ),
+        InvalidQuery(
+            "groupby must be included if there are aggregations in the select"
+        ),
+        id="groupby can't be None with nested aggregate",
+    ),
+    pytest.param(
+        Query(
+            dataset="discover",
+            match=Entity("events"),
             select=[Column("title"), Function("count", [], "count")],
             groupby=[Column("day")],
             where=[Condition(Column("timestamp"), Op.GT, NOW)],
@@ -189,27 +210,6 @@ tests = [
         ),
         InvalidQuery("Column(name='title') missing from the groupby"),
         id="groupby must include all non aggregates",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
-            select=[Column("title"), Function("count", [], "count")],
-            groupby=[Column("day")],
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            orderby=[
-                OrderBy(Column("title"), Direction.ASC),
-                OrderBy(Function("count", []), Direction.DESC),
-                OrderBy(Column("event_id"), Direction.ASC),
-            ],
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "Column(name='event_id') in orderby clause is missing from select clause"
-        ),
-        id="All OrderBy must be in the select",
     ),
     pytest.param(
         Query(

@@ -136,7 +136,14 @@ class Function(Expression):
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:
-        return is_aggregation_function(self.function)
+        if is_aggregation_function(self.function):
+            return True
+
+        for param in self.parameters:
+            if isinstance(param, Function) and param.is_aggregate():
+                return True
+
+        return False
 
     def validate(self) -> None:
         if not isinstance(self.function, str):

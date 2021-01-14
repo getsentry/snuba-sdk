@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
 from snuba_sdk.conditions import Condition
@@ -32,6 +32,15 @@ TRANSLATOR = Translator()
 
 @dataclass(frozen=True)
 class Query:
+    """
+    A code representation of a SnQL query. It is immutable, so any set_ functions
+    return a new copy of the query. Unlike Expressions it is possible to
+    instantiate a Query that is invalid. Any of the translation functions will
+    validate the query before translating them, so the query must be valid before
+    they are called.
+    """
+
+    # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
     match: Entity
     select: Optional[List[Union[Column, Function]]] = None
@@ -63,6 +72,10 @@ class Query:
     def _replace(self, field: str, value: Any) -> Query:
         new = replace(self, **{field: value})
         return new
+
+    def get_fields(self) -> Sequence[str]:
+        self_fields = fields(self)  # Verified the order in the Python source
+        return tuple(f.name for f in self_fields)
 
     def set_match(self, match: Entity) -> Query:
         if not isinstance(match, Entity):
