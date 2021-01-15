@@ -1,5 +1,9 @@
 # Changelog and versioning
 
+## 0.0.2
+
+- No documented changes.
+
 ## Versioning Policy
 
 This project follows [semver](https://semver.org/), with three additions:
