@@ -1,4 +1,5 @@
 import pytest
+import re
 from typing import Any, Callable, Optional
 
 from snuba_sdk.conditions import Op
@@ -132,7 +133,7 @@ def test_functions(
         assert TRANSLATOR.visit(exp) == translated
 
     if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
             verify()
     else:
         verify()

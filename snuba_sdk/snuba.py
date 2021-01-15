@@ -1,12 +1,15 @@
+import numbers
+from typing import Any, List, Optional
+
 # This is supposed to enumerate the functions snuba supports (with their
-# validator) so we can keep control of the clickhouse functions snuba
+# validator) so we can keep control of the functions snuba
 # exposes.
 #
 # At this point it is just listing some of them used during query
 # processing, so we can keep the list in one place only.
 
 # Please keep them sorted alphabetically in two groups:
-# Standard and Clickhouse specific.
+# Standard and Snuba specific.
 _AGGREGATION_FUNCTIONS_BASE = {
     # Base
     "count",
@@ -21,7 +24,7 @@ _AGGREGATION_FUNCTIONS_BASE = {
     "varSamp",
     "covarPop",
     "covarSamp",
-    # Clickhouse Specific
+    # Snuba Specific
     "anyHeavy",
     "anyLast",
     "argMin",
@@ -102,3 +105,49 @@ AGGREGATION_FUNCTIONS = {
 
 def is_aggregation_function(func_name: str) -> bool:
     return func_name in AGGREGATION_FUNCTIONS
+
+
+def check_array_type(pot_array: List[Any]) -> bool:
+    """
+    Check if a list follows the Snuba array typing rules.
+    - An array must contain all the same data type, or NULL
+    - An array can nest arrays, but those arrays must all hold the same data type
+    """
+
+    def find_base(value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        elif isinstance(value, numbers.Number):
+            return "num"
+        elif not isinstance(value, list):
+            return str(type(value))
+
+        to_check = None
+        for v in value:
+            if v is not None:
+                to_check = v
+                break
+
+        if to_check is None:
+            return None
+
+        return f"list({find_base(to_check)})"
+
+    # Find the first non-null type
+    base_type = None
+    for elem in pot_array:
+        base_type = find_base(elem)
+        if base_type is not None:
+            break
+
+    if base_type is None:
+        return True
+
+    for elem in pot_array:
+        elem_type = find_base(elem)
+        if elem_type is not None and elem_type != base_type:
+            return False
+        elif isinstance(elem, list) and not check_array_type(elem):
+            return False
+
+    return True
