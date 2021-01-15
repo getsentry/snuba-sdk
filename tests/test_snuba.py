@@ -1,7 +1,7 @@
 import pytest
 from typing import Any, List
 
-from snuba_sdk.clickhouse import check_array_type
+from snuba_sdk.snuba import check_array_type
 
 tests = [
     pytest.param([1, 2, 3], True),

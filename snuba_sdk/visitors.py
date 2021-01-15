@@ -56,6 +56,7 @@ def _stringify_scalar(value: ScalarType) -> str:
         is_scalar(value)  # Throws on an invalid array
         return f"array({', '.join([_stringify_scalar(v) for v in value])})"
     elif isinstance(value, tuple):
+        is_scalar(value)  # Throws on an invalid tuple
         return f"tuple({', '.join([_stringify_scalar(v) for v in value])})"
 
     raise InvalidExpression(f"'{value}' is not a valid scalar")

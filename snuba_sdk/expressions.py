@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, List, Optional, Sequence, Set, Union
 
-from snuba_sdk.clickhouse import check_array_type, is_aggregation_function
+from snuba_sdk.snuba import check_array_type, is_aggregation_function
 
 
 class InvalidExpression(Exception):
@@ -52,7 +52,11 @@ class InvalidArray(Exception):
 
 
 def is_scalar(value: Any) -> bool:
-    if isinstance(value, tuple(Scalar)) or isinstance(value, tuple):
+    if isinstance(value, tuple(Scalar)):
+        return True
+    elif isinstance(value, tuple):
+        if not all(is_scalar(v) for v in value):
+            raise InvalidExpression("tuple must contain only scalar values")
         return True
     elif isinstance(value, list):
         if not check_array_type(value):

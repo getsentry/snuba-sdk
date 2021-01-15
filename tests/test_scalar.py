@@ -2,7 +2,7 @@ import pytest
 import re
 from datetime import date, datetime, timezone, timedelta
 
-from snuba_sdk.expressions import InvalidArray, ScalarType
+from snuba_sdk.expressions import InvalidArray, InvalidExpression, ScalarType
 from snuba_sdk.visitors import _stringify_scalar
 
 tests = [
@@ -66,3 +66,9 @@ def test_invalid_scalars() -> None:
         ),
     ):
         _stringify_scalar(["a", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+
+    with pytest.raises(
+        InvalidExpression,
+        match=re.escape("tuple must contain only scalar values"),
+    ):
+        _stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore

@@ -1,14 +1,15 @@
+import numbers
 from typing import Any, List, Optional
 
 # This is supposed to enumerate the functions snuba supports (with their
-# validator) so we can keep control of the clickhouse functions snuba
+# validator) so we can keep control of the functions snuba
 # exposes.
 #
 # At this point it is just listing some of them used during query
 # processing, so we can keep the list in one place only.
 
 # Please keep them sorted alphabetically in two groups:
-# Standard and Clickhouse specific.
+# Standard and Snuba specific.
 _AGGREGATION_FUNCTIONS_BASE = {
     # Base
     "count",
@@ -23,7 +24,7 @@ _AGGREGATION_FUNCTIONS_BASE = {
     "varSamp",
     "covarPop",
     "covarSamp",
-    # Clickhouse Specific
+    # Snuba Specific
     "anyHeavy",
     "anyLast",
     "argMin",
@@ -108,7 +109,7 @@ def is_aggregation_function(func_name: str) -> bool:
 
 def check_array_type(pot_array: List[Any]) -> bool:
     """
-    Check if a list follows the Clickhouse array typing rules.
+    Check if a list follows the Snuba array typing rules.
     - An array must contain all the same data type, or NULL
     - An array can nest arrays, but those arrays must all hold the same data type
     """
@@ -116,7 +117,7 @@ def check_array_type(pot_array: List[Any]) -> bool:
     def find_base(value: Any) -> Optional[str]:
         if value is None:
             return None
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, numbers.Number):
             return "num"
         elif not isinstance(value, list):
             return str(type(value))
