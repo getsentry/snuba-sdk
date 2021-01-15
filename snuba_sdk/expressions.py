@@ -4,9 +4,9 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import List, Optional, Set, Union
+from typing import Any, List, Optional, Sequence, Set, Union
 
-from snuba_sdk.clickhouse import is_aggregation_function
+from snuba_sdk.clickhouse import check_array_type, is_aggregation_function
 
 
 class InvalidExpression(Exception):
@@ -23,9 +23,45 @@ class Expression(ABC):
 
 
 # For type hinting
-ScalarType = Union[None, bool, str, bytes, float, int, date, datetime]
+ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]
+ScalarSequenceType = Sequence[ScalarLiteralType]
+ScalarType = Union[ScalarLiteralType, ScalarSequenceType]
+
 # For type checking
-Scalar: Set[type] = {type(None), bool, str, bytes, float, int, date, datetime}
+Scalar: Set[type] = {
+    type(None),
+    bool,
+    str,
+    bytes,
+    float,
+    int,
+    date,
+    datetime,
+}
+
+
+class InvalidArray(Exception):
+    def __init__(self, value: List[Any]) -> None:
+        value_str = f"{value}"
+        if len(value_str) > 10:
+            value_str = f"{value_str[:10]}...]"
+
+        super().__init__(
+            f"invalid array {value_str}: arrays must have the same data type or None, perhaps use a tuple instead"
+        )
+
+
+def is_scalar(value: Any) -> bool:
+    if isinstance(value, tuple(Scalar)) or isinstance(value, tuple):
+        return True
+    elif isinstance(value, list):
+        if not check_array_type(value):
+            raise InvalidArray(value)
+
+        return True
+
+    return False
+
 
 column_name_re = re.compile(r"[a-zA-Z_]+")
 

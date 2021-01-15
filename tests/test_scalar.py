@@ -1,7 +1,8 @@
 import pytest
+import re
 from datetime import date, datetime, timezone, timedelta
 
-from snuba_sdk.expressions import ScalarType
+from snuba_sdk.expressions import InvalidArray, ScalarType
 from snuba_sdk.visitors import _stringify_scalar
 
 tests = [
@@ -32,9 +33,36 @@ tests = [
     pytest.param("a'b''c'", "'a\\'b\\'\\'c\\''"),
     pytest.param("a\\''b''c'", "'a\\'\\'b\\'\\'c\\''"),
     pytest.param("a\nb\nc", "'a\\nb\\nc'"),
+    pytest.param([1, 2, 3], "array(1, 2, 3)"),
+    pytest.param(
+        [[1, 2, None], [None, 5, 6]], "array(array(1, 2, NULL), array(NULL, 5, 6))"
+    ),
+    pytest.param(("a", "b", "c"), "tuple('a', 'b', 'c')"),
+    pytest.param(
+        (("a", 1, True), (None, "b", None)),
+        "tuple(tuple('a', 1, TRUE), tuple(NULL, 'b', NULL))",
+    ),
 ]
 
 
 @pytest.mark.parametrize("scalar, expected", tests)
 def test_scalars(scalar: ScalarType, expected: str) -> None:
     assert _stringify_scalar(scalar) == expected, scalar
+
+
+def test_invalid_scalars() -> None:
+    with pytest.raises(
+        InvalidArray,
+        match=re.escape(
+            "invalid array ['a', 1]: arrays must have the same data type or None, perhaps use a tuple instead"
+        ),
+    ):
+        _stringify_scalar(["a", 1])
+
+    with pytest.raises(
+        InvalidArray,
+        match=re.escape(
+            "invalid array ['a', 1, 2...]: arrays must have the same data type or None, perhaps use a tuple instead"
+        ),
+    ):
+        _stringify_scalar(["a", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])

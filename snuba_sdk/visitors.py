@@ -11,6 +11,7 @@ from snuba_sdk.expressions import (
     Function,
     Granularity,
     InvalidExpression,
+    is_scalar,
     Limit,
     Offset,
     Scalar,
@@ -51,6 +52,11 @@ def _stringify_scalar(value: ScalarType) -> str:
         return f"toDateTime('{value.isoformat()}')"
     elif isinstance(value, date):
         return f"toDateTime('{value.isoformat()}')"
+    elif isinstance(value, list):
+        is_scalar(value)  # Throws on an invalid array
+        return f"array({', '.join([_stringify_scalar(v) for v in value])})"
+    elif isinstance(value, tuple):
+        return f"tuple({', '.join([_stringify_scalar(v) for v in value])})"
 
     raise InvalidExpression(f"'{value}' is not a valid scalar")
 
@@ -120,9 +126,11 @@ class Translation(Visitor[str]):
         return f"({entity.name})"
 
     def _visit_condition(self, cond: Condition) -> str:
+        rhs = None
         if isinstance(cond.rhs, (Column, Function)):
             rhs = self.visit(cond.rhs)
-        elif isinstance(cond.rhs, tuple(Scalar)):
+        elif is_scalar(cond.rhs):
             rhs = _stringify_scalar(cond.rhs)
 
+        assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value} {rhs}"

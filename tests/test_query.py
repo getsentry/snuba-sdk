@@ -120,6 +120,29 @@ tests = [
         id="complex query with replace",
     ),
     pytest.param(
+        Query("discover", Entity("events"))
+        .set_select([Column("event_id")])
+        .set_where(
+            [
+                Condition(Column("project_id"), Op.IN, [1, 2, 3]),
+                Condition(Column("group_id"), Op.NOT_IN, (1, "2", 3)),
+            ]
+        )
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        None,
+        (
+            "MATCH (events) "
+            "SELECT event_id "
+            "WHERE project_id IN array(1, 2, 3) AND group_id NOT IN tuple(1, '2', 3) "
+            "LIMIT 10 "
+            "OFFSET 1 "
+            "GRANULARITY 3600"
+        ),
+        id="lists and tuples are allowed",
+    ),
+    pytest.param(
         Query(
             dataset="discover",
             match=Entity("events"),
