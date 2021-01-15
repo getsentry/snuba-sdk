@@ -6,7 +6,7 @@
 
 # snuba-sdk - SDK for generating SnQL queries for Snuba
 
-[![PyPi page link -- version](https://img.shields.io/pypi/v/sentry-sdk.svg)](https://pypi.python.org/pypi/sentry-sdk)
+[![PyPi page link -- version](https://img.shields.io/pypi/v/snuba-sdk.svg)](https://pypi.python.org/pypi/snuba-sdk)
 [![Discord](https://img.shields.io/discord/621778831602221064)](https://discord.gg/cWnMQeA)
 [![Tests](https://github.com/getsentry/snuba-sdk/workflows/tests/badge.svg)](https://github.com/getsentry/snuba-sdk/actions)
 
