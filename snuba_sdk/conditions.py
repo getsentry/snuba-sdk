@@ -9,7 +9,7 @@ from snuba_sdk.expressions import (
     Expression,
     Function,
     InvalidExpression,
-    Scalar,
+    is_scalar,
     ScalarType,
 )
 
@@ -38,7 +38,7 @@ class Condition(Expression):
             raise InvalidExpression(
                 f"invalid condition: LHS of a condition must be a Column or Function, not {type(self.lhs)}"
             )
-        if not isinstance(self.rhs, (Column, Function, *Scalar)):
+        if not isinstance(self.rhs, (Column, Function)) and not is_scalar(self.rhs):
             raise InvalidExpression(
                 f"invalid condition: RHS of a condition must be a Column, Function or Scalar not {type(self.rhs)}"
             )
