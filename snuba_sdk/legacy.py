@@ -52,9 +52,11 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     selected_columns = list(map(to_exp, body.get("selected_columns", [])))
     for a in body.get("aggregations", []):
-        if a[0].endswith(")") and not a[1]:
+        if a[0].endswith("()") and not a[1]:
             selected_columns.append(Function(a[0].strip("()"), [], a[2]))
         else:
+            if "(" in a[0] or ")" in a[0]:
+                raise InvalidQuery(f"SnQL does not support infix expressions: '{a[0]}'")
             agg = to_exp(a)
             selected_columns.append(agg)
 

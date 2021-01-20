@@ -2,7 +2,7 @@ import pytest
 import re
 from typing import Any, Mapping, Sequence
 
-from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.query import InvalidQuery
 from snuba_sdk.legacy import json_to_snql
 
 
@@ -182,7 +182,7 @@ invalid_tests = [
             "consistent": False,
             "arrayjoin": "array_stuff",
         },
-        InvalidExpression("function 'quantile(0.5)' contains invalid characters"),
+        InvalidQuery("SnQL does not support infix expressions: 'quantile(0.5)'"),
     )
 ]
 
