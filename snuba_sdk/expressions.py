@@ -4,6 +4,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
+from enum import Enum
 from typing import Any, List, Optional, Sequence, Set, Union
 
 from snuba_sdk.snuba import check_array_type, is_aggregation_function
@@ -106,6 +107,15 @@ class Granularity(Expression):
 
 
 @dataclass(frozen=True)
+class Totals(Expression):
+    totals: bool = False
+
+    def validate(self) -> None:
+        if not isinstance(self.totals, bool):
+            raise InvalidExpression("totals must be a boolean")
+
+
+@dataclass(frozen=True)
 class Column(Expression):
     name: str
 
@@ -126,7 +136,14 @@ class Function(Expression):
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:
-        return is_aggregation_function(self.function)
+        if is_aggregation_function(self.function):
+            return True
+
+        for param in self.parameters:
+            if isinstance(param, Function) and param.is_aggregate():
+                return True
+
+        return False
 
     def validate(self) -> None:
         if not isinstance(self.function, str):
@@ -156,3 +173,41 @@ class Function(Expression):
                 raise InvalidExpression(
                     f"parameter '{param}' of function {self.function} is an invalid type"
                 )
+
+    def __eq__(self, other: object) -> bool:
+        # Don't use the alias to compare equality
+        if not isinstance(other, Function):
+            return False
+
+        return self.function == other.function and self.parameters == other.parameters
+
+
+class Direction(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+
+@dataclass(frozen=True)
+class OrderBy(Expression):
+    exp: Union[Column, Function]
+    direction: Direction
+
+    def validate(self) -> None:
+        if not isinstance(self.exp, (Column, Function)):
+            raise InvalidExpression("OrderBy expression must be a Column or Function")
+        if not isinstance(self.direction, Direction):
+            raise InvalidExpression("OrderBy direction must be a Direction")
+
+
+@dataclass(frozen=True)
+class LimitBy(Expression):
+    column: Column
+    count: int
+
+    def validate(self) -> None:
+        if not isinstance(self.column, Column):
+            raise InvalidExpression("LimitBy can only be used on a Column")
+        if not isinstance(self.count, int) or self.count <= 0 or self.count > 10000:
+            raise InvalidExpression(
+                "LimitBy count must be a positive integer (max 10,000)"
+            )

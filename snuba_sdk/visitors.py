@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Generic, TypeVar
 
+from snuba_sdk.entity import Entity
+from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
     Expression,
@@ -13,12 +15,13 @@ from snuba_sdk.expressions import (
     InvalidExpression,
     is_scalar,
     Limit,
+    LimitBy,
     Offset,
+    OrderBy,
     Scalar,
     ScalarType,
+    Totals,
 )
-from snuba_sdk.entity import Entity
-from snuba_sdk.conditions import Condition
 
 
 # validation regexes
@@ -65,7 +68,7 @@ def _stringify_scalar(value: ScalarType) -> str:
 TVisited = TypeVar("TVisited")
 
 
-class Visitor(ABC, Generic[TVisited]):
+class ExpressionVisitor(ABC, Generic[TVisited]):
     def visit(self, node: Expression) -> TVisited:
         if isinstance(node, Column):
             return self._visit_column(node)
@@ -75,12 +78,18 @@ class Visitor(ABC, Generic[TVisited]):
             return self._visit_entity(node)
         elif isinstance(node, Condition):
             return self._visit_condition(node)
+        elif isinstance(node, OrderBy):
+            return self._visit_orderby(node)
         elif isinstance(node, Limit):
             return self._visit_int_literal(node.limit)
         elif isinstance(node, Offset):
             return self._visit_int_literal(node.offset)
+        elif isinstance(node, LimitBy):
+            return self._visit_limitby(node)
         elif isinstance(node, Granularity):
             return self._visit_int_literal(node.granularity)
+        elif isinstance(node, Totals):
+            return self._visit_totals(node)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -104,8 +113,20 @@ class Visitor(ABC, Generic[TVisited]):
     def _visit_condition(self, cond: Condition) -> TVisited:
         raise NotImplementedError
 
+    @abstractmethod
+    def _visit_orderby(self, orderby: OrderBy) -> TVisited:
+        raise NotImplementedError
 
-class Translation(Visitor[str]):
+    @abstractmethod
+    def _visit_limitby(self, limitby: LimitBy) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_totals(self, totals: Totals) -> TVisited:
+        raise NotImplementedError
+
+
+class Translation(ExpressionVisitor[str]):
     def _visit_column(self, column: Column) -> str:
         return column.name
 
@@ -135,3 +156,12 @@ class Translation(Visitor[str]):
 
         assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value} {rhs}"
+
+    def _visit_orderby(self, orderby: OrderBy) -> str:
+        return f"{self.visit(orderby.exp)} {orderby.direction.value}"
+
+    def _visit_limitby(self, limitby: LimitBy) -> str:
+        return f"{limitby.count} BY {self.visit(limitby.column)}"
+
+    def _visit_totals(self, totals: Totals) -> str:
+        return str(totals.totals)

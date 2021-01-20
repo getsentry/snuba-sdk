@@ -1,7 +1,19 @@
 import pytest
+import re
 from typing import Any, Optional
 
-from snuba_sdk.expressions import Granularity, InvalidExpression, Limit, Offset
+from snuba_sdk.expressions import (
+    Column,
+    Direction,
+    Function,
+    Granularity,
+    InvalidExpression,
+    Limit,
+    LimitBy,
+    Offset,
+    OrderBy,
+    Totals,
+)
 
 limit_tests = [
     pytest.param(1, None),
@@ -58,3 +70,72 @@ def test_granularity(value: Any, exception: Optional[Exception]) -> None:
             Granularity(value)
     else:
         assert Granularity(value).granularity == value
+
+
+orderby_tests = [
+    pytest.param(Column("foo"), Direction.ASC, None),
+    pytest.param(Function("bar", [Column("foo")]), Direction.ASC, None),
+    pytest.param(
+        0,
+        Direction.DESC,
+        InvalidExpression("OrderBy expression must be a Column or Function"),
+    ),
+    pytest.param(
+        Column("foo"), "ASC", InvalidExpression("OrderBy direction must be a Direction")
+    ),
+]
+
+
+@pytest.mark.parametrize("exp, direction, exception", orderby_tests)
+def test_orderby(exp: Any, direction: Any, exception: Optional[Exception]) -> None:
+    if exception is not None:
+        with pytest.raises(type(exception), match=str(exception)):
+            OrderBy(exp, direction)
+    else:
+        assert OrderBy(exp, direction)
+
+
+limitby_tests = [
+    pytest.param(Column("foo"), 1, None),
+    pytest.param("bar", 1, InvalidExpression("LimitBy can only be used on a Column")),
+    pytest.param(
+        Column("foo"),
+        "1",
+        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+    ),
+    pytest.param(
+        Column("foo"),
+        -1,
+        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+    ),
+    pytest.param(
+        Column("foo"),
+        15000,
+        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+    ),
+]
+
+
+@pytest.mark.parametrize("column, count, exception", limitby_tests)
+def test_limitby(column: Any, count: Any, exception: Optional[Exception]) -> None:
+    if exception is not None:
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
+            LimitBy(column, count)
+    else:
+        assert LimitBy(column, count).count == count
+
+
+totals_tests = [
+    pytest.param(True, None),
+    pytest.param(False, None),
+    pytest.param(0, InvalidExpression("totals must be a boolean")),
+]
+
+
+@pytest.mark.parametrize("value, exception", totals_tests)
+def test_totals(value: Any, exception: Optional[Exception]) -> None:
+    if exception is not None:
+        with pytest.raises(type(exception), match=str(exception)):
+            Totals(value)
+    else:
+        assert Totals(value).totals == value
