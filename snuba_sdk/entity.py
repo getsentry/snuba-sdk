@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from snuba_sdk.expressions import Expression
 
 
-entity_name_re = re.compile(r"[a-zA-Z_]+")
+entity_name_re = re.compile(r"^[a-zA-Z_]+$")
 
 
 class InvalidEntity(Exception):

@@ -11,14 +11,21 @@ from snuba_sdk.visitors import Translation
 tests = [
     pytest.param("valid", Column("valid"), "valid", None, id="basic column test"),
     pytest.param(
-        "_valid", Column("_valid"), "_valid", None, id="underscore column test"
+        "valid_", Column("valid_"), "valid_", None, id="underscore column test"
     ),
     pytest.param(
-        "_valid.stuff",
-        Column("_valid.stuff"),
-        "_valid.stuff",
+        "va_lid.stuff",
+        Column("va_lid.stuff"),
+        "va_lid.stuff",
         None,
         id="dot column test",
+    ),
+    pytest.param(
+        "_valid",
+        None,
+        None,
+        InvalidExpression("column '_valid' is empty or contains invalid characters"),
+        id="underscore column test",
     ),
     pytest.param(
         "..valid",

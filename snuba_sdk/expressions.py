@@ -68,7 +68,7 @@ def is_scalar(value: Any) -> bool:
     return False
 
 
-column_name_re = re.compile(r"[a-zA-Z_]+")
+column_name_re = re.compile(r"^[a-zA-Z][a-zA-Z_.]+$")
 
 
 def _validate_int_literal(
@@ -132,7 +132,7 @@ class Column(Expression):
 @dataclass(frozen=True)
 class Function(Expression):
     function: str
-    parameters: List[Union[ScalarType, Column, Function]]
+    parameters: Sequence[Union[ScalarType, Column, Function]]
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:

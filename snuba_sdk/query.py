@@ -18,7 +18,7 @@ from snuba_sdk.expressions import (
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
 
 
-def list_type(vals: List[Any], type_classes: Sequence[Any]) -> bool:
+def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
     return isinstance(vals, list) and all(
         isinstance(v, tuple(type_classes)) for v in vals
     )
@@ -82,21 +82,21 @@ class Query:
             raise InvalidQuery(f"{match} must be a valid Entity")
         return self._replace("match", match)
 
-    def set_select(self, select: List[Union[Column, Function]]) -> Query:
+    def set_select(self, select: Sequence[Union[Column, Function]]) -> Query:
         if not list_type(select, (Column, Function)) or not select:
             raise InvalidQuery(
                 "select clause must be a non-empty list of Column and/or Function"
             )
         return self._replace("select", select)
 
-    def set_groupby(self, groupby: List[Union[Column, Function]]) -> Query:
+    def set_groupby(self, groupby: Sequence[Union[Column, Function]]) -> Query:
         if not list_type(groupby, (Column, Function)):
             raise InvalidQuery(
                 "groupby clause must be a list of Column and/or Function"
             )
         return self._replace("groupby", groupby)
 
-    def set_where(self, conditions: List[Condition]) -> Query:
+    def set_where(self, conditions: Sequence[Condition]) -> Query:
         if not list_type(conditions, (Condition,)):
             raise InvalidQuery("where clause must be a list of Condition")
         return self._replace("where", conditions)

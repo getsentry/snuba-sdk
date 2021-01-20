@@ -124,27 +124,27 @@ class Printer(QueryVisitor[str]):
         return f"MATCH {self.translator.visit(match)}"
 
     def _visit_select(self, select: Optional[List[Union[Column, Function]]]) -> str:
-        if select is not None:
+        if select:
             return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
     def _visit_groupby(self, groupby: Optional[List[Union[Column, Function]]]) -> str:
-        if groupby is not None:
+        if groupby:
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
     def _visit_where(self, where: Optional[List[Condition]]) -> str:
-        if where is not None:
+        if where:
             return f"WHERE {' AND '.join(self.translator.visit(w) for w in where)}"
         return ""
 
     def _visit_having(self, having: Optional[List[Condition]]) -> str:
-        if having is not None:
+        if having:
             return f"HAVING {' AND '.join(self.translator.visit(h) for h in having)}"
         return ""
 
     def _visit_orderby(self, orderby: Optional[List[OrderBy]]) -> str:
-        if orderby is not None:
+        if orderby:
             return f"ORDER BY {', '.join(self.translator.visit(o) for o in orderby)}"
         return ""
 
@@ -190,7 +190,7 @@ class Validator(QueryVisitor[None]):
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 
-        if query.select is None:
+        if query.select is None or len(query.select) == 0:
             raise InvalidQuery("query must have at least one column in select")
 
         # - limit by must be a field in select
