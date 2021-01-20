@@ -3,7 +3,7 @@ import re
 from typing import Any, Mapping, Sequence
 
 from snuba_sdk.expressions import InvalidExpression
-from snuba_sdk.utils import json_to_snql
+from snuba_sdk.legacy import json_to_snql
 
 
 tests = [
