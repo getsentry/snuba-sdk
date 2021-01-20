@@ -1,5 +1,11 @@
 # Changelog and versioning
 
+## 0.0.3
+
+- Add a query visitor for printing, validating and translating a Query object to a SnQL query
+- Allow arrays and tuples of scalars in Expressions
+- Add a function that translates from JSON snuba to SnQL SDK
+
 ## 0.0.2
 
 - It is now possible to create a functioning Query, with basic validation. Also CI and release tools have all been set up.
