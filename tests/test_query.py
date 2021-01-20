@@ -104,14 +104,6 @@ tests = [
         .set_offset(1)
         .set_granularity(3600),
         None,
-        (
-            "MATCH (events) "
-            "SELECT event_id "
-            "WHERE project_id IN array(1, 2, 3) AND group_id NOT IN tuple(1, '2', 3) "
-            "LIMIT 10 "
-            "OFFSET 1 "
-            "GRANULARITY 3600"
-        ),
         id="lists and tuples are allowed",
     ),
     pytest.param(

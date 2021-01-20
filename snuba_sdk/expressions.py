@@ -68,7 +68,7 @@ def is_scalar(value: Any) -> bool:
     return False
 
 
-column_name_re = re.compile(r"[a-zA-Z_]+")
+column_name_re = re.compile(r"^[a-zA-Z][a-zA-Z_.]+$")
 
 
 def _validate_int_literal(

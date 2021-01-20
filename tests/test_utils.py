@@ -1,6 +1,8 @@
 import pytest
+import re
 from typing import Any, Mapping, Sequence
 
+from snuba_sdk.expressions import InvalidExpression
 from snuba_sdk.utils import json_to_snql
 
 
@@ -156,8 +158,46 @@ def test_json_to_snuba(json_body: Mapping[str, Any], clauses: Sequence[str]) -> 
     assert query.print() == expected
 
 
+invalid_tests = [
+    pytest.param(
+        {
+            "selected_columns": ["project_id", "release", "array_stuff"],
+            "orderby": ["sessions", "-project_id"],
+            "offset": 0,
+            "limit": 100,
+            "limitby": [11, "release"],
+            "project": [2],
+            "organization": (2,),
+            "dataset": "sessions",
+            "from_date": "2020-10-17T20:51:46.110774",
+            "to_date": "2021-01-15T20:51:47.110825",
+            "conditions": [
+                ["project_id", "IN", [2]],
+                ["array_stuff", "IN", [[2]]],
+                ["tuple_stuff", "IN", ((2,),)],
+                ["bucketed_started", ">", "2020-10-17T20:51:46.110774"],
+            ],
+            "having": [["min_users", ">", 10]],
+            "aggregations": [["quantile(0.5)", ["duration"], "quantile_0_5"]],
+            "consistent": False,
+            "arrayjoin": "array_stuff",
+        },
+        InvalidExpression("function 'quantile(0.5)' contains invalid characters"),
+    )
+]
+
+
+@pytest.mark.parametrize("json_body, exception", invalid_tests)
+def test_invalid_snuba_queries(
+    json_body: Mapping[str, Any], exception: Exception
+) -> None:
+    with pytest.raises(type(exception), match=re.escape(str(exception))):
+        query = json_to_snql(json_body, "sessions")
+        query.print()
+
+
 # These are all taken verbatim from the sentry sessions tests
-tests = [
+sentry_tests = [
     pytest.param(
         {
             "selected_columns": ["release", "project_id", "users", "sessions"],
@@ -537,7 +577,7 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("json_body, clauses", tests)
+@pytest.mark.parametrize("json_body, clauses", sentry_tests)
 def test_json_to_snuba_for_sessions(
     json_body: Mapping[str, Any], clauses: Sequence[str]
 ) -> None:

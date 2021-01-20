@@ -133,6 +133,5 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         if body.get(extra) is not None:
             query = getattr(query, f"set_{extra}")(body.get(extra))
 
-    # sample = legacy.get("sample")
-    # sample_clause = f"SAMPLE {sample}" if sample else ""
+    # TODO: Sample clause
     return query
