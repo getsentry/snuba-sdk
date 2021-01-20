@@ -78,9 +78,6 @@ If an expression in the query is invalid (e.g. `Column(1)`) then an `InvalidExpr
 
 # TODO List
 
-- ~~Add missing clauses: having, orderby, limitby~~
-- Handle array/tuple literals by converting to `array(...)` and `tuple(...)` functions implicitly
-- Add a utility to convert the old JSON Snuba query format to the new SnQL format
 - Sample support in Entity
 - Subscriptable support (measurements\[fcp.first\])
 - Curried function calls
