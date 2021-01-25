@@ -14,7 +14,8 @@ help:
 
 .venv:
 	virtualenv -ppython3.9 $(VENV_PATH)
-	$(VENV_PATH)/bin/pip install tox
+	$(VENV_PATH)/bin/pip install -r test-requirements.txt
+	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
 setup-git:
 	pip install 'pre-commit==2.9.3'
@@ -27,22 +28,23 @@ dist: .venv
 .PHONY: dist
 
 format: .venv
-	$(VENV_PATH)/bin/tox -e linters --notest
-	.tox/linters/bin/black .
+	$(VENV_PATH)/bin/flake8 tests examples snuba_sdk
+	$(VENV_PATH)/bin/black tests examples snuba_sdk
+	$(VENV_PATH)/bin/mypy --config-file mypy.ini tests examples snuba_sdk
+
 .PHONY: format
 
 tests: .venv
-	@$(VENV_PATH)/bin/tox -e py3.9
+	@$(VENV_PATH)/bin/pytest
+
 .PHONY: tests
 
 check: lint tests
 .PHONY: check
 
 lint: .venv
-	@set -e && $(VENV_PATH)/bin/tox -e linters || ( \
-		echo "================================"; \
-		echo "Bad formatting? Run: make format"; \
-		echo "================================"; \
-		false)
+	$(VENV_PATH)/bin/flake8 tests examples snuba_sdk
+	$(VENV_PATH)/bin/black --check tests examples snuba_sdk
+	$(VENV_PATH)/bin/mypy --config-file mypy.ini tests examples snuba_sdk
 
 .PHONY: lint
