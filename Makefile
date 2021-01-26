@@ -13,7 +13,8 @@ help:
 	@false
 
 .venv:
-	virtualenv -ppython3.9 $(VENV_PATH)
+	virtualenv -ppython3.6 $(VENV_PATH)
+	. $(VENV_PATH)/bin/activate
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
@@ -48,3 +49,6 @@ lint: .venv
 	$(VENV_PATH)/bin/mypy --config-file mypy.ini tests examples snuba_sdk
 
 .PHONY: lint
+
+test-all: .venv
+	tox

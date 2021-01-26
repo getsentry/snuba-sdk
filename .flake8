@@ -13,4 +13,4 @@ ignore =
   N804   // is a worse version of and conflicts with B902 (first argument of a classmethod should be named cls)
 max-line-length = 80
 select = N,B,C,E,F,W,T4,B9
-exclude=checkouts,lol*
+exclude=checkouts,lol*,.tox
