@@ -120,8 +120,12 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
         order_bys = []
         for o in order_by:
-            direction = Direction.DESC if o.startswith("-") else Direction.ASC
-            order_bys.append(OrderBy(Column(o.lstrip("-")), direction))
+            direction = Direction.ASC
+            if isinstance(o, str) and o.startswith("-"):
+                direction = Direction.DESC
+                o = o.lstrip("-")
+
+            order_bys.append(OrderBy(to_exp(o), direction))
 
         query = query.set_orderby(order_bys)
 

@@ -105,6 +105,52 @@ tests = [
     ),
     pytest.param(
         {
+            "selected_columns": ["project_id", "release"],
+            "orderby": [["divide", ["sessions_crashed", "sessions"]]],
+            "offset": 0,
+            "limit": 100,
+            "limitby": [11, "release"],
+            "project": [2],
+            "organization": (2,),
+            "dataset": "sessions",
+            "from_date": "2020-10-17T20:51:46.110774",
+            "to_date": "2021-01-15T20:51:47.110825",
+            "groupby": ["release", "project_id"],
+            "conditions": [
+                ["project_id", "IN", [2]],
+                ["array_stuff", "IN", [[2]]],
+                ["tuple_stuff", "IN", ((2,),)],
+                ["bucketed_started", ">", "2020-10-17T20:51:46.110774"],
+            ],
+            "having": [["min_users", ">", 10]],
+            "aggregations": [["min", [["max", ["users"], "max_users"]], "min_users"]],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT project_id, release, min(max(users) AS max_users) AS min_users",
+            "BY release, project_id",
+            (
+                "WHERE project_id IN array(2) "
+                "AND array_stuff IN array(array(2)) "
+                "AND tuple_stuff IN tuple(tuple(2)) "
+                "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
+                "AND project_id IN array(2) "
+                "AND organization_id IN tuple(2) "
+                "AND started > toDateTime('2020-10-17T20:51:46.110774') "
+                "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
+            ),
+            "HAVING min_users > 10",
+            "ORDER BY divide(sessions_crashed, sessions) ASC",
+            "LIMIT 11 BY release",
+            "LIMIT 100",
+            "OFFSET 0",
+        ),
+        id="function order by",
+    ),
+    pytest.param(
+        {
             "selected_columns": ["project_id", "release", "array_stuff"],
             "orderby": ["sessions", "-project_id"],
             "offset": 0,
