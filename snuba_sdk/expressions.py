@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -132,7 +130,7 @@ class Column(Expression):
 @dataclass(frozen=True)
 class Function(Expression):
     function: str
-    parameters: Sequence[Union[ScalarType, Column, Function]]
+    parameters: Sequence[Union[ScalarType, Column, "Function"]]
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:

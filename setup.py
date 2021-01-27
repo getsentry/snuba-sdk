@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-def get_file_text(file_name):
+def get_file_text(file_name: str) -> str:
     with open(os.path.join(here, file_name)) as in_file:
         return in_file.read()
 
@@ -36,7 +36,7 @@ setup(
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
     license="BSD",
-    install_requires=["urllib3>=1.10.0", "certifi"],
+    install_requires=["dataclasses"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
@@ -45,8 +45,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

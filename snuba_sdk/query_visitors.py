@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from abc import ABC, abstractmethod
 from typing import (
@@ -38,7 +36,7 @@ QVisited = TypeVar("QVisited")
 
 
 class QueryVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: Query) -> QVisited:
+    def visit(self, query: "Query") -> QVisited:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -47,7 +45,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         return self._combine(query, returns)
 
     @abstractmethod
-    def _combine(self, query: Query, returns: Mapping[str, QVisited]) -> QVisited:
+    def _combine(self, query: "Query", returns: Mapping[str, QVisited]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -108,7 +106,7 @@ class Printer(QueryVisitor[str]):
         self.translator = Translation()
         self.pretty = pretty
 
-    def _combine(self, query: Query, returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
         clauses = query.get_fields()[1:]  # Ignore dataset for now
         separator = "\n" if self.pretty else " "
         formatted = separator.join([returns[c] for c in clauses if returns[c]])
@@ -178,7 +176,7 @@ class Translator(Printer):
     def __init__(self) -> None:
         super().__init__(False)
 
-    def _combine(self, query: Query, returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
         body = {"dataset": query.dataset, "query": formatted_query}
 
@@ -186,7 +184,7 @@ class Translator(Printer):
 
 
 class Validator(QueryVisitor[None]):
-    def _combine(self, query: Query, returns: Mapping[str, None]) -> None:
+    def _combine(self, query: "Query", returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 

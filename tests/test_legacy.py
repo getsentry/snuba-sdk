@@ -2,7 +2,7 @@ import pytest
 import re
 from typing import Any, Mapping, Sequence
 
-from snuba_sdk.query import InvalidQuery
+from snuba_sdk.query_visitors import InvalidQuery
 from snuba_sdk.legacy import json_to_snql
 
 
