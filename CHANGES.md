@@ -1,5 +1,9 @@
 # Changelog and versioning
 
+## 0.0.4
+
+- No documented changes.
+
 ## 0.0.3
 
 - Add a query visitor for printing, validating and translating a Query object to a SnQL query
