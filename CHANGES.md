@@ -1,8 +1,14 @@
 # Changelog and versioning
 
+## 0.0.5
+
+- Some small bug fixes uncovered after doing an integration test with Sentry and Snuba.
+
 ## 0.0.4
 
-- No documented changes.
+- This package was originally developed for Python 3.8+, however Sentry (the main user) is still using Python 3.6.
+- The tox tests being used in Github Actions were not executing correctly, and so didn't report that this package was incompatible with 3.6.
+- The package was refactored to work with Python 3.6, and the tox tests were removed from Github Actions (but left in for easier local testing).
 
 ## 0.0.3
 
