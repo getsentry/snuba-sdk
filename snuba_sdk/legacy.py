@@ -79,9 +79,9 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
         conditions.append(Condition(to_exp(cond[0]), Op(cond[1]), to_scalar(cond[2])))
 
-    extra_conditions = ["project", "organization"]
-    for cond in extra_conditions:
-        column = Column(f"{cond}_id")
+    extra_conditions = [("project", "project_id"), ("organization", "org_id")]
+    for cond, col in extra_conditions:
+        column = Column(col)
         values = body.get(cond)
         if isinstance(values, int):
             conditions.append(Condition(column, Op.EQ, values))

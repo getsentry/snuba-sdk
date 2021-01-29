@@ -43,7 +43,7 @@ tests = [
                 "AND tuple_stuff IN tuple(tuple(2)) "
                 "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND project_id IN array(2) "
-                "AND organization_id IN tuple(2) "
+                "AND org_id IN tuple(2) "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -91,7 +91,7 @@ tests = [
                 "AND tuple_stuff IN tuple(tuple(2)) "
                 "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND project_id IN array(2) "
-                "AND organization_id IN tuple(2) "
+                "AND org_id IN tuple(2) "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -137,7 +137,7 @@ tests = [
                 "AND tuple_stuff IN tuple(tuple(2)) "
                 "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND project_id IN array(2) "
-                "AND organization_id IN tuple(2) "
+                "AND org_id IN tuple(2) "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -182,7 +182,7 @@ tests = [
                 "AND tuple_stuff IN tuple(tuple(2)) "
                 "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND project_id IN array(2) "
-                "AND organization_id IN tuple(2) "
+                "AND org_id IN tuple(2) "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -269,7 +269,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0', 'foo@2.0.0') "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -309,7 +309,7 @@ sentry_tests = [
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -345,7 +345,7 @@ sentry_tests = [
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -378,7 +378,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0', 'dummy-release') "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -411,7 +411,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0') "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -443,7 +443,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0', 'foo@2.0.0', 'dummy-release') "
                 "AND project_id IN array(2) "
                 "AND project_id = 2 "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -485,7 +485,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0', 'foo@2.0.0') "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -516,7 +516,7 @@ sentry_tests = [
             (
                 "WHERE project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -547,7 +547,7 @@ sentry_tests = [
             (
                 "WHERE project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -579,7 +579,7 @@ sentry_tests = [
                 "WHERE release IN array('foo@1.0.0', 'foo@2.0.0', 'dummy-release') "
                 "AND project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
@@ -610,7 +610,7 @@ sentry_tests = [
             (
                 "WHERE project_id IN array(2) "
                 "AND project_id IN array(2) "
-                "AND organization_id = 2 "
+                "AND org_id = 2 "
                 "AND started > toDateTime('2020-10-17T20:51:46.110774') "
                 "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
             ),
