@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from snuba_sdk.expressions import (
     Column,
+    Consistent,
+    Debug,
     Direction,
     Function,
     Granularity,
@@ -13,6 +15,7 @@ from snuba_sdk.expressions import (
     Offset,
     OrderBy,
     Totals,
+    Turbo,
 )
 
 limit_tests = [
@@ -29,7 +32,7 @@ limit_tests = [
 @pytest.mark.parametrize("value, exception", limit_tests)
 def test_limit(value: Any, exception: Optional[Exception]) -> None:
     if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
             Limit(value)
     else:
         assert Limit(value).limit == value
@@ -48,7 +51,7 @@ offset_tests = [
 @pytest.mark.parametrize("value, exception", offset_tests)
 def test_offset(value: Any, exception: Optional[Exception]) -> None:
     if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
             Offset(value)
     else:
         assert Offset(value).offset == value
@@ -66,7 +69,7 @@ granularity_tests = [
 @pytest.mark.parametrize("value, exception", granularity_tests)
 def test_granularity(value: Any, exception: Optional[Exception]) -> None:
     if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
             Granularity(value)
     else:
         assert Granularity(value).granularity == value
@@ -89,7 +92,7 @@ orderby_tests = [
 @pytest.mark.parametrize("exp, direction, exception", orderby_tests)
 def test_orderby(exp: Any, direction: Any, exception: Optional[Exception]) -> None:
     if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
             OrderBy(exp, direction)
     else:
         assert OrderBy(exp, direction)
@@ -125,17 +128,17 @@ def test_limitby(column: Any, count: Any, exception: Optional[Exception]) -> Non
         assert LimitBy(column, count).count == count
 
 
-totals_tests = [
-    pytest.param(True, None),
-    pytest.param(False, None),
-    pytest.param(0, InvalidExpression("totals must be a boolean")),
+boolean_tests = [
+    pytest.param("totals", Totals),
+    pytest.param("consistent", Consistent),
+    pytest.param("turbo", Turbo),
+    pytest.param("debug", Debug),
 ]
 
 
-@pytest.mark.parametrize("value, exception", totals_tests)
-def test_totals(value: Any, exception: Optional[Exception]) -> None:
-    if exception is not None:
-        with pytest.raises(type(exception), match=str(exception)):
-            Totals(value)
-    else:
-        assert Totals(value).totals == value
+@pytest.mark.parametrize("name, flag", boolean_tests)
+def test_boolean_flags(name: str, flag: Any) -> None:
+    assert flag(True) is not None
+    assert flag(False) is not None
+    with pytest.raises(InvalidExpression, match=re.escape(f"{name} must be a boolean")):
+        flag(0)

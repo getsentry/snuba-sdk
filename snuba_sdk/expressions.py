@@ -105,12 +105,33 @@ class Granularity(Expression):
 
 
 @dataclass(frozen=True)
-class Totals(Expression):
-    totals: bool = False
+class BooleanFlag(Expression):
+    value: bool = False
+    name: str = ""
 
     def validate(self) -> None:
-        if not isinstance(self.totals, bool):
-            raise InvalidExpression("totals must be a boolean")
+        if not isinstance(self.value, bool):
+            raise InvalidExpression(f"{self.name} must be a boolean")
+
+
+@dataclass(frozen=True)
+class Totals(BooleanFlag):
+    name: str = "totals"
+
+
+@dataclass(frozen=True)
+class Consistent(BooleanFlag):
+    name: str = "consistent"
+
+
+@dataclass(frozen=True)
+class Turbo(BooleanFlag):
+    name: str = "turbo"
+
+
+@dataclass(frozen=True)
+class Debug(BooleanFlag):
+    name: str = "debug"
 
 
 @dataclass(frozen=True)

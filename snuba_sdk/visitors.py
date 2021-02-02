@@ -7,6 +7,7 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
+    Consistent,
     Expression,
     Function,
     Granularity,
@@ -19,6 +20,7 @@ from snuba_sdk.expressions import (
     Scalar,
     ScalarType,
     Totals,
+    Turbo,
 )
 
 
@@ -143,7 +145,13 @@ class Translation(ExpressionVisitor[str]):
         return f"{literal:d}"
 
     def _visit_entity(self, entity: Entity) -> str:
-        return f"({entity.name})"
+        sample_clause = ""
+        if entity.sample is not None:
+            if isinstance(entity.sample, int):
+                sample_clause = f" SAMPLE {entity.sample:d}"
+            else:
+                sample_clause = f" SAMPLE {entity.sample:f}"
+        return f"({entity.name}{sample_clause})"
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
@@ -162,4 +170,10 @@ class Translation(ExpressionVisitor[str]):
         return f"{limitby.count} BY {self.visit(limitby.column)}"
 
     def _visit_totals(self, totals: Totals) -> str:
-        return str(totals.totals)
+        return str(totals.value)
+
+    def _visit_consistent(self, consistent: Consistent) -> str:
+        return str(consistent.value)
+
+    def _visit_turbo(self, turbo: Turbo) -> str:
+        return str(turbo.value)

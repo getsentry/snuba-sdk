@@ -1,7 +1,7 @@
 import json
 import pytest
 from datetime import datetime, timezone
-from typing import Sequence
+from typing import Any, MutableMapping, Optional, Sequence, Tuple
 
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
@@ -36,12 +36,13 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
+        None,
         id="basic query",
     ),
     pytest.param(
         Query(
             dataset="discover",
-            match=Entity("events"),
+            match=Entity("events", 1000),
             select=[
                 Column("title"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
@@ -61,7 +62,7 @@ tests = [
             totals=Totals(True),
         ),
         (
-            "MATCH (events)",
+            "MATCH (events SAMPLE 1000)",
             "SELECT title, uniq(event_id) AS uniq_events",
             "BY title",
             (
@@ -77,10 +78,11 @@ tests = [
             "GRANULARITY 3600",
             "TOTALS True",
         ),
+        None,
         id="query with all clauses",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query("discover", Entity("events", 0.2))
         .set_select([Column("event_id"), Column("title")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_orderby(
@@ -91,16 +93,22 @@ tests = [
         )
         .set_limit(10)
         .set_offset(1)
-        .set_granularity(3600),
+        .set_granularity(3600)
+        .set_totals(True)
+        .set_consistent(True)
+        .set_turbo(True)
+        .set_debug(True),
         (
-            "MATCH (events)",
+            "MATCH (events SAMPLE 0.200000)",
             "SELECT event_id, title",
             "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
             "ORDER BY event_id ASC, title DESC",
             "LIMIT 10",
             "OFFSET 1",
             "GRANULARITY 3600",
+            "TOTALS True",
         ),
+        [("consistent", True), ("turbo", True), ("debug", True)],
         id="multiple ORDER BY",
     ),
     pytest.param(
@@ -132,6 +140,7 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
+        None,
         id="multiple HAVING",
     ),
     pytest.param(
@@ -154,26 +163,40 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
+        None,
         id="lists and tuples are allowed",
     ),
 ]
 
 
-@pytest.mark.parametrize("query, clauses", tests)
-def test_print_query(query: Query, clauses: Sequence[str]) -> None:
+@pytest.mark.parametrize("query, clauses, extras", tests)
+def test_print_query(
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+) -> None:
     expected = " ".join(clauses)
     assert str(query) == expected
 
 
-@pytest.mark.parametrize("query, clauses", tests)
-def test_pretty_print_query(query: Query, clauses: Sequence[str]) -> None:
+@pytest.mark.parametrize("query, clauses, extras", tests)
+def test_pretty_print_query(
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+) -> None:
     joined = "\n".join(clauses)
-    expected = f"-- DATASET: discover\n{joined}"
+    prefix = "-- DATASET: discover\n"
+    if extras:
+        for key, value in extras:
+            prefix += f"-- {key.upper()}: {value}\n"
+
+    expected = f"{prefix}{joined}"
     assert query.print() == expected
 
 
-@pytest.mark.parametrize("query, clauses", tests)
-def test_translate_query(query: Query, clauses: Sequence[str]) -> None:
+@pytest.mark.parametrize("query, clauses, extras", tests)
+def test_translate_query(
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+) -> None:
     joined = " ".join(clauses)
-    body = {"dataset": "discover", "query": joined}
+    body: MutableMapping[str, Any] = {"dataset": "discover", "query": joined}
+    if extras:
+        body.update({k: v for k, v in extras})
     assert query.snuba() == json.dumps(body)

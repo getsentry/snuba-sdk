@@ -78,11 +78,15 @@ If an expression in the query is invalid (e.g. `Column(1)`) then an `InvalidExpr
 
 # TODO List
 
-- Sample support in Entity
+- ~~Consistent~~
+- ~~Turbo~~
+- ~~Debug~~
+- ~~Sample support in Entity~~
 - Subscriptable support (measurements\[fcp.first\])
 - Curried function calls
 - unary conditions
 - Complex boolean conditions (AND/OR)
+
 - Join support
 - Have the Entity object take a set of columns
 - Syntactic sugar

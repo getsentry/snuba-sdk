@@ -31,10 +31,14 @@ tests = [
             "consistent": False,
             "granularity": 86400,
             "totals": True,
+            "sample": 0.1,
+            "debug": True,
         },
         (
             "-- DATASET: sessions",
-            "MATCH (sessions)",
+            "-- CONSISTENT: False",
+            "-- DEBUG: True",
+            "MATCH (sessions SAMPLE 0.100000)",
             "SELECT project_id, release, min(max(users) AS max_users) AS min_users",
             "BY release, project_id",
             (
@@ -79,10 +83,12 @@ tests = [
             "having": [["min_users", ">", 10]],
             "aggregations": [["min", [["max", ["users"], "max_users"]], "min_users"]],
             "consistent": False,
+            "sample": 1000,
         },
         (
             "-- DATASET: sessions",
-            "MATCH (sessions)",
+            "-- CONSISTENT: False",
+            "MATCH (sessions SAMPLE 1000)",
             "SELECT project_id, release, min(max(users) AS max_users) AS min_users",
             "BY release, project_id",
             (
@@ -125,9 +131,12 @@ tests = [
             "having": [["min_users", ">", 10]],
             "aggregations": [["min", [["max", ["users"], "max_users"]], "min_users"]],
             "consistent": False,
+            "turbo": True,
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
+            "-- TURBO: True",
             "MATCH (sessions)",
             "SELECT project_id, release, min(max(users) AS max_users) AS min_users",
             "BY release, project_id",
@@ -174,6 +183,7 @@ tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT project_id, release, array_stuff, arrayJoin(array_stuff) AS array_stuff",
             (
@@ -262,6 +272,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, users, sessions",
             "BY release, project_id",
@@ -301,6 +312,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, bucketed_started, sessions",
             "BY release, project_id, bucketed_started",
@@ -337,6 +349,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, bucketed_started, users",
             "BY release, project_id, bucketed_started",
@@ -371,6 +384,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id",
             "BY release, project_id",
@@ -404,6 +418,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT min(started) AS oldest, project_id, release",
             "BY release, project_id",
@@ -436,6 +451,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, users, sessions",
             "BY release, project_id",
@@ -478,6 +494,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, duration_quantiles, sessions, sessions_errored, sessions_crashed, sessions_abnormal, users, users_crashed",
             "BY release, project_id",
@@ -510,6 +527,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT project_id, release",
             "BY release, project_id",
@@ -541,6 +559,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT project_id, users",
             "BY project_id",
@@ -572,6 +591,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT release, project_id, users, sessions",
             "BY release, project_id",
@@ -604,6 +624,7 @@ sentry_tests = [
         },
         (
             "-- DATASET: sessions",
+            "-- CONSISTENT: False",
             "MATCH (sessions)",
             "SELECT project_id, release",
             "BY release, project_id",
