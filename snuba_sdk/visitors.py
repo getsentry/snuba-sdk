@@ -8,6 +8,7 @@ from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
     Consistent,
+    CurriedFunction,
     Debug,
     Expression,
     Function,
@@ -73,8 +74,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
     def visit(self, node: Expression) -> TVisited:
         if isinstance(node, Column):
             return self._visit_column(node)
-        elif isinstance(node, Function):
-            return self._visit_function(node)
+        elif isinstance(node, (CurriedFunction, Function)):
+            return self._visit_curried_function(node)
         elif isinstance(node, Entity):
             return self._visit_entity(node)
         elif isinstance(node, Condition):
@@ -105,7 +106,7 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_function(self, func: Function) -> TVisited:
+    def _visit_curried_function(self, func: CurriedFunction) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -149,16 +150,31 @@ class Translation(ExpressionVisitor[str]):
     def _visit_column(self, column: Column) -> str:
         return column.name
 
-    def _visit_function(self, func: Function) -> str:
+    def _visit_curried_function(self, func: CurriedFunction) -> str:
         alias = "" if func.alias is None else f" AS {func.alias}"
-        params = []
-        for param in func.parameters:
-            if isinstance(param, (Column, Function)):
-                params.append(self.visit(param))
-            elif isinstance(param, tuple(Scalar)):
-                params.append(_stringify_scalar(param))
+        initialize_clause = ""
+        if func.initializers is not None:
+            initializers = []
+            for initer in func.initializers:
+                if isinstance(initer, Column):
+                    initializers.append(self.visit(initer))
+                elif isinstance(initer, tuple(Scalar)):
+                    initializers.append(_stringify_scalar(initer))
 
-        return f"{func.function}({', '.join(params)}){alias}"
+            initialize_clause = f"({', '.join(initializers)})"
+
+        param_clause = ""
+        if func.parameters is not None:
+            params = []
+            for param in func.parameters:
+                if isinstance(param, (Column, CurriedFunction, Function)):
+                    params.append(self.visit(param))
+                elif is_scalar(param):
+                    params.append(_stringify_scalar(param))
+
+            param_clause = f"({', '.join(params)})"
+
+        return f"{func.function}{initialize_clause}{param_clause}{alias}"
 
     def _visit_int_literal(self, literal: int) -> str:
         return f"{literal:d}"
@@ -174,7 +190,7 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
-        if isinstance(cond.rhs, (Column, Function)):
+        if isinstance(cond.rhs, (Column, CurriedFunction, Function)):
             rhs = self.visit(cond.rhs)
         elif is_scalar(cond.rhs):
             rhs = _stringify_scalar(cond.rhs)

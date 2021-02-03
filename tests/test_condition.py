@@ -48,7 +48,7 @@ tests = [
         None,
         "",
         InvalidExpression(
-            "invalid condition: LHS of a condition must be a Column or Function, not <class 'str'>"
+            "invalid condition: LHS of a condition must be a Column, CurriedFunction or Function, not <class 'str'>"
         ),
         id="lhs invalid type",
     ),
@@ -64,7 +64,7 @@ tests = [
         None,
         "",
         InvalidExpression(
-            "invalid condition: RHS of a condition must be a Column, Function or Scalar not <enum 'Op'>"
+            "invalid condition: RHS of a condition must be a Column, CurriedFunction, Function or Scalar not <enum 'Op'>"
         ),
         id="rhs invalid type",
     ),

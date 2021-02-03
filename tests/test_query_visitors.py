@@ -7,6 +7,7 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    CurriedFunction,
     Direction,
     Function,
     Granularity,
@@ -46,6 +47,7 @@ tests = [
             select=[
                 Column("title"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
+                CurriedFunction("quantile", [0.5], [Column("duration")], "p50"),
             ],
             groupby=[Column("title")],
             where=[
@@ -63,7 +65,7 @@ tests = [
         ),
         (
             "MATCH (events SAMPLE 1000)",
-            "SELECT title, uniq(event_id) AS uniq_events",
+            "SELECT title, uniq(event_id) AS uniq_events, quantile(0.5)(duration) AS p50",
             "BY title",
             (
                 "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006') "

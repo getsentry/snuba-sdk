@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, List, Optional, Sequence, Set, Union
@@ -50,9 +50,11 @@ class InvalidArray(Exception):
         )
 
 
-def is_scalar(value: Any) -> bool:
+def is_scalar(value: Any, literal: bool = False) -> bool:
     if isinstance(value, tuple(Scalar)):
         return True
+    elif literal:  # Bail if we don't include arrays/tuples
+        return False
     elif isinstance(value, tuple):
         if not all(is_scalar(v) for v in value):
             raise InvalidExpression("tuple must contain only scalar values")
@@ -66,7 +68,13 @@ def is_scalar(value: Any) -> bool:
     return False
 
 
-column_name_re = re.compile(r"^[a-zA-Z][a-zA-Z_.]+$")
+column_name_re = re.compile(r"^[a-zA-Z](\w|\.)+$")
+# In theory the function matcher should be the same as the column one.
+# However legacy API sends curried functions as raw strings, and it
+# wasn't worth it to import an entire parsing grammar into the SDK
+# just to accomodate that one case. Instead, allow it for now and
+# once that use case is eliminated we can remove this.
+function_name_re = re.compile(r"^[a-zA-Z](\w|[().,]| |\[|\])+$")
 
 
 def _validate_int_literal(
@@ -155,18 +163,25 @@ class Column(Expression):
 
 
 @dataclass(frozen=True)
-class Function(Expression):
+class CurriedFunction(Expression):
     function: str
-    parameters: Sequence[Union[ScalarType, Column, "Function"]]
+    initializers: Optional[Sequence[Union[ScalarLiteralType, Column]]] = None
+    parameters: Optional[
+        Sequence[Union[ScalarType, Column, "CurriedFunction", "Function"]]
+    ] = None
     alias: Optional[str] = None
 
     def is_aggregate(self) -> bool:
         if is_aggregation_function(self.function):
             return True
 
-        for param in self.parameters:
-            if isinstance(param, Function) and param.is_aggregate():
-                return True
+        if self.parameters is not None:
+            for param in self.parameters:
+                if (
+                    isinstance(param, (CurriedFunction, Function))
+                    and param.is_aggregate()
+                ):
+                    return True
 
         return False
 
@@ -177,10 +192,23 @@ class Function(Expression):
             # TODO: Have a whitelist of valid functions to check, maybe even with more
             # specific parameter type checking
             raise InvalidExpression("function cannot be empty")
-        if not column_name_re.match(self.function):
+        if not function_name_re.match(self.function):
             raise InvalidExpression(
                 f"function '{self.function}' contains invalid characters"
             )
+
+        if self.initializers is not None:
+            if not isinstance(self.initializers, Sequence):
+                raise InvalidExpression(
+                    f"initializers of function {self.function} must be a Sequence"
+                )
+            elif not all(
+                isinstance(param, Column) or is_scalar(param, True)
+                for param in self.initializers
+            ):
+                raise InvalidExpression(
+                    f"initializers to function {self.function} must be a scalar or column"
+                )
 
         if self.alias is not None:
             if not isinstance(self.alias, str) or self.alias == "":
@@ -192,19 +220,37 @@ class Function(Expression):
                     f"alias '{self.alias}' of function {self.function} contains invalid characters"
                 )
 
-        for param in self.parameters:
-            if not isinstance(param, (Column, Function, *Scalar)):
-                assert not isinstance(param, bytes)  # mypy
+        if self.parameters is not None:
+            if not isinstance(self.parameters, Sequence):
                 raise InvalidExpression(
-                    f"parameter '{param}' of function {self.function} is an invalid type"
+                    f"parameters of function {self.function} must be a Sequence"
                 )
+            for param in self.parameters:
+                if not isinstance(
+                    param, (Column, CurriedFunction, Function)
+                ) and not is_scalar(param):
+                    assert not isinstance(param, bytes)  # mypy
+                    raise InvalidExpression(
+                        f"parameter '{param}' of function {self.function} is an invalid type"
+                    )
 
     def __eq__(self, other: object) -> bool:
         # Don't use the alias to compare equality
-        if not isinstance(other, Function):
+        if not isinstance(other, CurriedFunction):
             return False
 
-        return self.function == other.function and self.parameters == other.parameters
+        return (
+            self.function == other.function
+            and self.initializers == other.initializers
+            and self.parameters == other.parameters
+        )
+
+
+@dataclass(frozen=True)
+class Function(CurriedFunction):
+    initializers: Optional[Sequence[Union[ScalarLiteralType, Column]]] = field(
+        init=False, default=None
+    )
 
 
 class Direction(Enum):
@@ -214,12 +260,14 @@ class Direction(Enum):
 
 @dataclass(frozen=True)
 class OrderBy(Expression):
-    exp: Union[Column, Function]
+    exp: Union[Column, CurriedFunction, Function]
     direction: Direction
 
     def validate(self) -> None:
-        if not isinstance(self.exp, (Column, Function)):
-            raise InvalidExpression("OrderBy expression must be a Column or Function")
+        if not isinstance(self.exp, (Column, CurriedFunction, Function)):
+            raise InvalidExpression(
+                "OrderBy expression must be a Column, CurriedFunction or Function"
+            )
         if not isinstance(self.direction, Direction):
             raise InvalidExpression("OrderBy direction must be a Direction")
 

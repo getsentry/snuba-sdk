@@ -16,6 +16,7 @@ from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
     Consistent,
+    CurriedFunction,
     Debug,
     Expression,
     Function,
@@ -63,13 +64,13 @@ class QueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, Function]]]
+        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, Function]]]
+        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> QVisited:
         raise NotImplementedError
 
@@ -147,13 +148,15 @@ class Printer(QueryVisitor[str]):
     def _visit_match(self, match: Entity) -> str:
         return f"MATCH {self.translator.visit(match)}"
 
-    def _visit_select(self, select: Optional[Sequence[Union[Column, Function]]]) -> str:
+    def _visit_select(
+        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+    ) -> str:
         if select:
             return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, Function]]]
+        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> str:
         if groupby:
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
@@ -254,10 +257,13 @@ class Validator(QueryVisitor[None]):
         non_aggregates = []
         has_aggregates = False
         for exp in query.select:
-            if isinstance(exp, Function) and not exp.alias:
+            if isinstance(exp, (CurriedFunction, Function)) and not exp.alias:
                 raise InvalidQuery(f"{exp} must have an alias in the select")
 
-            if not isinstance(exp, Function) or not exp.is_aggregate():
+            if (
+                not isinstance(exp, (CurriedFunction, Function))
+                or not exp.is_aggregate()
+            ):
                 non_aggregates.append(exp)
             else:
                 has_aggregates = True
@@ -288,12 +294,12 @@ class Validator(QueryVisitor[None]):
                 v.validate()
 
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, Function]]]
+        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> None:
         self.__list_validate(select)
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, Function]]]
+        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> None:
         self.__list_validate(groupby)
 

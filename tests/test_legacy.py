@@ -1,8 +1,6 @@
 import pytest
-import re
 from typing import Any, Mapping, Sequence
 
-from snuba_sdk.query_visitors import InvalidQuery
 from snuba_sdk.legacy import json_to_snql
 
 
@@ -202,20 +200,9 @@ tests = [
         ),
         id="arrayjoin",
     ),
-]
-
-
-@pytest.mark.parametrize("json_body, clauses", tests)
-def test_json_to_snuba(json_body: Mapping[str, Any], clauses: Sequence[str]) -> None:
-    expected = "\n".join(clauses)
-    query = json_to_snql(json_body, "sessions")
-    assert query.print() == expected
-
-
-invalid_tests = [
     pytest.param(
         {
-            "selected_columns": ["project_id", "release", "array_stuff"],
+            "selected_columns": ["project_id", "release"],
             "orderby": ["sessions", "-project_id"],
             "offset": 0,
             "limit": 100,
@@ -232,22 +219,43 @@ invalid_tests = [
                 ["bucketed_started", ">", "2020-10-17T20:51:46.110774"],
             ],
             "having": [["min_users", ">", 10]],
-            "aggregations": [["quantile(0.5)", ["duration"], "quantile_0_5"]],
+            "aggregations": [
+                ["apdex(duration, 300)", None, "apdex"],
+                ["uniqIf(user, greater(duration, 1200))", None, "misery"],
+                ["quantile(0.75)", "duration", "p75"],
+            ],
             "consistent": False,
-            "arrayjoin": "array_stuff",
         },
-        InvalidQuery("SnQL does not support infix expressions: 'quantile(0.5)'"),
-    )
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT project_id, release, apdex(duration, 300) AS apdex, uniqIf(user, greater(duration, 1200)) AS misery, quantile(0.75)(duration) AS p75",
+            (
+                "WHERE project_id IN array(2) "
+                "AND array_stuff IN array(array(2)) "
+                "AND tuple_stuff IN tuple(tuple(2)) "
+                "AND bucketed_started > toDateTime('2020-10-17T20:51:46.110774') "
+                "AND project_id IN array(2) "
+                "AND org_id IN tuple(2) "
+                "AND started > toDateTime('2020-10-17T20:51:46.110774') "
+                "AND started <= toDateTime('2021-01-15T20:51:47.110825')"
+            ),
+            "HAVING min_users > 10",
+            "ORDER BY sessions ASC, project_id DESC",
+            "LIMIT 11 BY release",
+            "LIMIT 100",
+            "OFFSET 0",
+        ),
+        id="curried/string functions",
+    ),
 ]
 
 
-@pytest.mark.parametrize("json_body, exception", invalid_tests)
-def test_invalid_snuba_queries(
-    json_body: Mapping[str, Any], exception: Exception
-) -> None:
-    with pytest.raises(type(exception), match=re.escape(str(exception))):
-        query = json_to_snql(json_body, "sessions")
-        query.print()
+@pytest.mark.parametrize("json_body, clauses", tests)
+def test_json_to_snuba(json_body: Mapping[str, Any], clauses: Sequence[str]) -> None:
+    expected = "\n".join(clauses)
+    query = json_to_snql(json_body, "sessions")
+    assert query.print() == expected
 
 
 # These are all taken verbatim from the sentry sessions tests

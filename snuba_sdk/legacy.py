@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Mapping, Sequence, Union
+from typing import Any, Mapping, Sequence
 
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
@@ -18,48 +18,50 @@ def parse_datetime(date_str: str) -> datetime:
     return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
 
 
+def parse_scalar(value: Any) -> Any:
+    if isinstance(value, list):
+        return list(map(parse_scalar, value))
+    elif isinstance(value, tuple):
+        return tuple(map(parse_scalar, value))
+
+    if isinstance(value, str):
+        try:
+            date_scalar = parse_datetime(value)
+            return date_scalar
+        except ValueError:
+            return value
+
+    return value
+
+
+def parse_exp(value: Any) -> Any:
+    if isinstance(value, str):
+        return Column(value)
+    if not isinstance(value, list):
+        return parse_scalar(value)
+
+    alias = value[2] if len(value) > 2 else None
+
+    if value[0].endswith("()") and not value[1]:
+        return Function(value[0].strip("()"), [], alias)
+
+    children = None
+    if isinstance(value[1], list):
+        children = list(map(parse_exp, value[1]))
+    elif value[1]:
+        children = [parse_exp(value[1])]
+
+    return Function(value[0], children, alias)
+
+
 def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
-    def to_exp(value: Union[str, List[Any]]) -> Union[Column, Function]:
-        if not isinstance(value, list):
-            return Column(value)
-
-        children = []
-        if isinstance(value[1], list):
-            children = list(map(to_exp, value[1]))
-        elif value[1]:
-            children = [to_exp(value[1])]
-
-        alias = value[2] if len(value) > 2 else None
-        return Function(value[0], children, alias)
-
-    def to_scalar(value: Any) -> Any:
-        if isinstance(value, list):
-            return list(map(to_scalar, value))
-        elif isinstance(value, tuple):
-            return tuple(map(to_scalar, value))
-
-        if isinstance(value, str):
-            try:
-                date_scalar = parse_datetime(value)
-                return date_scalar
-            except ValueError:
-                return value
-
-        return value
-
     dataset = body.get("dataset", "")
     sample = body.get("sample")
     query = Query(dataset, Entity(entity, sample))
 
-    selected_columns = list(map(to_exp, body.get("selected_columns", [])))
+    selected_columns = list(map(parse_exp, body.get("selected_columns", [])))
     for a in body.get("aggregations", []):
-        if a[0].endswith("()") and not a[1]:
-            selected_columns.append(Function(a[0].strip("()"), [], a[2]))
-        else:
-            if "(" in a[0] or ")" in a[0]:
-                raise InvalidQuery(f"SnQL does not support infix expressions: '{a[0]}'")
-            agg = to_exp(a)
-            selected_columns.append(agg)
+        selected_columns.append(parse_exp(a))
 
     arrayjoin = body.get("arrayjoin")
     if arrayjoin:
@@ -71,14 +73,16 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     if groupby and not isinstance(groupby, list):
         groupby = [groupby]
 
-    query = query.set_groupby(list(map(to_exp, groupby)))
+    query = query.set_groupby(list(map(parse_exp, groupby)))
 
     conditions = []
     for cond in body.get("conditions", []):
         if len(cond) != 3 or not isinstance(cond[1], str):
             raise InvalidQuery("OR conditions not supported yet")
 
-        conditions.append(Condition(to_exp(cond[0]), Op(cond[1]), to_scalar(cond[2])))
+        conditions.append(
+            Condition(parse_exp(cond[0]), Op(cond[1]), parse_scalar(cond[2]))
+        )
 
     extra_conditions = [("project", "project_id"), ("organization", "org_id")]
     for cond, col in extra_conditions:
@@ -87,10 +91,10 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         if isinstance(values, int):
             conditions.append(Condition(column, Op.EQ, values))
         elif isinstance(values, list):
-            rhs: Sequence[Any] = list(map(to_scalar, values))
+            rhs: Sequence[Any] = list(map(parse_scalar, values))
             conditions.append(Condition(column, Op.IN, rhs))
         elif isinstance(values, tuple):
-            rhs = tuple(map(to_scalar, values))
+            rhs = tuple(map(parse_scalar, values))
             conditions.append(Condition(column, Op.IN, rhs))
 
     date_conds = [("from_date", Op.GT), ("to_date", Op.LTE)]
@@ -110,7 +114,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         if len(cond) != 3 or not isinstance(cond[1], str):
             raise InvalidQuery("OR conditions not supported yet")
 
-        having.append(Condition(to_exp(cond[0]), Op(cond[1]), to_scalar(cond[2])))
+        having.append(Condition(parse_exp(cond[0]), Op(cond[1]), parse_scalar(cond[2])))
 
     query = query.set_having(having)
 
@@ -126,7 +130,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
                 direction = Direction.DESC
                 o = o.lstrip("-")
 
-            order_bys.append(OrderBy(to_exp(o), direction))
+            order_bys.append(OrderBy(parse_exp(o), direction))
 
         query = query.set_orderby(order_bys)
 
