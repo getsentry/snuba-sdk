@@ -94,7 +94,7 @@ tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600)
-        .set_totals(True)
+        .set_totals(False)
         .set_consistent(True)
         .set_turbo(True)
         .set_debug(True),
@@ -106,7 +106,6 @@ tests = [
             "LIMIT 10",
             "OFFSET 1",
             "GRANULARITY 3600",
-            "TOTALS True",
         ),
         [("consistent", True), ("turbo", True), ("debug", True)],
         id="multiple ORDER BY",

@@ -8,6 +8,7 @@ from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
     Consistent,
+    Debug,
     Expression,
     Function,
     Granularity,
@@ -90,6 +91,12 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_int_literal(node.granularity)
         elif isinstance(node, Totals):
             return self._visit_totals(node)
+        elif isinstance(node, Consistent):
+            return self._visit_consistent(node)
+        elif isinstance(node, Turbo):
+            return self._visit_turbo(node)
+        elif isinstance(node, Debug):
+            return self._visit_debug(node)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -123,6 +130,18 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_totals(self, totals: Totals) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_consistent(self, consistent: Consistent) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_turbo(self, turbo: Turbo) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_debug(self, debug: Debug) -> TVisited:
         raise NotImplementedError
 
 
@@ -170,10 +189,13 @@ class Translation(ExpressionVisitor[str]):
         return f"{limitby.count} BY {self.visit(limitby.column)}"
 
     def _visit_totals(self, totals: Totals) -> str:
-        return str(totals.value)
+        return str(totals)
 
     def _visit_consistent(self, consistent: Consistent) -> str:
-        return str(consistent.value)
+        return str(consistent)
 
     def _visit_turbo(self, turbo: Turbo) -> str:
-        return str(turbo.value)
+        return str(turbo)
+
+    def _visit_debug(self, debug: Debug) -> str:
+        return str(debug)

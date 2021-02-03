@@ -102,19 +102,19 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_totals(self, totals: Optional[Totals]) -> QVisited:
+    def _visit_totals(self, totals: Totals) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_consistent(self, consistent: Optional[Consistent]) -> QVisited:
+    def _visit_consistent(self, consistent: Consistent) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_turbo(self, turbo: Optional[Turbo]) -> QVisited:
+    def _visit_turbo(self, turbo: Turbo) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_debug(self, debug: Optional[Debug]) -> QVisited:
+    def _visit_debug(self, debug: Debug) -> QVisited:
         raise NotImplementedError
 
 
@@ -194,19 +194,19 @@ class Printer(QueryVisitor[str]):
             return f"GRANULARITY {self.translator.visit(granularity)}"
         return ""
 
-    def _visit_totals(self, totals: Optional[Totals]) -> str:
-        if totals is not None:
+    def _visit_totals(self, totals: Totals) -> str:
+        if totals:
             return f"TOTALS {self.translator.visit(totals)}"
         return ""
 
-    def _visit_consistent(self, consistent: Optional[Consistent]) -> str:
-        return str(consistent.value) if consistent is not None else ""
+    def _visit_consistent(self, consistent: Consistent) -> str:
+        return str(consistent) if consistent else ""
 
-    def _visit_turbo(self, turbo: Optional[Turbo]) -> str:
-        return str(turbo.value) if turbo is not None else ""
+    def _visit_turbo(self, turbo: Turbo) -> str:
+        return str(turbo) if turbo else ""
 
-    def _visit_debug(self, debug: Optional[Debug]) -> str:
-        return str(debug.value) if debug is not None else ""
+    def _visit_debug(self, debug: Debug) -> str:
+        return str(debug) if debug else ""
 
 
 class Translator(Printer):
@@ -219,11 +219,11 @@ class Translator(Printer):
             "dataset": query.dataset,
             "query": formatted_query,
         }
-        if query.consistent is not None:
+        if query.consistent:
             body["consistent"] = query.consistent.value
-        if query.turbo is not None:
+        if query.turbo:
             body["turbo"] = query.turbo.value
-        if query.debug is not None:
+        if query.debug:
             body["debug"] = query.debug.value
 
         return json.dumps(body)
@@ -273,6 +273,9 @@ class Validator(QueryVisitor[None]):
                 if group_exp not in query.groupby:
                     raise InvalidQuery(f"{group_exp} missing from the groupby")
 
+        if query.totals and not query.groupby:
+            raise InvalidQuery("totals is only valid with a groupby")
+
     def _visit_dataset(self, dataset: str) -> None:
         pass
 
@@ -315,14 +318,14 @@ class Validator(QueryVisitor[None]):
     def _visit_granularity(self, granularity: Optional[Granularity]) -> None:
         granularity.validate() if granularity is not None else None
 
-    def _visit_totals(self, totals: Optional[Totals]) -> None:
-        totals.validate() if totals is not None else None
+    def _visit_totals(self, totals: Totals) -> None:
+        totals.validate()
 
-    def _visit_consistent(self, consistent: Optional[Consistent]) -> None:
-        consistent.validate() if consistent is not None else None
+    def _visit_consistent(self, consistent: Consistent) -> None:
+        consistent.validate()
 
-    def _visit_turbo(self, turbo: Optional[Turbo]) -> None:
-        turbo.validate() if turbo is not None else None
+    def _visit_turbo(self, turbo: Turbo) -> None:
+        turbo.validate()
 
-    def _visit_debug(self, debug: Optional[Debug]) -> None:
-        debug.validate() if debug is not None else None
+    def _visit_debug(self, debug: Debug) -> None:
+        debug.validate()

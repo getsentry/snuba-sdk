@@ -53,10 +53,10 @@ class Query:
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
-    totals: Optional[Totals] = None
-    consistent: Optional[Consistent] = None
-    turbo: Optional[Turbo] = None
-    debug: Optional[Debug] = None
+    totals: Totals = Totals(False)
+    consistent: Consistent = Consistent(False)
+    turbo: Turbo = Turbo(False)
+    debug: Debug = Debug(False)
 
     def __post_init__(self) -> None:
         """

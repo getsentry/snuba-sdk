@@ -239,6 +239,19 @@ tests = [
         ),
         id="LimitBy must be in the select",
     ),
+    pytest.param(
+        Query(
+            dataset="discover",
+            match=Entity("events"),
+            select=[Column("title")],
+            where=[Condition(Column("timestamp"), Op.GT, NOW)],
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+        ).set_totals(True),
+        InvalidQuery("totals is only valid with a groupby"),
+        id="Totals must have a groupby",
+    ),
 ]
 
 

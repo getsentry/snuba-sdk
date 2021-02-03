@@ -113,6 +113,12 @@ class BooleanFlag(Expression):
         if not isinstance(self.value, bool):
             raise InvalidExpression(f"{self.name} must be a boolean")
 
+    def __bool__(self) -> bool:
+        return self.value
+
+    def __str__(self) -> str:
+        return str(self.value)
+
 
 @dataclass(frozen=True)
 class Totals(BooleanFlag):
