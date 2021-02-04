@@ -7,6 +7,7 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    Debug,
     Direction,
     Function,
     Granularity,
@@ -38,7 +39,7 @@ tests = [
     pytest.param(
         Query(
             dataset="discover",
-            match=Entity("events"),
+            match=Entity("events", 0.2),
             select=[
                 Column("title"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
@@ -55,12 +56,13 @@ tests = [
             limit=Limit(10),
             offset=Offset(1),
             granularity=Granularity(3600),
+            debug=Debug(True),
         ),
         None,
         id="complex query",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query("discover", Entity("events", 0.2))
         .set_select([Column("event_id")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_limit(10)
@@ -87,7 +89,8 @@ tests = [
         .set_limitby(LimitBy(Column("title"), 5))
         .set_limit(10)
         .set_offset(1)
-        .set_granularity(3600),
+        .set_granularity(3600)
+        .set_debug(True),
         None,
         id="complex query with replace",
     ),
@@ -235,6 +238,19 @@ tests = [
             "Column(name='event_id') in limitby clause is missing from select clause"
         ),
         id="LimitBy must be in the select",
+    ),
+    pytest.param(
+        Query(
+            dataset="discover",
+            match=Entity("events"),
+            select=[Column("title")],
+            where=[Condition(Column("timestamp"), Op.GT, NOW)],
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+        ).set_totals(True),
+        InvalidQuery("totals is only valid with a groupby"),
+        id="Totals must have a groupby",
     ),
 ]
 

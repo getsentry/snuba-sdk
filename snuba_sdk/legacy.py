@@ -48,7 +48,8 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         return value
 
     dataset = body.get("dataset", "")
-    query = Query(dataset, Entity(entity))
+    sample = body.get("sample")
+    query = Query(dataset, Entity(entity, sample))
 
     selected_columns = list(map(to_exp, body.get("selected_columns", [])))
     for a in body.get("aggregations", []):
@@ -134,10 +135,17 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         limit, name = limitby
         query = query.set_limitby(LimitBy(Column(name), int(limit)))
 
-    extras = ("limit", "offset", "granularity", "totals")
+    extras = (
+        "limit",
+        "offset",
+        "granularity",
+        "totals",
+        "consistent",
+        "turbo",
+        "debug",
+    )
     for extra in extras:
         if body.get(extra) is not None:
             query = getattr(query, f"set_{extra}")(body.get(extra))
 
-    # TODO: Sample clause
     return query

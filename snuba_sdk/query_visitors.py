@@ -2,11 +2,12 @@ import json
 from abc import ABC, abstractmethod
 from typing import (
     Generic,
-    List,
     Mapping,
+    MutableMapping,
     Optional,
-    TypeVar,
+    Sequence,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -14,6 +15,9 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.conditions import Condition
 from snuba_sdk.expressions import (
     Column,
+    Consistent,
+    Debug,
+    Expression,
     Function,
     Granularity,
     Limit,
@@ -21,6 +25,7 @@ from snuba_sdk.expressions import (
     Offset,
     OrderBy,
     Totals,
+    Turbo,
 )
 from snuba_sdk.visitors import Translation
 
@@ -58,26 +63,26 @@ class QueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _visit_select(
-        self, select: Optional[List[Union[Column, Function]]]
+        self, select: Optional[Sequence[Union[Column, Function]]]
     ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_groupby(
-        self, groupby: Optional[List[Union[Column, Function]]]
+        self, groupby: Optional[Sequence[Union[Column, Function]]]
     ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_where(self, where: Optional[List[Condition]]) -> QVisited:
+    def _visit_where(self, where: Optional[Sequence[Condition]]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_having(self, having: Optional[List[Condition]]) -> QVisited:
+    def _visit_having(self, having: Optional[Sequence[Condition]]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_orderby(self, orderby: Optional[List[OrderBy]]) -> QVisited:
+    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -97,7 +102,19 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_totals(self, granularity: Optional[Totals]) -> QVisited:
+    def _visit_totals(self, totals: Totals) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_consistent(self, consistent: Consistent) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_turbo(self, turbo: Turbo) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_debug(self, debug: Debug) -> QVisited:
         raise NotImplementedError
 
 
@@ -107,11 +124,20 @@ class Printer(QueryVisitor[str]):
         self.pretty = pretty
 
     def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
-        clauses = query.get_fields()[1:]  # Ignore dataset for now
+        clause_order = query.get_fields()
+        # These fields are encoded outside of the SQL
+        to_skip = ("dataset", "consistent", "turbo", "debug")
+
         separator = "\n" if self.pretty else " "
-        formatted = separator.join([returns[c] for c in clauses if returns[c]])
+        formatted = separator.join(
+            [returns[c] for c in clause_order if c not in to_skip and returns[c]]
+        )
         if self.pretty:
-            formatted = f"-- DATASET: {returns['dataset']}\n{formatted}"
+            prefix = ""
+            for skip in to_skip:
+                if returns.get(skip):
+                    prefix += f"-- {skip.upper()}: {returns[skip]}\n"
+            formatted = f"{prefix}{formatted}"
 
         return formatted
 
@@ -121,27 +147,29 @@ class Printer(QueryVisitor[str]):
     def _visit_match(self, match: Entity) -> str:
         return f"MATCH {self.translator.visit(match)}"
 
-    def _visit_select(self, select: Optional[List[Union[Column, Function]]]) -> str:
+    def _visit_select(self, select: Optional[Sequence[Union[Column, Function]]]) -> str:
         if select:
             return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
-    def _visit_groupby(self, groupby: Optional[List[Union[Column, Function]]]) -> str:
+    def _visit_groupby(
+        self, groupby: Optional[Sequence[Union[Column, Function]]]
+    ) -> str:
         if groupby:
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
-    def _visit_where(self, where: Optional[List[Condition]]) -> str:
+    def _visit_where(self, where: Optional[Sequence[Condition]]) -> str:
         if where:
             return f"WHERE {' AND '.join(self.translator.visit(w) for w in where)}"
         return ""
 
-    def _visit_having(self, having: Optional[List[Condition]]) -> str:
+    def _visit_having(self, having: Optional[Sequence[Condition]]) -> str:
         if having:
             return f"HAVING {' AND '.join(self.translator.visit(h) for h in having)}"
         return ""
 
-    def _visit_orderby(self, orderby: Optional[List[OrderBy]]) -> str:
+    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> str:
         if orderby:
             return f"ORDER BY {', '.join(self.translator.visit(o) for o in orderby)}"
         return ""
@@ -166,10 +194,19 @@ class Printer(QueryVisitor[str]):
             return f"GRANULARITY {self.translator.visit(granularity)}"
         return ""
 
-    def _visit_totals(self, totals: Optional[Totals]) -> str:
-        if totals is not None:
+    def _visit_totals(self, totals: Totals) -> str:
+        if totals:
             return f"TOTALS {self.translator.visit(totals)}"
         return ""
+
+    def _visit_consistent(self, consistent: Consistent) -> str:
+        return str(consistent) if consistent else ""
+
+    def _visit_turbo(self, turbo: Turbo) -> str:
+        return str(turbo) if turbo else ""
+
+    def _visit_debug(self, debug: Debug) -> str:
+        return str(debug) if debug else ""
 
 
 class Translator(Printer):
@@ -178,7 +215,16 @@ class Translator(Printer):
 
     def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
-        body = {"dataset": query.dataset, "query": formatted_query}
+        body: MutableMapping[str, Union[str, bool]] = {
+            "dataset": query.dataset,
+            "query": formatted_query,
+        }
+        if query.consistent:
+            body["consistent"] = query.consistent.value
+        if query.turbo:
+            body["turbo"] = query.turbo.value
+        if query.debug:
+            body["debug"] = query.debug.value
 
         return json.dumps(body)
 
@@ -227,53 +273,59 @@ class Validator(QueryVisitor[None]):
                 if group_exp not in query.groupby:
                     raise InvalidQuery(f"{group_exp} missing from the groupby")
 
+        if query.totals and not query.groupby:
+            raise InvalidQuery("totals is only valid with a groupby")
+
     def _visit_dataset(self, dataset: str) -> None:
         pass
 
     def _visit_match(self, match: Entity) -> None:
         match.validate()
 
-    def _visit_select(self, select: Optional[List[Union[Column, Function]]]) -> None:
-        if select is not None:
-            for s in select:
-                s.validate()
+    def __list_validate(self, values: Optional[Sequence[Expression]]) -> None:
+        if values is not None:
+            for v in values:
+                v.validate()
 
-    def _visit_groupby(self, groupby: Optional[List[Union[Column, Function]]]) -> None:
-        if groupby is not None:
-            for g in groupby:
-                g.validate()
+    def _visit_select(
+        self, select: Optional[Sequence[Union[Column, Function]]]
+    ) -> None:
+        self.__list_validate(select)
 
-    def _visit_where(self, where: Optional[List[Condition]]) -> None:
-        if where is not None:
-            for w in where:
-                w.validate()
+    def _visit_groupby(
+        self, groupby: Optional[Sequence[Union[Column, Function]]]
+    ) -> None:
+        self.__list_validate(groupby)
 
-    def _visit_having(self, having: Optional[List[Condition]]) -> None:
-        if having is not None:
-            for h in having:
-                h.validate()
+    def _visit_where(self, where: Optional[Sequence[Condition]]) -> None:
+        self.__list_validate(where)
 
-    def _visit_orderby(self, orderby: Optional[List[OrderBy]]) -> None:
-        if orderby is not None:
-            for o in orderby:
-                o.validate()
+    def _visit_having(self, having: Optional[Sequence[Condition]]) -> None:
+        self.__list_validate(having)
+
+    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> None:
+        self.__list_validate(orderby)
 
     def _visit_limitby(self, limitby: Optional[LimitBy]) -> None:
-        if limitby is not None:
-            limitby.validate()
+        limitby.validate() if limitby is not None else None
 
     def _visit_limit(self, limit: Optional[Limit]) -> None:
-        if limit is not None:
-            limit.validate()
+        limit.validate() if limit is not None else None
 
     def _visit_offset(self, offset: Optional[Offset]) -> None:
-        if offset is not None:
-            offset.validate()
+        offset.validate() if offset is not None else None
 
     def _visit_granularity(self, granularity: Optional[Granularity]) -> None:
-        if granularity is not None:
-            granularity.validate()
+        granularity.validate() if granularity is not None else None
 
-    def _visit_totals(self, totals: Optional[Totals]) -> None:
-        if totals is not None:
-            totals.validate()
+    def _visit_totals(self, totals: Totals) -> None:
+        totals.validate()
+
+    def _visit_consistent(self, consistent: Consistent) -> None:
+        consistent.validate()
+
+    def _visit_turbo(self, turbo: Turbo) -> None:
+        turbo.validate()
+
+    def _visit_debug(self, debug: Debug) -> None:
+        debug.validate()

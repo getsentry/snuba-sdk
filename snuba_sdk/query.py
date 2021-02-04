@@ -5,6 +5,8 @@ from snuba_sdk.conditions import Condition
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    Consistent,
+    Debug,
     Function,
     Granularity,
     Limit,
@@ -12,6 +14,7 @@ from snuba_sdk.expressions import (
     Offset,
     OrderBy,
     Totals,
+    Turbo,
 )
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
 
@@ -50,7 +53,10 @@ class Query:
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
-    totals: Optional[Totals] = None
+    totals: Totals = Totals(False)
+    consistent: Consistent = Consistent(False)
+    turbo: Turbo = Turbo(False)
+    debug: Debug = Debug(False)
 
     def __post_init__(self) -> None:
         """
@@ -99,12 +105,12 @@ class Query:
             raise InvalidQuery("where clause must be a list of Condition")
         return self._replace("where", conditions)
 
-    def set_having(self, conditions: List[Condition]) -> "Query":
+    def set_having(self, conditions: Sequence[Condition]) -> "Query":
         if not list_type(conditions, (Condition,)):
             raise InvalidQuery("having clause must be a list of Condition")
         return self._replace("having", conditions)
 
-    def set_orderby(self, orderby: List[OrderBy]) -> "Query":
+    def set_orderby(self, orderby: Sequence[OrderBy]) -> "Query":
         if not list_type(orderby, (OrderBy,)):
             raise InvalidQuery("orderby clause must be a list of OrderBy")
         return self._replace("orderby", orderby)
@@ -125,6 +131,15 @@ class Query:
 
     def set_totals(self, totals: bool) -> "Query":
         return self._replace("totals", Totals(totals))
+
+    def set_consistent(self, consistent: bool) -> "Query":
+        return self._replace("consistent", Consistent(consistent))
+
+    def set_turbo(self, turbo: bool) -> "Query":
+        return self._replace("turbo", Turbo(turbo))
+
+    def set_debug(self, debug: bool) -> "Query":
+        return self._replace("debug", Debug(debug))
 
     def validate(self) -> None:
         VALIDATOR.visit(self)
