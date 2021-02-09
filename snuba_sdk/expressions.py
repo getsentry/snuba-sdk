@@ -50,11 +50,16 @@ class InvalidArray(Exception):
         )
 
 
-def is_scalar(value: Any, literal: bool = False) -> bool:
+def is_literal(value: Any) -> bool:
+    """
+    Allow simple scalar types but not lists/tuples.
+    """
+    return isinstance(value, tuple(Scalar))
+
+
+def is_scalar(value: Any) -> bool:
     if isinstance(value, tuple(Scalar)):
         return True
-    elif literal:  # Bail if we don't include arrays/tuples
-        return False
     elif isinstance(value, tuple):
         if not all(is_scalar(v) for v in value):
             raise InvalidExpression("tuple must contain only scalar values")
@@ -203,7 +208,7 @@ class CurriedFunction(Expression):
                     f"initializers of function {self.function} must be a Sequence"
                 )
             elif not all(
-                isinstance(param, Column) or is_scalar(param, True)
+                isinstance(param, Column) or is_literal(param)
                 for param in self.initializers
             ):
                 raise InvalidExpression(
