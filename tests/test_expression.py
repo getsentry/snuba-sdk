@@ -81,7 +81,9 @@ orderby_tests = [
     pytest.param(
         0,
         Direction.DESC,
-        InvalidExpression("OrderBy expression must be a Column or Function"),
+        InvalidExpression(
+            "OrderBy expression must be a Column, CurriedFunction or Function"
+        ),
     ),
     pytest.param(
         Column("foo"), "ASC", InvalidExpression("OrderBy direction must be a Direction")

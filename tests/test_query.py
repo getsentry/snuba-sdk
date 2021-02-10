@@ -7,6 +7,7 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
+    CurriedFunction,
     Debug,
     Direction,
     Function,
@@ -74,7 +75,11 @@ tests = [
     pytest.param(
         Query("discover", Entity("events"))
         .set_select(
-            [Column("title"), Function("uniq", [Column("event_id")], "uniq_events")]
+            [
+                Column("title"),
+                Function("uniq", [Column("event_id")], "uniq_events"),
+                CurriedFunction("quantile", [0.5], [Column("duration")], "p50"),
+            ]
         )
         .set_groupby([Column("title")])
         .set_where(
@@ -167,7 +172,7 @@ tests = [
             granularity=Granularity(3600),
         ),
         InvalidQuery(
-            "Function(function='count', parameters=[], alias=None) must have an alias in the select"
+            "Function(function='count', initializers=None, parameters=[], alias=None) must have an alias in the select"
         ),
         id="functions in the select must have an alias",
     ),

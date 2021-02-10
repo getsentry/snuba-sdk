@@ -1,8 +1,8 @@
 import types
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from snuba_sdk.conditions import Condition
-from snuba_sdk.expressions import Column, Function
+from snuba_sdk.expressions import Column, CurriedFunction, Function
 
 
 # Wrappers to lazily build the expressions
@@ -30,5 +30,33 @@ def func(function: Any, parameters: List[Any], alias: Any = None) -> Callable[[]
                 params.append(param)
 
         return Function(function, params, alias)
+
+    return to_func
+
+
+def cur_func(
+    function: Any,
+    initializers: Optional[List[Any]],
+    parameters: List[Any],
+    alias: Any = None,
+) -> Callable[[], Any]:
+    def to_func() -> CurriedFunction:
+        initers = None
+        if initializers is not None:
+            initers = []
+            for initer in initializers:
+                if isinstance(initer, types.FunctionType):
+                    initers.append(initer())
+                else:
+                    initers.append(initer)
+
+        params = []
+        for param in parameters:
+            if isinstance(param, types.FunctionType):
+                params.append(param())
+            else:
+                params.append(param)
+
+        return CurriedFunction(function, initers, params, alias)
 
     return to_func

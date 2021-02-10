@@ -6,6 +6,7 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
     Consistent,
+    CurriedFunction,
     Debug,
     Function,
     Granularity,
@@ -44,8 +45,8 @@ class Query:
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
     match: Entity
-    select: Optional[List[Union[Column, Function]]] = None
-    groupby: Optional[List[Union[Column, Function]]] = None
+    select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
+    groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     where: Optional[List[Condition]] = None
     having: Optional[List[Condition]] = None
     orderby: Optional[List[OrderBy]] = None
@@ -86,15 +87,19 @@ class Query:
             raise InvalidQuery(f"{match} must be a valid Entity")
         return self._replace("match", match)
 
-    def set_select(self, select: Sequence[Union[Column, Function]]) -> "Query":
-        if not list_type(select, (Column, Function)) or not select:
+    def set_select(
+        self, select: Sequence[Union[Column, CurriedFunction, Function]]
+    ) -> "Query":
+        if not list_type(select, (Column, CurriedFunction, Function)) or not select:
             raise InvalidQuery(
                 "select clause must be a non-empty list of Column and/or Function"
             )
         return self._replace("select", select)
 
-    def set_groupby(self, groupby: Sequence[Union[Column, Function]]) -> "Query":
-        if not list_type(groupby, (Column, Function)):
+    def set_groupby(
+        self, groupby: Sequence[Union[Column, CurriedFunction, Function]]
+    ) -> "Query":
+        if not list_type(groupby, (Column, CurriedFunction, Function)):
             raise InvalidQuery(
                 "groupby clause must be a list of Column and/or Function"
             )
