@@ -46,7 +46,7 @@ check: lint tests
 lint: .venv
 	$(VENV_PATH)/bin/flake8 tests examples snuba_sdk
 	$(VENV_PATH)/bin/black --check tests examples snuba_sdk
-	$(VENV_PATH)/bin/mypy --config-file mypy.ini tests examples snuba_sdk
+	$(VENV_PATH)/bin/mypy --config-file mypy.ini --strict tests examples snuba_sdk
 
 .PHONY: lint
 
