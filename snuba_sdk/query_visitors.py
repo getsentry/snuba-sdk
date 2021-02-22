@@ -31,7 +31,9 @@ from snuba_sdk.expressions import (
 from snuba_sdk.visitors import Translation
 
 if TYPE_CHECKING:
-    from snuba_sdk.query import Query
+    # Import the module due to sphinx autodoc problems
+    # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
+    from snuba_sdk import query
 
 
 class InvalidQuery(Exception):
@@ -42,7 +44,7 @@ QVisited = TypeVar("QVisited")
 
 
 class QueryVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: "Query") -> QVisited:
+    def visit(self, query: "query.Query") -> QVisited:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -51,7 +53,9 @@ class QueryVisitor(ABC, Generic[QVisited]):
         return self._combine(query, returns)
 
     @abstractmethod
-    def _combine(self, query: "Query", returns: Mapping[str, QVisited]) -> QVisited:
+    def _combine(
+        self, query: "query.Query", returns: Mapping[str, QVisited]
+    ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -124,7 +128,7 @@ class Printer(QueryVisitor[str]):
         self.translator = Translation()
         self.pretty = pretty
 
-    def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "query.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
         to_skip = ("dataset", "consistent", "turbo", "debug")
@@ -216,7 +220,7 @@ class Translator(Printer):
     def __init__(self) -> None:
         super().__init__(False)
 
-    def _combine(self, query: "Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "query.Query", returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
         body: MutableMapping[str, Union[str, bool]] = {
             "dataset": query.dataset,
@@ -233,7 +237,7 @@ class Translator(Printer):
 
 
 class Validator(QueryVisitor[None]):
-    def _combine(self, query: "Query", returns: Mapping[str, None]) -> None:
+    def _combine(self, query: "query.Query", returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 

@@ -35,7 +35,7 @@ TRANSLATOR = Translator()
 @dataclass(frozen=True)
 class Query:
     """
-    A code representation of a SnQL query. It is immutable, so any set_ functions
+    A code representation of a SnQL query. It is immutable, so any set functions
     return a new copy of the query. Unlike Expressions it is possible to
     instantiate a Query that is invalid. Any of the translation functions will
     validate the query before translating them, so the query must be valid before
