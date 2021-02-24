@@ -22,3 +22,4 @@ function replace() {
 }
 
 replace "version=\"[0-9.]+\"" "version=\"$NEW_VERSION\"" ./setup.py
+replace "release = \"[0-9.]+\"" "release = \"$NEW_VERSION\"" ./docs/conf.py
