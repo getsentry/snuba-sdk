@@ -173,7 +173,7 @@ class Column(Expression):
     """
 
     name: str
-    column: Optional[str] = field(init=False, default=None)
+    subscriptable: Optional[str] = field(init=False, default=None)
     key: Optional[str] = field(init=False, default=None)
 
     def validate(self) -> None:
@@ -188,9 +188,9 @@ class Column(Expression):
         # If this is a subscriptable set these values to help with debugging etc.
         # Because this is frozen we can't set the value directly.
         if "[" in self.name:
-            column, key = self.name.split("[", 1)
+            subscriptable, key = self.name.split("[", 1)
             key = key.strip("]")
-            super().__setattr__("column", column)
+            super().__setattr__("subscriptable", subscriptable)
             super().__setattr__("key", key)
 
 

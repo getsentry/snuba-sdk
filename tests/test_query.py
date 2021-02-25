@@ -226,7 +226,7 @@ tests = [
             granularity=Granularity(3600),
         ),
         InvalidQuery(
-            "Column(name='title', column=None, key=None) missing from the groupby"
+            "Column(name='title', subscriptable=None, key=None) missing from the groupby"
         ),
         id="groupby must include all non aggregates",
     ),
@@ -243,7 +243,7 @@ tests = [
             granularity=Granularity(3600),
         ),
         InvalidQuery(
-            "Column(name='event_id', column=None, key=None) in limitby clause is missing from select clause"
+            "Column(name='event_id', subscriptable=None, key=None) in limitby clause is missing from select clause"
         ),
         id="LimitBy must be in the select",
     ),

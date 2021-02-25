@@ -103,7 +103,7 @@ def test_columns(
     def verify() -> None:
         exp = Column(column_name)
         assert exp.name == valid[0]
-        assert exp.column == valid[1]
+        assert exp.subscriptable == valid[1]
         assert exp.key == valid[2]
         assert TRANSLATOR.visit(exp) == translated
 
