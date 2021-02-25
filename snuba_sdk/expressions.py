@@ -73,7 +73,9 @@ def is_scalar(value: Any) -> bool:
     return False
 
 
-column_name_re = re.compile(r"^[a-zA-Z](\w|\.)+$")
+alias_re = re.compile(r"^[a-zA-Z](\w|\.)+$")
+
+column_name_re = re.compile(r"^[a-zA-Z](\w|\.|:)*(\[([a-zA-Z](\w|\.|:)*)\])?$")
 # In theory the function matcher should be the same as the column one.
 # However legacy API sends curried functions as raw strings, and it
 # wasn't worth it to import an entire parsing grammar into the SDK
@@ -155,7 +157,24 @@ class Debug(BooleanFlag):
 
 @dataclass(frozen=True)
 class Column(Expression):
+    """
+    A representation of a single column in the database. Columns are
+    expected to be alpha-numeric, with '.', '_`, and `:` allowed as well.
+    If the column is subscriptable then you can specify the column in the
+    form `column[key]`. The `column` attribute will contain the outer
+    column and `key` will contain the inner key.
+
+    :param name: The column name.
+    :type name: str
+
+    :raises InvalidExpression: If the column name is not a string or has an
+        invalid format.
+
+    """
+
     name: str
+    subscriptable: Optional[str] = field(init=False, default=None)
+    key: Optional[str] = field(init=False, default=None)
 
     def validate(self) -> None:
         if not isinstance(self.name, str):
@@ -165,6 +184,14 @@ class Column(Expression):
             raise InvalidExpression(
                 f"column '{self.name}' is empty or contains invalid characters"
             )
+
+        # If this is a subscriptable set these values to help with debugging etc.
+        # Because this is frozen we can't set the value directly.
+        if "[" in self.name:
+            subscriptable, key = self.name.split("[", 1)
+            key = key.strip("]")
+            super().__setattr__("subscriptable", subscriptable)
+            super().__setattr__("key", key)
 
 
 @dataclass(frozen=True)
@@ -220,7 +247,7 @@ class CurriedFunction(Expression):
                 raise InvalidExpression(
                     f"alias '{self.alias}' of function {self.function} must be None or a non-empty string"
                 )
-            if not column_name_re.match(self.alias):
+            if not alias_re.match(self.alias):
                 raise InvalidExpression(
                     f"alias '{self.alias}' of function {self.function} contains invalid characters"
                 )

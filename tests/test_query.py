@@ -43,9 +43,10 @@ tests = [
             match=Entity("events", 0.2),
             select=[
                 Column("title"),
+                Column("tags[release:1]"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
             ],
-            groupby=[Column("title")],
+            groupby=[Column("title"), Column("tags[release:1]")],
             where=[
                 Condition(Column("timestamp"), Op.GT, NOW),
                 Condition(Function("toHour", [Column("timestamp")]), Op.LTE, NOW),
@@ -224,7 +225,9 @@ tests = [
             offset=Offset(1),
             granularity=Granularity(3600),
         ),
-        InvalidQuery("Column(name='title') missing from the groupby"),
+        InvalidQuery(
+            "Column(name='title', subscriptable=None, key=None) missing from the groupby"
+        ),
         id="groupby must include all non aggregates",
     ),
     pytest.param(
@@ -240,7 +243,7 @@ tests = [
             granularity=Granularity(3600),
         ),
         InvalidQuery(
-            "Column(name='event_id') in limitby clause is missing from select clause"
+            "Column(name='event_id', subscriptable=None, key=None) in limitby clause is missing from select clause"
         ),
         id="LimitBy must be in the select",
     ),
