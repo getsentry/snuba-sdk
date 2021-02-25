@@ -12,7 +12,7 @@ from typing import (
 )
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.conditions import Condition
+from snuba_sdk.conditions import BooleanCondition, Condition
 from snuba_sdk.expressions import (
     Column,
     Consistent,
@@ -79,11 +79,15 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_where(self, where: Optional[Sequence[Condition]]) -> QVisited:
+    def _visit_where(
+        self, where: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_having(self, having: Optional[Sequence[Condition]]) -> QVisited:
+    def _visit_having(
+        self, having: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -166,12 +170,16 @@ class Printer(QueryVisitor[str]):
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
-    def _visit_where(self, where: Optional[Sequence[Condition]]) -> str:
+    def _visit_where(
+        self, where: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> str:
         if where:
             return f"WHERE {' AND '.join(self.translator.visit(w) for w in where)}"
         return ""
 
-    def _visit_having(self, having: Optional[Sequence[Condition]]) -> str:
+    def _visit_having(
+        self, having: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> str:
         if having:
             return f"HAVING {' AND '.join(self.translator.visit(h) for h in having)}"
         return ""
@@ -307,10 +315,14 @@ class Validator(QueryVisitor[None]):
     ) -> None:
         self.__list_validate(groupby)
 
-    def _visit_where(self, where: Optional[Sequence[Condition]]) -> None:
+    def _visit_where(
+        self, where: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> None:
         self.__list_validate(where)
 
-    def _visit_having(self, having: Optional[Sequence[Condition]]) -> None:
+    def _visit_having(
+        self, having: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> None:
         self.__list_validate(having)
 
     def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> None:

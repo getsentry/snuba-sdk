@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
@@ -88,9 +88,35 @@ tests = [
                 Condition(Column("timestamp"), Op.GT, NOW),
                 Condition(Function("toHour", [Column("timestamp")]), Op.LTE, NOW),
                 Condition(Column("project_id"), Op.IN, Function("tuple", [1, 2, 3])),
-            ]
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(Column("event_id"), Op.EQ, "abc"),
+                        Condition(Column("duration"), Op.GT, 10),
+                    ],
+                ),
+            ],
         )
-        .set_having([Condition(Function("uniq", [Column("event_id")]), Op.GT, 1)])
+        .set_having(
+            [
+                Condition(Function("uniq", [Column("event_id")]), Op.GT, 1),
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(
+                            Function("uniq", [Column("event_id")]),
+                            Op.GTE,
+                            10,
+                        ),
+                        Condition(
+                            CurriedFunction("quantile", [0.5], [Column("duration")]),
+                            Op.GTE,
+                            99,
+                        ),
+                    ],
+                ),
+            ],
+        )
         .set_orderby([OrderBy(Column("title"), Direction.ASC)])
         .set_limitby(LimitBy(Column("title"), 5))
         .set_limit(10)
