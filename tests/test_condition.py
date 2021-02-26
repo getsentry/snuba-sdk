@@ -44,6 +44,22 @@ tests = [
         id="rhs function",
     ),
     pytest.param(
+        cond(Column("event_id"), Op.IS_NULL),
+        Condition(Column("event_id"), Op.IS_NULL),
+        "event_id IS NULL",
+        None,
+        id="unary condition test",
+    ),
+    pytest.param(
+        cond(Column("foo"), Op.IS_NULL, "foo"),
+        None,
+        "",
+        InvalidExpression(
+            "invalid condition: unary operators don't have rhs conditions",
+        ),
+        id="unary too many conditions",
+    ),
+    pytest.param(
         cond("foo", Op.EQ, "foo"),
         None,
         "",

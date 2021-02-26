@@ -190,13 +190,15 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
-        if isinstance(cond.rhs, (Column, CurriedFunction, Function)):
-            rhs = self.visit(cond.rhs)
+        if cond.is_unary():
+            rhs = ""
+        elif isinstance(cond.rhs, (Column, CurriedFunction, Function)):
+            rhs = f" {self.visit(cond.rhs)}"
         elif is_scalar(cond.rhs):
-            rhs = _stringify_scalar(cond.rhs)
+            rhs = f" {_stringify_scalar(cond.rhs)}"
 
         assert rhs is not None
-        return f"{self.visit(cond.lhs)} {cond.op.value} {rhs}"
+        return f"{self.visit(cond.lhs)} {cond.op.value}{rhs}"
 
     def _visit_orderby(self, orderby: OrderBy) -> str:
         return f"{self.visit(orderby.exp)} {orderby.direction.value}"
