@@ -1,15 +1,15 @@
-======================================
-snuba-sdk - Snuba SDK for SnQL Queries
-======================================
+======================================================
+SDK for generating SnQL queries for Snuba
+======================================================
 
-This is the API documentation for `Sentry's Snuba SDK
-<https://pypi.org/project/snuba-sdk/>`_. For full documentation and other resources
-visit the `GitHub repository <https://github.com/getsentry/snuba-sdk>`_.
+.. include:: readme_link.rst
 
 .. toctree::
-    snuba_sdk
-    README <readme>
     :caption: Contents:
+    :hidden:
+    :maxdepth: 6
+
+    sdk
 
 
 Indices and tables
@@ -17,4 +17,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
