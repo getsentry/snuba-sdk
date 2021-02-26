@@ -1,10 +1,8 @@
-======================================================
-snuba-sdk - SDK for generating SnQL queries for Snuba
-======================================================
-
 .. image:: https://sentry-brand.storage.googleapis.com/sentry-logo-black.png
     :width: 280
     :target: https://sentry.io
+
+See here for the full `documentation <https://getsentry.github.io/snuba-sdk/>`_.
 
 ======
 Status
@@ -87,14 +85,13 @@ This outputs:
     OFFSET 0
     GRANULARITY 3600
 
-If an expression in the query is invalid (e.g. `Column(1)`) then an `InvalidExpression` exception will be thrown. If there is a problem with a query, it will throw an `InvalidQuery` exception when `.validate()` or `.translate()` is called.
+If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpression`` exception will be thrown.
+If there is a problem with a query, it will throw an ``InvalidQuery`` exception when ``.validate()`` or ``.translate()`` is called.
 
 =========
 TODO List
 =========
 
-- Subscriptable support (measurements\[fcp.first\])
-- Complex boolean conditions (AND/OR)
 - Join support
 - Have the Entity object take a set of columns
 - Syntactic sugar
@@ -103,10 +100,10 @@ TODO List
 Contributing to the SDK
 ===========================
 
-Please refer to `CONTRIBUTING.md <https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.md>`
+Please refer to `CONTRIBUTING.md <https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.md>`_.
 
 =========
 License
 =========
 
-Licensed under MIT, see `LICENSE <https://github.com/getsentry/snuba-sdk/blob/master/LICENSE>`
+Licensed under MIT, see `LICENSE <https://github.com/getsentry/snuba-sdk/blob/master/LICENSE>`_.
