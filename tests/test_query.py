@@ -134,18 +134,12 @@ tests = [
     pytest.param(
         Query("discover", Entity("events"))
         .set_select([Column("event_id"), Column("title")])
-        .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
-        .set_orderby(
-            [
-                OrderBy(Column("event_id"), Direction.ASC),
-                OrderBy(Column("title"), Direction.DESC),
-            ]
-        )
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
         None,
-        id="multiple ORDER BY",
+        id="unary condition",
     ),
     pytest.param(
         Query(

@@ -6,7 +6,7 @@ from snuba_sdk.expressions import Column, CurriedFunction, Function
 
 
 # Wrappers to lazily build the expressions
-def cond(lhs: Any, op: Any, rhs: Any) -> Callable[[], Any]:
+def cond(lhs: Any, op: Any, rhs: Any = None) -> Callable[[], Any]:
     def to_cond() -> Condition:
         return Condition(lhs, op, rhs)
 
