@@ -1,7 +1,7 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
-from snuba_sdk.conditions import Condition
+from snuba_sdk.conditions import BooleanCondition, Condition
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Column,
@@ -47,8 +47,8 @@ class Query:
     match: Entity
     select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
-    where: Optional[List[Condition]] = None
-    having: Optional[List[Condition]] = None
+    where: Optional[List[Union[BooleanCondition, Condition]]] = None
+    having: Optional[List[Union[BooleanCondition, Condition]]] = None
     orderby: Optional[List[OrderBy]] = None
     limitby: Optional[LimitBy] = None
     limit: Optional[Limit] = None
@@ -105,14 +105,18 @@ class Query:
             )
         return self._replace("groupby", groupby)
 
-    def set_where(self, conditions: Sequence[Condition]) -> "Query":
-        if not list_type(conditions, (Condition,)):
-            raise InvalidQuery("where clause must be a list of Condition")
+    def set_where(
+        self, conditions: Sequence[Union[BooleanCondition, Condition]]
+    ) -> "Query":
+        if not list_type(conditions, (BooleanCondition, Condition)):
+            raise InvalidQuery("where clause must be a list of conditions")
         return self._replace("where", conditions)
 
-    def set_having(self, conditions: Sequence[Condition]) -> "Query":
-        if not list_type(conditions, (Condition,)):
-            raise InvalidQuery("having clause must be a list of Condition")
+    def set_having(
+        self, conditions: Sequence[Union[BooleanCondition, Condition]]
+    ) -> "Query":
+        if not list_type(conditions, (BooleanCondition, Condition)):
+            raise InvalidQuery("having clause must be a list of conditions")
         return self._replace("having", conditions)
 
     def set_orderby(self, orderby: Sequence[OrderBy]) -> "Query":

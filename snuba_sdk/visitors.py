@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Generic, TypeVar
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.conditions import Condition
+from snuba_sdk.conditions import BooleanCondition, Condition
 from snuba_sdk.expressions import (
     Column,
     Consistent,
@@ -80,6 +80,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_entity(node)
         elif isinstance(node, Condition):
             return self._visit_condition(node)
+        elif isinstance(node, BooleanCondition):
+            return self._visit_boolean_condition(node)
         elif isinstance(node, OrderBy):
             return self._visit_orderby(node)
         elif isinstance(node, Limit):
@@ -119,6 +121,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_condition(self, cond: Condition) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_boolean_condition(self, cond: BooleanCondition) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -199,6 +205,11 @@ class Translation(ExpressionVisitor[str]):
 
         assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value}{rhs}"
+
+    def _visit_boolean_condition(self, cond: BooleanCondition) -> str:
+        conds = [self.visit(c) for c in cond.conditions]
+        cond_str = f" {cond.op.value} ".join(conds)
+        return f"({cond_str})"
 
     def _visit_orderby(self, orderby: OrderBy) -> str:
         return f"{self.visit(orderby.exp)} {orderby.direction.value}"

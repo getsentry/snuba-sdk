@@ -1,7 +1,7 @@
 import types
 from typing import Any, Callable, List, Optional
 
-from snuba_sdk.conditions import Condition
+from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
 from snuba_sdk.expressions import Column, CurriedFunction, Function
 
 
@@ -11,6 +11,27 @@ def cond(lhs: Any, op: Any, rhs: Any = None) -> Callable[[], Any]:
         return Condition(lhs, op, rhs)
 
     return to_cond
+
+
+def bool_cond(op: Any, conditions: Any) -> Callable[[], Any]:
+    def to_bool() -> BooleanCondition:
+        return BooleanCondition(op, conditions)
+
+    return to_bool
+
+
+def and_cond(conditions: Any) -> Callable[[], Any]:
+    def to_and() -> And:
+        return And(conditions)
+
+    return to_and
+
+
+def or_cond(conditions: Any) -> Callable[[], Any]:
+    def to_or() -> Or:
+        return Or(conditions)
+
+    return to_or
 
 
 def col(name: Any) -> Callable[[], Any]:
