@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Sequence, Union
 
@@ -91,3 +91,19 @@ class BooleanCondition(Expression):
                 raise InvalidExpression(
                     f"invalid boolean: {con} is not a valid condition"
                 )
+
+
+@dataclass(frozen=True)
+class And(BooleanCondition):
+    op: BooleanOp = field(init=False, default=BooleanOp.AND)
+    conditions: Sequence[Union[BooleanCondition, Condition]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(frozen=True)
+class Or(BooleanCondition):
+    op: BooleanOp = field(init=False, default=BooleanOp.OR)
+    conditions: Sequence[Union[BooleanCondition, Condition]] = field(
+        default_factory=list
+    )

@@ -2,14 +2,14 @@ import pytest
 import re
 from typing import Any, Callable, Optional
 
-from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
+from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.expressions import (
     Function,
     Column,
     InvalidExpression,
 )
 from snuba_sdk.visitors import Translation
-from tests import bool_cond, cond
+from tests import and_cond, bool_cond, cond, or_cond
 
 tests = [
     pytest.param(
@@ -125,16 +125,14 @@ boolean_tests = [
         id="basic boolean test",
     ),
     pytest.param(
-        bool_cond(
-            BooleanOp.AND,
+        and_cond(
             [
                 Condition(Column("a"), Op.EQ, 1),
                 Condition(Column("b"), Op.EQ, 2),
                 Condition(Column("c"), Op.EQ, 3),
             ],
         ),
-        BooleanCondition(
-            BooleanOp.AND,
+        And(
             [
                 Condition(Column("a"), Op.EQ, 1),
                 Condition(Column("b"), Op.EQ, 2),
@@ -146,19 +144,16 @@ boolean_tests = [
         id="more than two boolean test",
     ),
     pytest.param(
-        bool_cond(
-            BooleanOp.AND,
+        and_cond(
             [
                 Condition(Column("a"), Op.EQ, 1),
-                BooleanCondition(
-                    BooleanOp.OR,
+                Or(
                     [
                         Condition(Column("b"), Op.EQ, 2),
                         Condition(Column("c"), Op.EQ, 3),
                     ],
                 ),
-                BooleanCondition(
-                    BooleanOp.AND,
+                And(
                     [
                         Condition(Column("d"), Op.EQ, 4),
                         Condition(Column("e"), Op.EQ, 5),
@@ -166,19 +161,16 @@ boolean_tests = [
                 ),
             ],
         ),
-        BooleanCondition(
-            BooleanOp.AND,
+        And(
             [
                 Condition(Column("a"), Op.EQ, 1),
-                BooleanCondition(
-                    BooleanOp.OR,
+                Or(
                     [
                         Condition(Column("b"), Op.EQ, 2),
                         Condition(Column("c"), Op.EQ, 3),
                     ],
                 ),
-                BooleanCondition(
-                    BooleanOp.AND,
+                And(
                     [
                         Condition(Column("d"), Op.EQ, 4),
                         Condition(Column("e"), Op.EQ, 5),
@@ -201,7 +193,7 @@ boolean_tests = [
         id="invalid op",
     ),
     pytest.param(
-        bool_cond(BooleanOp.OR, Condition(Column("a"), Op.EQ, 1)),
+        and_cond(Condition(Column("a"), Op.EQ, 1)),
         None,
         None,
         InvalidExpression(
@@ -217,7 +209,7 @@ boolean_tests = [
         id="only one",
     ),
     pytest.param(
-        bool_cond(BooleanOp.OR, [Condition(Column("a"), Op.EQ, 1), Column("event_id")]),
+        or_cond([Condition(Column("a"), Op.EQ, 1), Column("event_id")]),
         None,
         None,
         InvalidExpression(
