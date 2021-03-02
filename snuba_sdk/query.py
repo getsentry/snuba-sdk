@@ -44,7 +44,7 @@ class Query:
 
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
-    match: Entity
+    match: Union[Entity, "Query"]
     select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     where: Optional[List[Union[BooleanCondition, Condition]]] = None
@@ -71,8 +71,14 @@ class Query:
         if not isinstance(self.dataset, str) or self.dataset == "":
             raise InvalidQuery("queries must have a valid dataset")
 
-        if not isinstance(self.match, Entity):
-            raise InvalidQuery("queries must have a valid Entity")
+        if not isinstance(self.match, (Query, Entity)):
+            raise InvalidQuery("queries must have a valid Entity or Query")
+
+        if isinstance(self.match, Query):
+            try:
+                self.match.validate()
+            except Exception as e:
+                raise InvalidQuery(f"inner query is invalid: {e}")
 
     def _replace(self, field: str, value: Any) -> "Query":
         new = replace(self, **{field: value})
@@ -82,9 +88,15 @@ class Query:
         self_fields = fields(self)  # Verified the order in the Python source
         return tuple(f.name for f in self_fields)
 
-    def set_match(self, match: Entity) -> "Query":
-        if not isinstance(match, Entity):
-            raise InvalidQuery(f"{match} must be a valid Entity")
+    def set_match(self, match: Union[Entity, "Query"]) -> "Query":
+        if not isinstance(match, (Entity, Query)):
+            raise InvalidQuery(f"{match} must be a valid Entity or Query")
+        elif isinstance(match, Query):
+            try:
+                match.validate()
+            except Exception as e:
+                raise InvalidQuery(f"inner query is invalid: {e}")
+
         return self._replace("match", match)
 
     def set_select(

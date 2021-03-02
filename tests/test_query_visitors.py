@@ -206,6 +206,97 @@ tests = [
         None,
         id="lists and tuples are allowed",
     ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[Column("event_id"), Column("title"), Column("timestamp")],
+            ),
+        )
+        .set_select([Column("event_id"), Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH { MATCH (events) SELECT event_id, title, timestamp }",
+            "SELECT event_id, title",
+            "WHERE timestamp IS NOT NULL",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        None,
+        id="simple subquery",
+    ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[
+                    Function("toString", [Column("event_id")], "new_event"),
+                    Column("title"),
+                    Column("timestamp"),
+                ],
+            ),
+        )
+        .set_select(
+            [Function("uniq", [Column("new_event")], "uniq_event"), Column("title")]
+        )
+        .set_groupby([Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH { MATCH (events) SELECT toString(event_id) AS new_event, title, timestamp }",
+            "SELECT uniq(new_event) AS uniq_event, title",
+            "BY title",
+            "WHERE timestamp IS NOT NULL",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        None,
+        id="subquery with functions",
+    ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Query(
+                    dataset="discover",
+                    match=Entity("events"),
+                    select=[Column("event_id"), Column("title"), Column("timestamp")],
+                ),
+                select=[
+                    Function("toString", [Column("event_id")], "new_event"),
+                    Column("timestamp"),
+                ],
+            ).set_consistent(True),
+        )
+        .set_select([Function("avg", [Column("new_event")], "avg_event")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600)
+        .set_consistent(True),
+        (
+            "MATCH { MATCH { MATCH (events) SELECT event_id, title, timestamp } SELECT toString(event_id) AS new_event, timestamp }",
+            "SELECT avg(new_event) AS avg_event",
+            "WHERE timestamp IS NOT NULL",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        [("consistent", True)],
+        id="multiple nested",
+    ),
 ]
 
 
