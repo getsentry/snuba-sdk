@@ -15,13 +15,25 @@ from snuba_sdk.query_visitors import InvalidQuery
 
 
 def parse_datetime(date_str: str) -> datetime:
-    return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
+    # Python 3.6 doesn't handle tz in the form "+00:00" correctly (the colon is too much apparently)
+    # so until we upgrade we need this hack.
+    if "+" in date_str:
+        first, tz = date_str.split("+", 1)
+        tz = tz.replace(":", "")
+        date_str = f"{first}+{tz}"
+
+    date_styles = ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S%z")
+    for styles in date_styles:
+        try:
+            return datetime.strptime(date_str, styles)
+        except ValueError:
+            continue
+
+    raise ValueError(f"{date_str} is not a recognized datetime")
 
 
 def parse_scalar(value: Any) -> Any:
-    if isinstance(value, list):
-        return list(map(parse_scalar, value))
-    elif isinstance(value, tuple):
+    if isinstance(value, (list, tuple)):
         return tuple(map(parse_scalar, value))
 
     if isinstance(value, str):
@@ -29,13 +41,17 @@ def parse_scalar(value: Any) -> Any:
             date_scalar = parse_datetime(value)
             return date_scalar
         except ValueError:
-            return value
+            escaped = value.replace("'", "\\'")
+            return escaped
 
     return value
 
 
 def parse_exp(value: Any) -> Any:
     if isinstance(value, str):
+        if not value or value.startswith("'"):
+            return value.strip("'")
+
         return Column(value)
     if not isinstance(value, list):
         return parse_scalar(value)

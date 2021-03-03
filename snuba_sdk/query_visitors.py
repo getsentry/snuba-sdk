@@ -288,8 +288,23 @@ class Validator(QueryVisitor[None]):
                 )
 
             for group_exp in non_aggregates:
-                if group_exp not in query.groupby:
-                    raise InvalidQuery(f"{group_exp} missing from the groupby")
+                # Array joins work a little differently. In this case the entire arrayjoin
+                # expression shouldn't be in the groupby, just the column that is being
+                # array joined
+                if (
+                    isinstance(group_exp, Function)
+                    and group_exp.function == "arrayJoin"
+                ):
+                    assert group_exp.parameters and isinstance(
+                        group_exp.parameters[0], Column
+                    )
+                    if group_exp.parameters[0] not in query.groupby:
+                        raise InvalidQuery(
+                            f"arrayjoin column {group_exp} missing from the groupby"
+                        )
+                else:
+                    if group_exp not in query.groupby:
+                        raise InvalidQuery(f"{group_exp} missing from the groupby")
 
         if query.totals and not query.groupby:
             raise InvalidQuery("totals is only valid with a groupby")
