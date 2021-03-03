@@ -29,8 +29,8 @@ setup(
         "Changelog": "https://github.com/getsentry/snuba-sdk/blob/main/CHANGES.md",
     },
     description="Snuba SDK for generating SnQL queries.",
-    long_description=get_file_text("README.md"),
-    long_description_content_type="text/markdown",
+    long_description=get_file_text("README.rst"),
+    long_description_content_type="text/x-rst",
     packages=find_packages(exclude=("tests", "tests.*")),
     # PEP 561
     package_data={"snuba_sdk": ["py.typed"]},
