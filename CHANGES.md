@@ -1,5 +1,9 @@
 # Changelog and versioning
 
+## 0.0.6
+
+- No documented changes.
+
 ## 0.0.5
 
 - Some small bug fixes uncovered after doing an integration test with Sentry and Snuba.
