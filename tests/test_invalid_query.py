@@ -3,7 +3,7 @@ import re
 from typing import Any, Mapping, Sequence
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.expressions import Column, Function, InvalidExpression
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQuery
 
@@ -82,3 +82,32 @@ def test_invalid_query_set() -> None:
 
     with pytest.raises(InvalidExpression, match=re.escape(tests["granularity"][1])):
         query.set_granularity(tests["granularity"][0])
+
+
+def test_invalid_subquery() -> None:
+    with pytest.raises(
+        InvalidQuery,
+        match=re.escape(
+            "inner query is invalid: query must have at least one column in select"
+        ),
+    ):
+        Query("discover", Query(dataset="discover", match=Entity("events"))).set_select(
+            [Column("event_id"), Column("title")]
+        )
+
+    with pytest.raises(
+        InvalidQuery,
+        match=re.escape(
+            "inner query is invalid: query must have at least one column in select"
+        ),
+    ):
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[Column("title"), Column("timestamp")],
+            ),
+        ).set_match(Query(dataset="discover", match=Entity("events"))).set_select(
+            [Function("uniq", [Column("new_event")], "uniq_event"), Column("title")]
+        )

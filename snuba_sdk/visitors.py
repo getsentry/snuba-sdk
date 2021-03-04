@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from datetime import date, datetime
-from typing import Generic, TypeVar
+from typing import Any, Generic, Set, TypeVar
 
 from snuba_sdk.entity import Entity
 from snuba_sdk.conditions import BooleanCondition, Condition
@@ -228,3 +228,82 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_debug(self, debug: Debug) -> str:
         return str(debug)
+
+
+class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
+    def __init__(self, exp_type: Any) -> None:
+        self.exp_type = exp_type
+
+    def _visit_column(self, column: Column) -> Set[Expression]:
+        if isinstance(column, self.exp_type):
+            return set([column])
+        return set()
+
+    def _visit_curried_function(self, func: CurriedFunction) -> Set[Expression]:
+        if isinstance(func, self.exp_type):
+            return set([func])
+
+        found = set()
+        if func.initializers is not None:
+            for initer in func.initializers:
+                if isinstance(initer, Expression):
+                    found |= self.visit(initer)
+
+        if func.parameters is not None:
+            for param in func.parameters:
+                if isinstance(param, Expression):
+                    found |= self.visit(param)
+
+        return found
+
+    def _visit_int_literal(self, literal: int) -> Set[Expression]:
+        return set()
+
+    def _visit_entity(self, entity: Entity) -> Set[Expression]:
+        if isinstance(entity, self.exp_type):
+            return set([entity])
+        return set()
+
+    def _visit_condition(self, cond: Condition) -> Set[Expression]:
+        found = self.visit(cond.lhs)
+        if not cond.is_unary():
+            if isinstance(cond.rhs, Expression):
+                found |= self.visit(cond.rhs)
+        return found
+
+    def _visit_boolean_condition(self, cond: BooleanCondition) -> Set[Expression]:
+        found = set()
+        for c in cond.conditions:
+            found |= self.visit(c)
+        return found
+
+    def _visit_orderby(self, orderby: OrderBy) -> Set[Expression]:
+        if isinstance(orderby, self.exp_type):
+            return set([orderby])
+
+        return self.visit(orderby.exp)
+
+    def _visit_limitby(self, limitby: LimitBy) -> Set[Expression]:
+        if isinstance(limitby, self.exp_type):
+            return set([limitby])
+        return self.visit(limitby.column)
+
+    def _visit_totals(self, totals: Totals) -> Set[Expression]:
+        if isinstance(totals, self.exp_type):
+            return set([totals])
+        return set()
+
+    def _visit_consistent(self, consistent: Consistent) -> Set[Expression]:
+        if isinstance(consistent, self.exp_type):
+            return set([consistent])
+        return set()
+
+    def _visit_turbo(self, turbo: Turbo) -> Set[Expression]:
+        if isinstance(turbo, self.exp_type):
+            return set([turbo])
+        return set()
+
+    def _visit_debug(self, debug: Debug) -> Set[Expression]:
+        if isinstance(debug, self.exp_type):
+            return set([debug])
+        return set()
