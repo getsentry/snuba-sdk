@@ -9,7 +9,7 @@ help:
 	@echo "make tests: Run tests"
 	@echo "make format: Run code formatters (destructive)"
 	@echo
-	@echo "Also make sure to read ./CONTRIBUTING.md"
+	@echo "Also make sure to read ./CONTRIBUTING.rst"
 	@false
 
 .venv:
