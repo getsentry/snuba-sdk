@@ -1,12 +1,13 @@
 import json
 from abc import ABC, abstractmethod
 from typing import (
+    Any,
     Generic,
     Mapping,
     MutableMapping,
     Optional,
     Sequence,
-    TYPE_CHECKING,
+    Set,
     TypeVar,
     Union,
 )
@@ -28,12 +29,11 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
-from snuba_sdk.visitors import Translation
+from snuba_sdk.visitors import ExpressionFinder, Translation
 
-if TYPE_CHECKING:
-    # Import the module due to sphinx autodoc problems
-    # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
-    from snuba_sdk import query
+# Import the module due to sphinx autodoc problems
+# https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
+from snuba_sdk import query as main
 
 
 class InvalidQuery(Exception):
@@ -44,7 +44,7 @@ QVisited = TypeVar("QVisited")
 
 
 class QueryVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: "query.Query") -> QVisited:
+    def visit(self, query: "main.Query") -> QVisited:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -54,7 +54,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _combine(
-        self, query: "query.Query", returns: Mapping[str, QVisited]
+        self, query: "main.Query", returns: Mapping[str, QVisited]
     ) -> QVisited:
         raise NotImplementedError
 
@@ -63,7 +63,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_match(self, match: Entity) -> QVisited:
+    def _visit_match(self, match: Union[Entity, "main.Query"]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -128,20 +128,22 @@ class QueryVisitor(ABC, Generic[QVisited]):
 
 
 class Printer(QueryVisitor[str]):
-    def __init__(self, pretty: bool = False) -> None:
+    def __init__(self, pretty: bool = False, is_inner: bool = False) -> None:
         self.translator = Translation()
         self.pretty = pretty
+        self.is_inner = is_inner
 
-    def _combine(self, query: "query.Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
         to_skip = ("dataset", "consistent", "turbo", "debug")
 
-        separator = "\n" if self.pretty else " "
+        separator = "\n" if (self.pretty and not self.is_inner) else " "
         formatted = separator.join(
             [returns[c] for c in clause_order if c not in to_skip and returns[c]]
         )
-        if self.pretty:
+
+        if self.pretty and not self.is_inner:
             prefix = ""
             for skip in to_skip:
                 if returns.get(skip):
@@ -153,8 +155,15 @@ class Printer(QueryVisitor[str]):
     def _visit_dataset(self, dataset: str) -> str:
         return dataset
 
-    def _visit_match(self, match: Entity) -> str:
-        return f"MATCH {self.translator.visit(match)}"
+    def _visit_match(self, match: Union[Entity, "main.Query"]) -> str:
+        if isinstance(match, Entity):
+            return f"MATCH {self.translator.visit(match)}"
+
+        # We need a separate translator that can recurse through the subqueries
+        # with different settings.
+        translator = Printer(self.pretty, True)
+        subquery = translator.visit(match)
+        return "MATCH { %s }" % subquery
 
     def _visit_select(
         self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
@@ -228,8 +237,11 @@ class Translator(Printer):
     def __init__(self) -> None:
         super().__init__(False)
 
-    def _combine(self, query: "query.Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
+        if self.is_inner:
+            return formatted_query
+
         body: MutableMapping[str, Union[str, bool]] = {
             "dataset": query.dataset,
             "query": formatted_query,
@@ -244,10 +256,109 @@ class Translator(Printer):
         return json.dumps(body)
 
 
+class ExpressionSearcher(QueryVisitor[Set[Expression]]):
+    def __init__(self, exp_type: Any) -> None:
+        self.expression_finder = ExpressionFinder(exp_type)
+
+    def _combine(
+        self, query: "main.Query", returns: Mapping[str, Set[Expression]]
+    ) -> Set[Expression]:
+        found = set()
+        for ret in returns.values():
+            found |= ret
+        return found
+
+    def _visit_dataset(self, dataset: str) -> Set[Expression]:
+        return set()
+
+    def _visit_match(self, match: Union[Entity, "main.Query"]) -> Set[Expression]:
+        if isinstance(match, Entity):
+            return self.expression_finder.visit(match)
+        return set()
+
+    def __aggregate(self, terms: Optional[Sequence[Expression]]) -> Set[Expression]:
+        found = set()
+        if terms:
+            for t in terms:
+                found |= self.expression_finder.visit(t)
+        return found
+
+    def _visit_select(
+        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+    ) -> Set[Expression]:
+        return self.__aggregate(select)
+
+    def _visit_groupby(
+        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+    ) -> Set[Expression]:
+        return self.__aggregate(groupby)
+
+    def _visit_where(
+        self, where: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> Set[Expression]:
+        return self.__aggregate(where)
+
+    def _visit_having(
+        self, having: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    ) -> Set[Expression]:
+        return self.__aggregate(having)
+
+    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> Set[Expression]:
+        return self.__aggregate(orderby)
+
+    def _visit_limitby(self, limitby: Optional[LimitBy]) -> Set[Expression]:
+        return self.expression_finder.visit(limitby) if limitby else set()
+
+    def _visit_limit(self, limit: Optional[Limit]) -> Set[Expression]:
+        return self.expression_finder.visit(limit) if limit else set()
+
+    def _visit_offset(self, offset: Optional[Offset]) -> Set[Expression]:
+        return self.expression_finder.visit(offset) if offset else set()
+
+    def _visit_granularity(self, granularity: Optional[Granularity]) -> Set[Expression]:
+        return self.expression_finder.visit(granularity) if granularity else set()
+
+    def _visit_totals(self, totals: Totals) -> Set[Expression]:
+        return self.expression_finder.visit(totals) if totals else set()
+
+    def _visit_consistent(self, consistent: Consistent) -> Set[Expression]:
+        return self.expression_finder.visit(consistent) if consistent else set()
+
+    def _visit_turbo(self, turbo: Turbo) -> Set[Expression]:
+        return self.expression_finder.visit(turbo) if turbo else set()
+
+    def _visit_debug(self, debug: Debug) -> Set[Expression]:
+        return self.expression_finder.visit(debug) if debug else set()
+
+
 class Validator(QueryVisitor[None]):
-    def _combine(self, query: "query.Query", returns: Mapping[str, None]) -> None:
+    def __init__(self) -> None:
+        super().__init__()
+        self.column_finder = ExpressionSearcher(Column)
+
+    def _combine(self, query: "main.Query", returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
+        ## SUBQUERIES
+        # - outer query must only reference columns from inner query, and reference by alias
+        # - inner query must be valid
+        if isinstance(query.match, main.Query):
+            self.visit(query.match)
+
+            outer_exps = self.column_finder.visit(query)
+            inner_match = set()
+            assert query.match.select is not None
+            for s in query.match.select:
+                if isinstance(s, CurriedFunction):
+                    inner_match.add(s.alias)
+                elif isinstance(s, Column):
+                    inner_match.add(s.name)
+
+            for c in outer_exps:
+                if isinstance(c, Column) and c.name not in inner_match:
+                    raise InvalidQuery(
+                        f"outer query is referencing column {c.name} that does not exist in subquery"
+                    )
 
         if query.select is None or len(query.select) == 0:
             raise InvalidQuery("query must have at least one column in select")
@@ -304,7 +415,7 @@ class Validator(QueryVisitor[None]):
     def _visit_dataset(self, dataset: str) -> None:
         pass
 
-    def _visit_match(self, match: Entity) -> None:
+    def _visit_match(self, match: Union[Entity, "main.Query"]) -> None:
         match.validate()
 
     def __list_validate(self, values: Optional[Sequence[Expression]]) -> None:

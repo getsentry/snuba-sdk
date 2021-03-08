@@ -1,7 +1,6 @@
 import pytest
 import re
 from datetime import datetime, timezone
-from typing import Optional
 
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
@@ -34,7 +33,6 @@ tests = [
             offset=Offset(1),
             granularity=Granularity(3600),
         ),
-        None,
         id="basic query",
     ),
     pytest.param(
@@ -60,7 +58,6 @@ tests = [
             granularity=Granularity(3600),
             debug=Debug(True),
         ),
-        None,
         id="complex query",
     ),
     pytest.param(
@@ -70,7 +67,6 @@ tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        None,
         id="basic query with replace",
     ),
     pytest.param(
@@ -123,7 +119,6 @@ tests = [
         .set_offset(1)
         .set_granularity(3600)
         .set_debug(True),
-        None,
         id="complex query with replace",
     ),
     pytest.param(
@@ -138,7 +133,6 @@ tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        None,
         id="lists and tuples are allowed",
     ),
     pytest.param(
@@ -154,7 +148,6 @@ tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        None,
         id="multiple ORDER BY",
     ),
     pytest.param(
@@ -164,9 +157,79 @@ tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        None,
         id="unary condition",
     ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[Column("event_id"), Column("title"), Column("timestamp")],
+            ),
+        )
+        .set_select([Column("event_id"), Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        id="simple subquery",
+    ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[
+                    Function("toString", [Column("event_id")], "new_event"),
+                    Column("title"),
+                    Column("timestamp"),
+                ],
+            ),
+        )
+        .set_select(
+            [Function("uniq", [Column("new_event")], "uniq_event"), Column("title")]
+        )
+        .set_groupby([Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        id="subquery with functions",
+    ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Query(
+                    dataset="discover",
+                    match=Entity("events"),
+                    select=[Column("event_id"), Column("title"), Column("timestamp")],
+                ),
+                select=[
+                    Function("toString", [Column("event_id")], "uniq_event"),
+                    Column("timestamp"),
+                ],
+            ),
+        )
+        .set_select([Function("avg", [Column("uniq_event")], "avg_event")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        id="multiple nested",
+    ),
+]
+
+
+@pytest.mark.parametrize("query", tests)
+def test_query(query: Query) -> None:
+    query.validate()
+
+
+invalid_tests = [
     pytest.param(
         Query(
             dataset="discover",
@@ -280,14 +343,55 @@ tests = [
         InvalidQuery("totals is only valid with a groupby"),
         id="Totals must have a groupby",
     ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[Column("event_id"), Column("title"), Column("timestamp")],
+            ),
+        )
+        .set_select([Column("event_id"), Column("group_id")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        InvalidQuery(
+            "outer query is referencing column group_id that does not exist in subquery"
+        ),
+        id="invalid column reference in outer query",
+    ),
+    pytest.param(
+        Query(
+            "discover",
+            Query(
+                dataset="discover",
+                match=Entity("events"),
+                select=[
+                    Function("toString", [Column("event_id")], "new_event"),
+                    Column("title"),
+                    Column("timestamp"),
+                ],
+            ),
+        )
+        .set_select(
+            [Function("uniq", [Column("event_id")], "uniq_event"), Column("title")]
+        )
+        .set_groupby([Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        InvalidQuery(
+            "outer query is referencing column event_id that does not exist in subquery"
+        ),
+        id="outer query is referencing column not alias",
+    ),
 ]
 
 
-@pytest.mark.parametrize("query, exception", tests)
-def test_query(query: Query, exception: Optional[Exception]) -> None:
-    if exception is not None:
-        with pytest.raises(type(exception), match=re.escape(str(exception))):
-            query.validate()
-        return
-
-    query.validate()
+@pytest.mark.parametrize("query, exception", invalid_tests)
+def test_invalid_query(query: Query, exception: Exception) -> None:
+    with pytest.raises(type(exception), match=re.escape(str(exception))):
+        query.validate()

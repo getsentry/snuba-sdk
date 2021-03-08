@@ -100,7 +100,7 @@ TODO List
 Contributing to the SDK
 ===========================
 
-Please refer to `CONTRIBUTING.md <https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.md>`_.
+Please refer to `CONTRIBUTING.rst <https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.rst>`_.
 
 =========
 License
