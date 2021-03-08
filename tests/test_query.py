@@ -317,23 +317,6 @@ invalid_tests = [
         Query(
             dataset="discover",
             match=Entity("events"),
-            select=[Column("title"), Function("count", [], "count")],
-            groupby=[Column("day")],
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            limitby=LimitBy(Column("event_id"), 5),
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "Column(name='event_id', subscriptable=None, key=None) in limitby clause is missing from select clause"
-        ),
-        id="LimitBy must be in the select",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
             select=[Column("title")],
             where=[Condition(Column("timestamp"), Op.GT, NOW)],
             limit=Limit(10),
