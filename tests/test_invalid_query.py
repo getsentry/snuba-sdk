@@ -2,8 +2,10 @@ import pytest
 import re
 from typing import Any, Mapping, Sequence
 
+from snuba_sdk.column import Column
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Column, Function, InvalidExpression
+from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.function import Function
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQuery
 

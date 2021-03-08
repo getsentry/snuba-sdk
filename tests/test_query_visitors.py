@@ -3,20 +3,17 @@ import pytest
 from datetime import datetime, timezone
 from typing import Any, MutableMapping, Optional, Sequence, Tuple
 
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
-    Column,
-    CurriedFunction,
-    Direction,
-    Function,
     Granularity,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Totals,
 )
+from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 
 
@@ -43,7 +40,7 @@ tests = [
     pytest.param(
         Query(
             dataset="discover",
-            match=Entity("events", 1000),
+            match=Entity("events", "e", 1000),
             select=[
                 Column("title"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
@@ -84,7 +81,7 @@ tests = [
             totals=Totals(True),
         ),
         (
-            "MATCH (events SAMPLE 1000)",
+            "MATCH (e: events SAMPLE 1000)",
             "SELECT title, uniq(event_id) AS uniq_events, quantile(0.5)(duration) AS p50",
             "BY title",
             (
@@ -105,7 +102,7 @@ tests = [
         id="query with all clauses",
     ),
     pytest.param(
-        Query("discover", Entity("events", 0.2))
+        Query("discover", Entity("events", None, 0.2))
         .set_select([Column("event_id"), Column("title")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_orderby(
@@ -236,7 +233,7 @@ tests = [
             "discover",
             Query(
                 dataset="discover",
-                match=Entity("events"),
+                match=Entity("events", "ev"),
                 select=[
                     Function("toString", [Column("event_id")], "new_event"),
                     Column("title"),
@@ -253,7 +250,7 @@ tests = [
         .set_offset(1)
         .set_granularity(3600),
         (
-            "MATCH { MATCH (events) SELECT toString(event_id) AS new_event, title, timestamp }",
+            "MATCH { MATCH (ev: events) SELECT toString(event_id) AS new_event, title, timestamp }",
             "SELECT uniq(new_event) AS uniq_event, title",
             "BY title",
             "WHERE timestamp IS NOT NULL",

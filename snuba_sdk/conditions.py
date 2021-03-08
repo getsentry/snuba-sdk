@@ -2,15 +2,18 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Sequence, Union
 
+from snuba_sdk.column import Column
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
-    Column,
-    CurriedFunction,
     Expression,
-    Function,
     InvalidExpression,
     is_scalar,
     ScalarType,
 )
+
+
+class InvalidCondition(InvalidExpression):
+    pass
 
 
 class Op(Enum):
@@ -39,24 +42,24 @@ class Condition(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.lhs, (Column, CurriedFunction, Function)):
-            raise InvalidExpression(
+            raise InvalidCondition(
                 f"invalid condition: LHS of a condition must be a Column, CurriedFunction or Function, not {type(self.lhs)}"
             )
         if not isinstance(self.op, Op):
-            raise InvalidExpression(
+            raise InvalidCondition(
                 "invalid condition: operator of a condition must be an Op"
             )
 
         if self.is_unary():
             if self.rhs is not None:
-                raise InvalidExpression(
+                raise InvalidCondition(
                     "invalid condition: unary operators don't have rhs conditions"
                 )
 
         if not isinstance(
             self.rhs, (Column, CurriedFunction, Function)
         ) and not is_scalar(self.rhs):
-            raise InvalidExpression(
+            raise InvalidCondition(
                 f"invalid condition: RHS of a condition must be a Column, CurriedFunction, Function or Scalar not {type(self.rhs)}"
             )
 
@@ -73,22 +76,22 @@ class BooleanCondition(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.op, BooleanOp):
-            raise InvalidExpression(
+            raise InvalidCondition(
                 "invalid boolean: operator of a boolean must be a BooleanOp"
             )
 
         if not isinstance(self.conditions, (list, tuple)):
-            raise InvalidExpression(
+            raise InvalidCondition(
                 "invalid boolean: conditions must be a list of other conditions"
             )
         elif len(self.conditions) < 2:
-            raise InvalidExpression(
+            raise InvalidCondition(
                 "invalid boolean: must supply at least two conditions"
             )
 
         for con in self.conditions:
             if not isinstance(con, (Condition, BooleanCondition)):
-                raise InvalidExpression(
+                raise InvalidCondition(
                     f"invalid boolean: {con} is not a valid condition"
                 )
 

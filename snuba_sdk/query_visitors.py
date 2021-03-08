@@ -12,23 +12,21 @@ from typing import (
     Union,
 )
 
-from snuba_sdk.entity import Entity
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
-    Column,
     Consistent,
-    CurriedFunction,
     Debug,
     Expression,
-    Function,
     Granularity,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Totals,
     Turbo,
 )
+from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.visitors import ExpressionFinder, Translation
 
 # Import the module due to sphinx autodoc problems
@@ -341,10 +339,7 @@ class Validator(QueryVisitor[None]):
         # - Must have certain conditions (project, timestamp, organization etc.)
         ## SUBQUERIES
         # - outer query must only reference columns from inner query, and reference by alias
-        # - inner query must be valid
         if isinstance(query.match, main.Query):
-            self.visit(query.match)
-
             outer_exps = self.column_finder.visit(query)
             inner_match = set()
             assert query.match.select is not None

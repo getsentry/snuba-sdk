@@ -2,12 +2,17 @@ import pytest
 import re
 from typing import Any, Callable, Optional
 
-from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
-from snuba_sdk.expressions import (
-    Function,
-    Column,
-    InvalidExpression,
+from snuba_sdk.column import Column
+from snuba_sdk.conditions import (
+    And,
+    BooleanCondition,
+    BooleanOp,
+    Condition,
+    InvalidCondition,
+    Op,
+    Or,
 )
+from snuba_sdk.function import Function
 from snuba_sdk.visitors import Translation
 from tests import and_cond, bool_cond, cond, or_cond
 
@@ -55,7 +60,7 @@ tests = [
         cond(Column("foo"), Op.IS_NULL, "foo"),
         None,
         "",
-        InvalidExpression(
+        InvalidCondition(
             "invalid condition: unary operators don't have rhs conditions",
         ),
         id="unary too many conditions",
@@ -64,7 +69,7 @@ tests = [
         cond("foo", Op.EQ, "foo"),
         None,
         "",
-        InvalidExpression(
+        InvalidCondition(
             "invalid condition: LHS of a condition must be a Column, CurriedFunction or Function, not <class 'str'>"
         ),
         id="lhs invalid type",
@@ -73,14 +78,14 @@ tests = [
         cond(Column("foo"), Column("bar"), "foo"),
         None,
         "",
-        InvalidExpression("invalid condition: operator of a condition must be an Op"),
+        InvalidCondition("invalid condition: operator of a condition must be an Op"),
         id="op invalid type",
     ),
     pytest.param(
         cond(Column("foo"), Op.EQ, Op.EQ),
         None,
         "",
-        InvalidExpression(
+        InvalidCondition(
             "invalid condition: RHS of a condition must be a Column, CurriedFunction, Function or Scalar not <enum 'Op'>"
         ),
         id="rhs invalid type",
@@ -189,14 +194,14 @@ boolean_tests = [
         ),
         None,
         None,
-        InvalidExpression("invalid boolean: operator of a boolean must be a BooleanOp"),
+        InvalidCondition("invalid boolean: operator of a boolean must be a BooleanOp"),
         id="invalid op",
     ),
     pytest.param(
         and_cond(Condition(Column("a"), Op.EQ, 1)),
         None,
         None,
-        InvalidExpression(
+        InvalidCondition(
             "invalid boolean: conditions must be a list of other conditions"
         ),
         id="not a list",
@@ -205,15 +210,15 @@ boolean_tests = [
         bool_cond(BooleanOp.OR, [Condition(Column("a"), Op.EQ, 1)]),
         None,
         None,
-        InvalidExpression("invalid boolean: must supply at least two conditions"),
+        InvalidCondition("invalid boolean: must supply at least two conditions"),
         id="only one",
     ),
     pytest.param(
         or_cond([Condition(Column("a"), Op.EQ, 1), Column("event_id")]),
         None,
         None,
-        InvalidExpression(
-            "invalid boolean: Column(name='event_id', subscriptable=None, key=None) is not a valid condition"
+        InvalidCondition(
+            "invalid boolean: Column(name='event_id', entity=None, subscriptable=None, key=None) is not a valid condition"
         ),
         id="not all conditions",
     ),

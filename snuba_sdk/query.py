@@ -1,22 +1,20 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
-    Column,
     Consistent,
-    CurriedFunction,
     Debug,
-    Function,
     Granularity,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Totals,
     Turbo,
 )
+from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
 
 
