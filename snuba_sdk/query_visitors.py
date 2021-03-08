@@ -363,19 +363,6 @@ class Validator(QueryVisitor[None]):
         if query.select is None or len(query.select) == 0:
             raise InvalidQuery("query must have at least one column in select")
 
-        # - limit by must be a field in select
-        if query.limitby is not None:
-            found = False
-            for s in query.select:
-                if s == query.limitby.column:
-                    found = True
-                    break
-
-            if not found:
-                raise InvalidQuery(
-                    f"{query.limitby.column} in limitby clause is missing from select clause"
-                )
-
         # Top level functions in the select clause must have an alias
         non_aggregates = []
         has_aggregates = False
