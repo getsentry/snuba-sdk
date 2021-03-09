@@ -22,10 +22,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install virtualenv
+          pip install -r linter-requirements.txt
       - name: Run linters
         run: |
-          make lint
+          flake8 tests examples snuba_sdk
+          black --check tests examples snuba_sdk
+          mypy --config-file mypy.ini --strict tests examples snuba_sdk
 
   tests:
     name: Run tests
