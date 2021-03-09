@@ -17,17 +17,15 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.9'
+          python-version: '3.6'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r linter-requirements.txt
+          pip install virtualenv
       - name: Run linters
         run: |
-          flake8 tests examples snuba_sdk
-          black --check tests examples snuba_sdk
-          mypy --config-file mypy.ini --strict tests examples snuba_sdk
+          make lint
 
   tests:
     name: Run tests
