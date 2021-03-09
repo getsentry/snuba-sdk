@@ -81,7 +81,7 @@ tests = [
             totals=Totals(True),
         ),
         (
-            "MATCH (e: events SAMPLE 1000)",
+            "MATCH (events SAMPLE 1000)",
             "SELECT title, uniq(event_id) AS uniq_events, quantile(0.5)(duration) AS p50",
             "BY title",
             (
@@ -250,7 +250,7 @@ tests = [
         .set_offset(1)
         .set_granularity(3600),
         (
-            "MATCH { MATCH (ev: events) SELECT toString(event_id) AS new_event, title, timestamp }",
+            "MATCH { MATCH (events) SELECT toString(event_id) AS new_event, title, timestamp }",
             "SELECT uniq(new_event) AS uniq_event, title",
             "BY title",
             "WHERE timestamp IS NOT NULL",

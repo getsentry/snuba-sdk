@@ -151,9 +151,14 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
 
 class Translation(ExpressionVisitor[str]):
+    def __init__(self, use_entity_aliases: bool = False):
+        # Eventually JOINs will set this to True, but single entity/sub queries
+        # don't support entity aliases.
+        self.use_entity_aliases = use_entity_aliases
+
     def _visit_column(self, column: Column) -> str:
         alias_clause = ""
-        if column.entity is not None:
+        if column.entity is not None and self.use_entity_aliases:
             alias_clause = f"{column.entity.alias}."
         return f"{alias_clause}{column.name}"
 
@@ -188,7 +193,7 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_entity(self, entity: Entity) -> str:
         alias_clause = ""
-        if entity.alias is not None:
+        if entity.alias is not None and self.use_entity_aliases:
             alias_clause = f"{entity.alias}: "
 
         sample_clause = ""

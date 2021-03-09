@@ -339,8 +339,8 @@ class Validator(QueryVisitor[None]):
         # - Must have certain conditions (project, timestamp, organization etc.)
         ## SUBQUERIES
         # - outer query must only reference columns from inner query, and reference by alias
+        all_columns = self.column_finder.visit(query)
         if isinstance(query.match, main.Query):
-            outer_exps = self.column_finder.visit(query)
             inner_match = set()
             assert query.match.select is not None
             for s in query.match.select:
@@ -349,7 +349,7 @@ class Validator(QueryVisitor[None]):
                 elif isinstance(s, Column):
                     inner_match.add(s.name)
 
-            for c in outer_exps:
+            for c in all_columns:
                 if isinstance(c, Column) and c.name not in inner_match:
                     raise InvalidQuery(
                         f"outer query is referencing column {c.name} that does not exist in subquery"

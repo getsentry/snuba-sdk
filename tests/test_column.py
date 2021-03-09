@@ -88,7 +88,7 @@ tests = [
 ]
 
 
-TRANSLATOR = Translation()
+TRANSLATOR = Translation(use_entity_aliases=True)
 
 
 @pytest.mark.parametrize("column_name, valid, translated, exception", tests)
