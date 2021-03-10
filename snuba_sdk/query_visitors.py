@@ -386,6 +386,13 @@ class Validator(QueryVisitor[None]):
                 )
 
             for group_exp in non_aggregates:
+                # Legacy passes aliases in the groupby instead of whole expressions.
+                # We need to check for both.
+                if isinstance(group_exp, Function):
+                    assert group_exp.alias is not None
+                    if Column(group_exp.alias) in query.groupby:
+                        continue
+
                 if group_exp not in query.groupby:
                     raise InvalidQuery(f"{group_exp} missing from the groupby")
 
