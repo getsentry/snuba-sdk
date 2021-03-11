@@ -7,7 +7,7 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op, Or
 from snuba_sdk.entity import Entity
 from snuba_sdk.function import Function
-from snuba_sdk.join import Join, Relationship
+from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQuery

@@ -21,7 +21,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
-from snuba_sdk.join import Join, Relationship
+from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.orderby import LimitBy, OrderBy
 
 

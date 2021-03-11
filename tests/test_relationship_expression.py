@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import InvalidExpression
-from snuba_sdk.join import Join, Relationship
+from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.visitors import Translation
 
 
@@ -95,10 +95,10 @@ join_tests = [
     pytest.param(
         [
             Relationship(Entity("events", "e"), "has", Entity("spans", "s")),
-            Relationship(Entity("events", "s"), "hasnt", Entity("spans", "e", 10)),
+            Relationship(Entity("events", "e"), "hasnt", Entity("spans", "e", 10)),
         ],
         None,
-        InvalidExpression("alias 's' is duplicated for entities events, spans"),
+        InvalidExpression("alias 'e' is duplicated for entities events, spans"),
     ),
 ]
 

@@ -26,7 +26,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
-from snuba_sdk.join import Join
+from snuba_sdk.relationships import Join
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.visitors import ExpressionFinder, Translation
 
