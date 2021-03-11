@@ -342,8 +342,9 @@ class Validator(QueryVisitor[None]):
     def _combine(self, query: "main.Query", returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
-        ## SUBQUERIES
-        # - outer query must only reference columns from inner query, and reference by alias
+
+        # If the match is a subquery, then the outer query can only reference columns
+        # from the subquery.
         all_columns = self.column_finder.visit(query)
         if isinstance(query.match, main.Query):
             inner_match = set()
@@ -359,6 +360,7 @@ class Validator(QueryVisitor[None]):
                     raise InvalidQuery(
                         f"outer query is referencing column {c.name} that does not exist in subquery"
                     )
+        # In a Join, all the columns must have a qualifying entity with a valid alias.
         elif isinstance(query.match, Join):
             entity_aliases = {
                 alias: entity for alias, entity in query.match.get_alias_mappings()
