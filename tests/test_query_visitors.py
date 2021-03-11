@@ -40,7 +40,7 @@ tests = [
     pytest.param(
         Query(
             dataset="discover",
-            match=Entity("events", "e", 1000),
+            match=Entity("events", "e", 1000.0),
             select=[
                 Column("title"),
                 Function("uniq", [Column("event_id")], "uniq_events"),
@@ -81,7 +81,7 @@ tests = [
             totals=Totals(True),
         ),
         (
-            "MATCH (events SAMPLE 1000)",
+            "MATCH (events SAMPLE 1000.0)",
             "SELECT title, uniq(event_id) AS uniq_events, quantile(0.5)(duration) AS p50",
             "BY title",
             (

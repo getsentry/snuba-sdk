@@ -238,24 +238,8 @@ invalid_tests = [
             offset=Offset(1),
             granularity=Granularity(3600),
         ),
-        InvalidQuery("query must have at least one column in select"),
+        InvalidQuery("query must have at least one expression in select"),
         id="missing select",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
-            select=[Function("count", [])],
-            groupby=[Column("title")],
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "Function(function='count', initializers=None, parameters=[], alias=None) must have an alias in the select"
-        ),
-        id="functions in the select must have an alias",
     ),
     pytest.param(
         Query(

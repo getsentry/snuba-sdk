@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any, Generic, Set, TypeVar
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.conditions import BooleanCondition, Condition, is_unary
 from snuba_sdk.entity import Entity
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
@@ -211,8 +211,8 @@ class Translation(ExpressionVisitor[str]):
 
         sample_clause = ""
         if entity.sample is not None:
-            if isinstance(entity.sample, int):
-                sample_clause = f" SAMPLE {entity.sample:d}"
+            if entity.sample % 1 == 0:
+                sample_clause = f" SAMPLE {entity.sample:.1f}"
             else:
                 sample_clause = f" SAMPLE {entity.sample:f}"
         return f"({alias_clause}{entity.name}{sample_clause})"
@@ -225,7 +225,7 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
-        if cond.is_unary():
+        if is_unary(cond.op):
             rhs = ""
         elif isinstance(cond.rhs, (Column, CurriedFunction, Function)):
             rhs = f" {self.visit(cond.rhs)}"
@@ -311,7 +311,7 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
     def _visit_condition(self, cond: Condition) -> Set[Expression]:
         found = self.visit(cond.lhs)
-        if not cond.is_unary():
+        if not is_unary(cond.op):
             if isinstance(cond.rhs, Expression):
                 found |= self.visit(cond.rhs)
         return found

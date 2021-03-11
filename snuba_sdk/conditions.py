@@ -31,14 +31,15 @@ class Op(Enum):
     IS_NOT_NULL = "IS NOT NULL"
 
 
+def is_unary(op: Op) -> bool:
+    return op in [Op.IS_NULL, Op.IS_NOT_NULL]
+
+
 @dataclass(frozen=True)
 class Condition(Expression):
     lhs: Union[Column, CurriedFunction, Function]
     op: Op
     rhs: Optional[Union[Column, CurriedFunction, Function, ScalarType]] = None
-
-    def is_unary(self) -> bool:
-        return self.op in set([Op.IS_NULL, Op.IS_NOT_NULL])
 
     def validate(self) -> None:
         if not isinstance(self.lhs, (Column, CurriedFunction, Function)):
@@ -50,7 +51,7 @@ class Condition(Expression):
                 "invalid condition: operator of a condition must be an Op"
             )
 
-        if self.is_unary():
+        if is_unary(self.op):
             if self.rhs is not None:
                 raise InvalidCondition(
                     "invalid condition: unary operators don't have rhs conditions"

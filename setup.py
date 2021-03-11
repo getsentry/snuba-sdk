@@ -9,7 +9,7 @@ Snuba-SDK - SnQL SDK for Snuba
 """
 
 import os
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages  # type: ignore
 
 here = os.path.abspath(os.path.dirname(__file__))
 

@@ -380,15 +380,12 @@ class Validator(QueryVisitor[None]):
                     )
 
         if query.select is None or len(query.select) == 0:
-            raise InvalidQuery("query must have at least one column in select")
+            raise InvalidQuery("query must have at least one expression in select")
 
-        # Top level functions in the select clause must have an alias
+        # Non-aggregate expressions must be in the groupby if there is an aggregate
         non_aggregates = []
         has_aggregates = False
         for exp in query.select:
-            if isinstance(exp, (CurriedFunction, Function)) and not exp.alias:
-                raise InvalidQuery(f"{exp} must have an alias in the select")
-
             if (
                 not isinstance(exp, (CurriedFunction, Function))
                 or not exp.is_aggregate()
@@ -397,7 +394,6 @@ class Validator(QueryVisitor[None]):
             else:
                 has_aggregates = True
 
-        # Non-aggregate expressions must be in the groupby if there is an aggregate
         if has_aggregates and len(non_aggregates) > 0:
             if not query.groupby or len(query.groupby) == 0:
                 raise InvalidQuery(

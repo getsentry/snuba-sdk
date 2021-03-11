@@ -11,9 +11,9 @@ TRANSLATOR = Translation(use_entity_aliases=True)
 tests = [
     pytest.param("sessions", None, None, "(sessions)", None),
     pytest.param("sessions", None, 0.1, "(sessions SAMPLE 0.100000)", None),
-    pytest.param("sessions", None, 10, "(sessions SAMPLE 10)", None),
+    pytest.param("sessions", None, 10.0, "(sessions SAMPLE 10.0)", None),
     pytest.param("sessions", "s", None, "(s: sessions)", None),
-    pytest.param("sessions", "s", 10, "(s: sessions SAMPLE 10)", None),
+    pytest.param("sessions", "s", 10.0, "(s: sessions SAMPLE 10.0)", None),
     pytest.param("", "s", None, None, InvalidEntity("'' is not a valid entity name")),
     pytest.param(1, None, None, None, InvalidEntity("'1' is not a valid entity name")),
     pytest.param("sessions", "", None, None, InvalidEntity("'' is not a valid alias")),
@@ -23,37 +23,14 @@ tests = [
         None,
         "0.1",
         None,
-        InvalidEntity(
-            "sample must be a float between 0 and 1 or an integer greater than 1"
-        ),
+        InvalidEntity("sample must be a float"),
     ),
     pytest.param(
         "sessions",
         "s",
         -0.1,
         None,
-        InvalidEntity("float samples must be between 0.0 and 1.0 (%age of rows)"),
-    ),
-    pytest.param(
-        "sessions",
-        None,
-        1.1,
-        None,
-        InvalidEntity("float samples must be between 0.0 and 1.0 (%age of rows)"),
-    ),
-    pytest.param(
-        "sessions",
-        None,
-        0,
-        None,
-        InvalidEntity("int samples must be at least 1 (# of rows)"),
-    ),
-    pytest.param(
-        "sessions",
-        "s",
-        -1,
-        None,
-        InvalidEntity("int samples must be at least 1 (# of rows)"),
+        InvalidEntity("samples must be greater than 0.0"),
     ),
 ]
 

@@ -1,4 +1,5 @@
 import numbers
+import re
 from typing import Any, List, Optional
 
 # This is supposed to enumerate the functions snuba supports (with their
@@ -80,6 +81,9 @@ _AGGREGATION_FUNCTIONS_BASE = {
     "retention",
     "uniqUpTo",
     "sumMapFiltered",
+    # Sentry
+    "apdex",
+    "failure_rate",
 }
 
 _AGGREGATION_SUFFIXES = {
@@ -102,8 +106,15 @@ AGGREGATION_FUNCTIONS = {
     for suffix in _AGGREGATION_SUFFIXES
 }
 
+FUNCTION_NAME = re.compile(r"([a-zA-Z_]+)\(")
+
 
 def is_aggregation_function(func_name: str) -> bool:
+    # Special case for legacy functions
+    if "(" in func_name:
+        matches = FUNCTION_NAME.findall(func_name)
+        return any(func in AGGREGATION_FUNCTIONS for func in matches)
+
     return func_name in AGGREGATION_FUNCTIONS
 
 
