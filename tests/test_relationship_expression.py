@@ -73,17 +73,17 @@ def test_relationships(
 
 join_tests = [
     pytest.param(
-        [Relationship(Entity("events", "e"), "has", Entity("spans", "s"))],
-        "(e: events) -[has]-> (s: spans)",
+        [Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))],
+        "(e: events) -[has]-> (s: sessions)",
         None,
     ),
     pytest.param(
         [
-            Relationship(Entity("events", "e"), "has", Entity("spans", "s")),
-            Relationship(Entity("events", "e"), "hasnt", Entity("spans", "s", 10)),
-            Relationship(Entity("events", "e"), "musnt", Entity("spans", "s")),
+            Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
+            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "s", 10)),
+            Relationship(Entity("events", "e"), "musnt", Entity("sessions", "s")),
         ],
-        "(e: events) -[has]-> (s: spans), (e: events) -[hasnt]-> (s: spans SAMPLE 10), (e: events) -[musnt]-> (s: spans)",
+        "(e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (s: sessions SAMPLE 10), (e: events) -[musnt]-> (s: sessions)",
         None,
     ),
     pytest.param(
@@ -94,11 +94,11 @@ join_tests = [
     ),
     pytest.param(
         [
-            Relationship(Entity("events", "e"), "has", Entity("spans", "s")),
-            Relationship(Entity("events", "e"), "hasnt", Entity("spans", "e", 10)),
+            Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
+            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "e", 10)),
         ],
         None,
-        InvalidExpression("alias 'e' is duplicated for entities events, spans"),
+        InvalidExpression("alias 'e' is duplicated for entities events, sessions"),
     ),
 ]
 

@@ -16,12 +16,12 @@ tests = [
     pytest.param(
         Query(
             "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("spans", "s"))]),
+            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
         .set_select(
             [
                 Column("group_id", Entity("events", "e")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
             ]
         )
         .set_where(
@@ -35,7 +35,7 @@ tests = [
         .set_granularity(3600)
         .set_consistent(True),
         (
-            "MATCH (e: events) -[has]-> (s: spans)",
+            "MATCH (e: events) -[has]-> (s: sessions)",
             "SELECT e.group_id, s.span_id",
             "WHERE e.timestamp IS NOT NULL",
             "ORDER BY e.timestamp DESC",
@@ -51,18 +51,20 @@ tests = [
             "discover",
             Join(
                 [
-                    Relationship(Entity("events", "e"), "has", Entity("spans", "s")),
+                    Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
                     Relationship(
                         Entity("events", "e"), "hasnt", Entity("transactions", "t", 10)
                     ),
-                    Relationship(Entity("events", "e"), "musnt", Entity("spans", "s")),
+                    Relationship(
+                        Entity("events", "e"), "musnt", Entity("sessions", "s")
+                    ),
                 ]
             ),
         )
         .set_select(
             [
                 Column("group_id", Entity("events", "e")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
                 Column("trace_id", Entity("transactions", "t")),
                 Function("count", [], "count"),
             ]
@@ -70,7 +72,7 @@ tests = [
         .set_groupby(
             [
                 Column("group_id", Entity("events", "e")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
                 Column("trace_id", Entity("transactions", "t")),
             ]
         )
@@ -82,7 +84,7 @@ tests = [
                             Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL
                         ),
                         Condition(
-                            Column("timestamp", Entity("spans", "s")), Op.IS_NOT_NULL
+                            Column("timestamp", Entity("sessions", "s")), Op.IS_NOT_NULL
                         ),
                         Condition(
                             Column("timestamp", Entity("transactions", "t")),
@@ -100,7 +102,7 @@ tests = [
         .set_granularity(3600)
         .set_consistent(True),
         (
-            "MATCH (e: events) -[has]-> (s: spans), (e: events) -[hasnt]-> (t: transactions SAMPLE 10), (e: events) -[musnt]-> (s: spans)",
+            "MATCH (e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (t: transactions SAMPLE 10), (e: events) -[musnt]-> (s: sessions)",
             "SELECT e.group_id, s.span_id, t.trace_id, count() AS count",
             "BY e.group_id, s.span_id, t.trace_id",
             "WHERE (e.timestamp IS NOT NULL OR s.timestamp IS NOT NULL OR t.timestamp IS NOT NULL)",
@@ -152,9 +154,9 @@ invalid_tests = [
     pytest.param(
         Query(
             "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("spans", "s"))]),
+            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
-        .set_select([Column("group_id"), Column("span_id", Entity("spans", "s"))])
+        .set_select([Column("group_id"), Column("span_id", Entity("sessions", "s"))])
         .set_where(
             [Condition(Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL)]
         )
@@ -171,12 +173,12 @@ invalid_tests = [
     pytest.param(
         Query(
             "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("spans", "s"))]),
+            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
         .set_select(
             [
                 Column("group_id", Entity("transactions", "t")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
             ]
         )
         .set_where(
@@ -195,12 +197,12 @@ invalid_tests = [
     pytest.param(
         Query(
             "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("spans", "s"))]),
+            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
         .set_select(
             [
                 Column("group_id", Entity("events", "t")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
             ]
         )
         .set_where(
@@ -219,12 +221,12 @@ invalid_tests = [
     pytest.param(
         Query(
             "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("spans", "s"))]),
+            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
         .set_select(
             [
                 Column("group_id", Entity("transactions", "e")),
-                Column("span_id", Entity("spans", "s")),
+                Column("span_id", Entity("sessions", "s")),
             ]
         )
         .set_where(

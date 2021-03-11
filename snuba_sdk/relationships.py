@@ -79,7 +79,8 @@ class Join(Expression):
         seen: MutableMapping[str, str] = {}
         for alias, entity in self.get_alias_mappings():
             if alias in seen and seen[alias] != entity:
+                entities = sorted([entity, seen[alias]])
                 raise InvalidExpression(
-                    f"alias '{alias}' is duplicated for entities {entity}, {seen[alias]}"
+                    f"alias '{alias}' is duplicated for entities {', '.join(entities)}"
                 )
             seen[alias] = entity
