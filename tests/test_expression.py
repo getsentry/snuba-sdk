@@ -2,21 +2,19 @@ import pytest
 import re
 from typing import Any, Optional
 
+from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
-    Column,
     Consistent,
     Debug,
-    Direction,
-    Function,
     Granularity,
     InvalidExpression,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Totals,
     Turbo,
 )
+from snuba_sdk.function import Function
+from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 
 limit_tests = [
     pytest.param(1, None),

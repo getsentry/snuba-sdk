@@ -15,12 +15,13 @@ class InvalidEntity(Exception):
 @dataclass(frozen=True)
 class Entity(Expression):
     name: str
+    alias: Optional[str] = None
     sample: Optional[Union[int, float]] = None
 
     def validate(self) -> None:
         # TODO: There should be a whitelist of entity names at some point
         if not isinstance(self.name, str) or not entity_name_re.match(self.name):
-            raise InvalidEntity(f"{self.name} is not a valid entity name")
+            raise InvalidEntity(f"'{self.name}' is not a valid entity name")
 
         if self.sample is not None:
             if not isinstance(self.sample, (int, float)):
@@ -35,3 +36,7 @@ class Entity(Expression):
             elif isinstance(self.sample, int):
                 if self.sample < 1:
                     raise InvalidEntity("int samples must be at least 1 (# of rows)")
+
+        if self.alias is not None:
+            if not isinstance(self.alias, str) or not self.alias:
+                raise InvalidEntity(f"'{self.alias}' is not a valid alias")

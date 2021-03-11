@@ -2,20 +2,17 @@ import pytest
 import re
 from datetime import datetime, timezone
 
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
-    Column,
-    CurriedFunction,
     Debug,
-    Direction,
-    Function,
     Granularity,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
 )
+from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQuery
 
@@ -38,7 +35,7 @@ tests = [
     pytest.param(
         Query(
             dataset="discover",
-            match=Entity("events", 0.2),
+            match=Entity("events", "ev", 0.2),
             select=[
                 Column("title"),
                 Column("tags[release:1]"),
@@ -61,7 +58,7 @@ tests = [
         id="complex query",
     ),
     pytest.param(
-        Query("discover", Entity("events", 0.2))
+        Query("discover", Entity("events", None, 0.2))
         .set_select([Column("event_id")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_limit(10)
@@ -309,7 +306,7 @@ invalid_tests = [
             granularity=Granularity(3600),
         ),
         InvalidQuery(
-            "Column(name='title', subscriptable=None, key=None) missing from the groupby"
+            "Column(name='title', entity=None, subscriptable=None, key=None) missing from the groupby"
         ),
         id="groupby must include all non aggregates",
     ),

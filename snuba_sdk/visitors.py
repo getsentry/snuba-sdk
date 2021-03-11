@@ -3,27 +3,25 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Any, Generic, Set, TypeVar
 
-from snuba_sdk.entity import Entity
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.entity import Entity
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
-    Column,
     Consistent,
-    CurriedFunction,
     Debug,
     Expression,
-    Function,
     Granularity,
     InvalidExpression,
     is_scalar,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Scalar,
     ScalarType,
     Totals,
     Turbo,
 )
+from snuba_sdk.orderby import LimitBy, OrderBy
 
 
 # validation regexes
@@ -153,8 +151,16 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
 
 class Translation(ExpressionVisitor[str]):
+    def __init__(self, use_entity_aliases: bool = False):
+        # Eventually JOINs will set this to True, but single entity/sub queries
+        # don't support entity aliases.
+        self.use_entity_aliases = use_entity_aliases
+
     def _visit_column(self, column: Column) -> str:
-        return column.name
+        alias_clause = ""
+        if column.entity is not None and self.use_entity_aliases:
+            alias_clause = f"{column.entity.alias}."
+        return f"{alias_clause}{column.name}"
 
     def _visit_curried_function(self, func: CurriedFunction) -> str:
         alias = "" if func.alias is None else f" AS {func.alias}"
@@ -186,13 +192,17 @@ class Translation(ExpressionVisitor[str]):
         return f"{literal:d}"
 
     def _visit_entity(self, entity: Entity) -> str:
+        alias_clause = ""
+        if entity.alias is not None and self.use_entity_aliases:
+            alias_clause = f"{entity.alias}: "
+
         sample_clause = ""
         if entity.sample is not None:
             if isinstance(entity.sample, int):
                 sample_clause = f" SAMPLE {entity.sample:d}"
             else:
                 sample_clause = f" SAMPLE {entity.sample:f}"
-        return f"({entity.name}{sample_clause})"
+        return f"({alias_clause}{entity.name}{sample_clause})"
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None

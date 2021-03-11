@@ -1,8 +1,9 @@
 import types
 from typing import Any, Callable, List, Optional
 
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
-from snuba_sdk.expressions import Column, CurriedFunction, Function
+from snuba_sdk.function import CurriedFunction, Function
 
 
 # Wrappers to lazily build the expressions

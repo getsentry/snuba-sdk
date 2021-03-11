@@ -1,11 +1,9 @@
 import pytest
 import re
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
-from snuba_sdk.expressions import (
-    Column,
-    InvalidExpression,
-)
+from snuba_sdk.column import Column, InvalidColumn
+from snuba_sdk.entity import Entity
 from snuba_sdk.visitors import Translation
 
 tests = [
@@ -47,7 +45,7 @@ tests = [
         "a1[a:b][aasdc]",
         None,
         None,
-        InvalidExpression(
+        InvalidColumn(
             "column 'a1[a:b][aasdc]' is empty or contains invalid characters"
         ),
         id="only one subscriptable",
@@ -56,41 +54,41 @@ tests = [
         "a1[a?]",
         None,
         None,
-        InvalidExpression("column 'a1[a?]' is empty or contains invalid characters"),
+        InvalidColumn("column 'a1[a?]' is empty or contains invalid characters"),
         id="invalid subscriptable",
     ),
     pytest.param(
         "_valid",
         None,
         None,
-        InvalidExpression("column '_valid' is empty or contains invalid characters"),
+        InvalidColumn("column '_valid' is empty or contains invalid characters"),
         id="underscore column test",
     ),
     pytest.param(
         "..valid",
         None,
         None,
-        InvalidExpression("column '..valid' is empty or contains invalid characters"),
+        InvalidColumn("column '..valid' is empty or contains invalid characters"),
         id="invalid column",
     ),
     pytest.param(
         10,
         None,
         None,
-        InvalidExpression("column '10' must be a string"),
+        InvalidColumn("column '10' must be a string"),
         id="invalid column type",
     ),
     pytest.param(
         "",
         None,
         None,
-        InvalidExpression("column '' is empty or contains invalid characters"),
+        InvalidColumn("column '' is empty or contains invalid characters"),
         id="empty column",
     ),
 ]
 
 
-TRANSLATOR = Translation()
+TRANSLATOR = Translation(use_entity_aliases=True)
 
 
 @pytest.mark.parametrize("column_name, valid, translated, exception", tests)
@@ -100,15 +98,48 @@ def test_columns(
     translated: str,
     exception: Optional[Exception],
 ) -> None:
-    def verify() -> None:
+    if exception is not None:
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
+            Column(column_name)
+    else:
         exp = Column(column_name)
         assert exp.name == valid[0]
         assert exp.subscriptable == valid[1]
         assert exp.key == valid[2]
         assert TRANSLATOR.visit(exp) == translated
 
+
+entity_tests = [
+    pytest.param("foo", Entity("events", "e"), "e.foo", None, id="column with entity"),
+    pytest.param(
+        "foo",
+        Entity("events"),
+        None,
+        InvalidColumn("column foo expects an Entity with an alias"),
+        id="column with entity but no alias",
+    ),
+    pytest.param(
+        "foo",
+        "events",
+        None,
+        InvalidColumn("column foo expects an Entity"),
+        id="column with non-entity",
+    ),
+]
+
+
+@pytest.mark.parametrize("column_name, entity, translated, exception", entity_tests)
+def test_columns_with_entities(
+    column_name: str,
+    entity: Any,
+    translated: str,
+    exception: Optional[Exception],
+) -> None:
     if exception is not None:
         with pytest.raises(type(exception), match=re.escape(str(exception))):
-            verify()
+            Column(column_name, entity)
     else:
-        verify()
+        exp = Column(column_name, entity)
+        assert exp.name == column_name
+        assert exp.entity == entity
+        assert TRANSLATOR.visit(exp) == translated

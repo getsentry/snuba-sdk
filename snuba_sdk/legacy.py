@@ -1,15 +1,11 @@
 from datetime import datetime
 from typing import Any, Mapping, Sequence
 
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import (
-    Column,
-    Direction,
-    Function,
-    LimitBy,
-    OrderBy,
-)
+from snuba_sdk.function import Function
+from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQuery
 
@@ -73,7 +69,7 @@ def parse_exp(value: Any) -> Any:
 def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     dataset = body.get("dataset", "")
     sample = body.get("sample")
-    query = Query(dataset, Entity(entity, sample))
+    query = Query(dataset, Entity(entity, None, sample))
 
     selected_columns = list(map(parse_exp, body.get("selected_columns", [])))
     for a in body.get("aggregations", []):
