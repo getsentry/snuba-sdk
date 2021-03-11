@@ -21,6 +21,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
+from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.orderby import LimitBy, OrderBy
 
 
@@ -76,6 +77,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_curried_function(node)
         elif isinstance(node, Entity):
             return self._visit_entity(node)
+        elif isinstance(node, Relationship):
+            return self._visit_relationship(node)
+        elif isinstance(node, Join):
+            return self._visit_join(node)
         elif isinstance(node, Condition):
             return self._visit_condition(node)
         elif isinstance(node, BooleanCondition):
@@ -115,6 +120,14 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_entity(self, entity: Entity) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_relationship(self, relationship: Relationship) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_join(self, join: Join) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -204,6 +217,12 @@ class Translation(ExpressionVisitor[str]):
                 sample_clause = f" SAMPLE {entity.sample:f}"
         return f"({alias_clause}{entity.name}{sample_clause})"
 
+    def _visit_relationship(self, relationship: Relationship) -> str:
+        return f"{self.visit(relationship.lhs)} -[{relationship.name}]-> {self.visit(relationship.rhs)}"
+
+    def _visit_join(self, join: Join) -> str:
+        return ", ".join([self.visit(rel) for rel in join.relationships])
+
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
         if cond.is_unary():
@@ -272,6 +291,22 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_entity(self, entity: Entity) -> Set[Expression]:
         if isinstance(entity, self.exp_type):
             return set([entity])
+        return set()
+
+    def _visit_relationship(self, relationship: Relationship) -> Set[Expression]:
+        if isinstance(relationship, self.exp_type):
+            return set([relationship])
+        elif isinstance(relationship.lhs, self.exp_type):
+            return set([relationship.lhs, relationship.rhs])
+
+        return set()
+
+    def _visit_join(self, join: Join) -> Set[Expression]:
+        if isinstance(join, self.exp_type):
+            return set([join])
+        elif isinstance(join.relationships[0], self.exp_type):
+            return set(join.relationships)
+
         return set()
 
     def _visit_condition(self, cond: Condition) -> Set[Expression]:

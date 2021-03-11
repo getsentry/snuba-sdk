@@ -14,6 +14,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
+from snuba_sdk.relationships import Join
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
 
@@ -42,7 +43,7 @@ class Query:
 
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
-    match: Union[Entity, "Query"]
+    match: Union[Entity, Join, "Query"]
     select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     where: Optional[List[Union[BooleanCondition, Condition]]] = None
@@ -69,8 +70,8 @@ class Query:
         if not isinstance(self.dataset, str) or self.dataset == "":
             raise InvalidQuery("queries must have a valid dataset")
 
-        if not isinstance(self.match, (Query, Entity)):
-            raise InvalidQuery("queries must have a valid Entity or Query")
+        if not isinstance(self.match, (Query, Join, Entity)):
+            raise InvalidQuery("queries must have a valid Entity, Join or Query")
 
         if isinstance(self.match, Query):
             try:
@@ -86,9 +87,9 @@ class Query:
         self_fields = fields(self)  # Verified the order in the Python source
         return tuple(f.name for f in self_fields)
 
-    def set_match(self, match: Union[Entity, "Query"]) -> "Query":
-        if not isinstance(match, (Entity, Query)):
-            raise InvalidQuery(f"{match} must be a valid Entity or Query")
+    def set_match(self, match: Union[Entity, Join, "Query"]) -> "Query":
+        if not isinstance(match, (Entity, Join, Query)):
+            raise InvalidQuery(f"{match} must be a valid Entity, Join or Query")
         elif isinstance(match, Query):
             try:
                 match.validate()

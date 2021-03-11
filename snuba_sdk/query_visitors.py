@@ -26,6 +26,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
+from snuba_sdk.relationships import Join
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.visitors import ExpressionFinder, Translation
 
@@ -61,7 +62,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_match(self, match: Union[Entity, "main.Query"]) -> QVisited:
+    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -131,6 +132,10 @@ class Printer(QueryVisitor[str]):
         self.pretty = pretty
         self.is_inner = is_inner
 
+    def visit(self, query: "main.Query") -> str:
+        self.translator.use_entity_aliases = isinstance(query.match, Join)
+        return super().visit(query)
+
     def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
@@ -153,8 +158,8 @@ class Printer(QueryVisitor[str]):
     def _visit_dataset(self, dataset: str) -> str:
         return dataset
 
-    def _visit_match(self, match: Union[Entity, "main.Query"]) -> str:
-        if isinstance(match, Entity):
+    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> str:
+        if isinstance(match, (Entity, Join)):
             return f"MATCH {self.translator.visit(match)}"
 
         # We need a separate translator that can recurse through the subqueries
@@ -269,8 +274,8 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     def _visit_dataset(self, dataset: str) -> Set[Expression]:
         return set()
 
-    def _visit_match(self, match: Union[Entity, "main.Query"]) -> Set[Expression]:
-        if isinstance(match, Entity):
+    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> Set[Expression]:
+        if isinstance(match, (Entity, Join)):
             return self.expression_finder.visit(match)
         return set()
 
@@ -337,8 +342,9 @@ class Validator(QueryVisitor[None]):
     def _combine(self, query: "main.Query", returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
-        ## SUBQUERIES
-        # - outer query must only reference columns from inner query, and reference by alias
+
+        # If the match is a subquery, then the outer query can only reference columns
+        # from the subquery.
         all_columns = self.column_finder.visit(query)
         if isinstance(query.match, main.Query):
             inner_match = set()
@@ -353,6 +359,24 @@ class Validator(QueryVisitor[None]):
                 if isinstance(c, Column) and c.name not in inner_match:
                     raise InvalidQuery(
                         f"outer query is referencing column {c.name} that does not exist in subquery"
+                    )
+        # In a Join, all the columns must have a qualifying entity with a valid alias.
+        elif isinstance(query.match, Join):
+            entity_aliases = {
+                alias: entity for alias, entity in query.match.get_alias_mappings()
+            }
+            column_exps = self.column_finder.visit(query)
+            for c in column_exps:
+                assert isinstance(c, Column)
+                if c.entity is None:
+                    raise InvalidQuery(f"{c.name} must have a qualifying entity")
+                elif c.entity.alias not in entity_aliases:
+                    raise InvalidQuery(
+                        f"{c.name} has unknown entity alias {c.entity.alias}"
+                    )
+                elif entity_aliases[c.entity.alias] != c.entity.name:
+                    raise InvalidQuery(
+                        f"{c.name} has incorrect alias for entity {c.entity.name}: {c.entity.alias}"
                     )
 
         if query.select is None or len(query.select) == 0:
@@ -397,7 +421,7 @@ class Validator(QueryVisitor[None]):
     def _visit_dataset(self, dataset: str) -> None:
         pass
 
-    def _visit_match(self, match: Union[Entity, "main.Query"]) -> None:
+    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> None:
         match.validate()
 
     def __list_validate(self, values: Optional[Sequence[Expression]]) -> None:
