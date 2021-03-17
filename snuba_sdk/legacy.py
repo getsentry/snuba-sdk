@@ -117,7 +117,7 @@ def parse_exp(value: Any) -> Any:
     return Function(value[0], children, alias)
 
 
-def parse_automatic_condition(
+def parse_extension_condition(
     col: str, values: Any, always_in: bool = False
 ) -> Optional[Condition]:
     """
@@ -141,11 +141,8 @@ def parse_automatic_condition(
         else:
             return Condition(column, Op.EQ, values)
 
-    if isinstance(values, list):
+    if isinstance(values, (list, tuple)):
         rhs: Sequence[Any] = tuple(map(parse_scalar, values))
-        return Condition(column, Op.IN, rhs)
-    elif isinstance(values, tuple):
-        rhs = tuple(map(parse_scalar, values))
         return Condition(column, Op.IN, rhs)
 
     return None
@@ -207,7 +204,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     conditions: List[Union[Or, Condition]] = []
     if body.get("organization"):
-        org_cond = parse_automatic_condition("org_id", body["organization"])
+        org_cond = parse_extension_condition("org_id", body["organization"])
         if org_cond:
             conditions.append(org_cond)
 
@@ -223,7 +220,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
                 )
 
     if body.get("project"):
-        proj_cond = parse_automatic_condition("project_id", body["project"], True)
+        proj_cond = parse_extension_condition("project_id", body["project"], True)
         if proj_cond:
             conditions.append(proj_cond)
 
