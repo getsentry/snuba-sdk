@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 from snuba_sdk.expressions import Expression
 
@@ -16,7 +16,7 @@ class InvalidEntity(Exception):
 class Entity(Expression):
     name: str
     alias: Optional[str] = None
-    sample: Optional[Union[int, float]] = None
+    sample: Optional[float] = None
 
     def validate(self) -> None:
         # TODO: There should be a whitelist of entity names at some point
@@ -24,19 +24,31 @@ class Entity(Expression):
             raise InvalidEntity(f"'{self.name}' is not a valid entity name")
 
         if self.sample is not None:
-            if not isinstance(self.sample, (int, float)):
-                raise InvalidEntity(
-                    "sample must be a float between 0 and 1 or an integer greater than 1"
-                )
-            elif isinstance(self.sample, float):
-                if self.sample < 0.0 or self.sample > 1.0:
-                    raise InvalidEntity(
-                        "float samples must be between 0.0 and 1.0 (%age of rows)"
-                    )
-            elif isinstance(self.sample, int):
-                if self.sample < 1:
-                    raise InvalidEntity("int samples must be at least 1 (# of rows)")
+            if not isinstance(self.sample, float):
+                raise InvalidEntity("sample must be a float")
+            elif self.sample <= 0.0:
+                raise InvalidEntity("samples must be greater than 0.0")
 
         if self.alias is not None:
             if not isinstance(self.alias, str) or not self.alias:
                 raise InvalidEntity(f"'{self.alias}' is not a valid alias")
+
+
+# TODO: This should be handled by the users of the SDK, not the SDK itself.
+ENTITY_TIME_COLUMNS = {
+    "discover": "timestamp",
+    "errors": "timestamp",
+    "events": "timestamp",
+    "discover_events": "timestamp",
+    "outcomes": "timestamp",
+    "outcomes_raw": "timestamp",
+    "sessions": "started",
+    "transactions": "finish_ts",
+    "discover_transactions": "finish_ts",
+    "discover_events": "timestamp",
+    "spans": "finish_ts",
+}
+
+
+def get_required_time_column(entity_name: str) -> Optional[str]:
+    return ENTITY_TIME_COLUMNS.get(entity_name)

@@ -90,7 +90,7 @@ def test_invalid_subquery() -> None:
     with pytest.raises(
         InvalidQuery,
         match=re.escape(
-            "inner query is invalid: query must have at least one column in select"
+            "inner query is invalid: query must have at least one expression in select"
         ),
     ):
         Query("discover", Query(dataset="discover", match=Entity("events"))).set_select(
@@ -100,7 +100,7 @@ def test_invalid_subquery() -> None:
     with pytest.raises(
         InvalidQuery,
         match=re.escape(
-            "inner query is invalid: query must have at least one column in select"
+            "inner query is invalid: query must have at least one expression in select"
         ),
     ):
         Query(

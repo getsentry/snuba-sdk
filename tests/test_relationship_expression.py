@@ -12,10 +12,10 @@ TRANSLATOR = Translation(use_entity_aliases=True)
 
 relationship_tests = [
     pytest.param(
-        Entity("events", "ev", 100),
+        Entity("events", "ev", 100.0),
         "contains",
         Entity("transactions", "t"),
-        "(ev: events SAMPLE 100) -[contains]-> (t: transactions)",
+        "(ev: events SAMPLE 100.0) -[contains]-> (t: transactions)",
         None,
     ),
     pytest.param(
@@ -26,23 +26,23 @@ relationship_tests = [
         InvalidExpression("'' must be an Entity"),
     ),
     pytest.param(
-        Entity("events", None, 100),
+        Entity("events", None, 100.0),
         "contains",
         Entity("transactions", "t"),
         None,
         InvalidExpression(
-            "Entity(name='events', alias=None, sample=100) must have a valid alias"
+            "Entity(name='events', alias=None, sample=100.0) must have a valid alias"
         ),
     ),
     pytest.param(
-        Entity("events", "ev", 100),
+        Entity("events", "ev", 100.0),
         1,
         Entity("transactions", "t"),
         None,
         InvalidExpression("'1' is not a valid relationship name"),
     ),
     pytest.param(
-        Entity("events", "e", 100),
+        Entity("events", "e", 100.0),
         "",
         Entity("transactions", "t"),
         None,
@@ -80,10 +80,10 @@ join_tests = [
     pytest.param(
         [
             Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
-            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "s", 10)),
+            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "s", 10.0)),
             Relationship(Entity("events", "e"), "musnt", Entity("sessions", "s")),
         ],
-        "(e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (s: sessions SAMPLE 10), (e: events) -[musnt]-> (s: sessions)",
+        "(e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (s: sessions SAMPLE 10.0), (e: events) -[musnt]-> (s: sessions)",
         None,
     ),
     pytest.param(
@@ -95,7 +95,7 @@ join_tests = [
     pytest.param(
         [
             Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
-            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "e", 10)),
+            Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "e", 10.0)),
         ],
         None,
         InvalidExpression("alias 'e' is duplicated for entities events, sessions"),
