@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.7
+---------
+
+- Update the Legacy converter to produce Queries that will emulate the original query as closely as possible. This way we can track migration success by ensuring the SDK and legacy calls are both producing the same Clickhouse SQL.
+
 0.0.6
 ---------
 
