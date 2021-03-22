@@ -8,6 +8,7 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
     Debug,
+    DryRun,
     Granularity,
     Limit,
     Offset,
@@ -57,6 +58,7 @@ class Query:
     consistent: Consistent = Consistent(False)
     turbo: Turbo = Turbo(False)
     debug: Debug = Debug(False)
+    dry_run: DryRun = DryRun(False)
 
     def __post_init__(self) -> None:
         """
@@ -160,6 +162,9 @@ class Query:
 
     def set_debug(self, debug: bool) -> "Query":
         return self._replace("debug", Debug(debug))
+
+    def set_dry_run(self, dry_run: bool) -> "Query":
+        return self._replace("dry_run", DryRun(dry_run))
 
     def validate(self) -> None:
         VALIDATOR.visit(self)

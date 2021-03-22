@@ -140,3 +140,8 @@ class Turbo(BooleanFlag):
 @dataclass(frozen=True)
 class Debug(BooleanFlag):
     name: str = "debug"
+
+
+@dataclass(frozen=True)
+class DryRun(BooleanFlag):
+    name: str = "dry_run"
