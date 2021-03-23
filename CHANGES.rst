@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.8
+---------
+
+- Add support for dry run flag
+
 0.0.7
 ---------
 
