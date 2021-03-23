@@ -6,6 +6,7 @@ from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
     Consistent,
     Debug,
+    DryRun,
     Granularity,
     InvalidExpression,
     Limit,
@@ -133,6 +134,7 @@ boolean_tests = [
     pytest.param("consistent", Consistent),
     pytest.param("turbo", Turbo),
     pytest.param("debug", Debug),
+    pytest.param("dry_run", DryRun),
 ]
 
 

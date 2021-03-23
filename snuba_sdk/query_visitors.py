@@ -19,6 +19,7 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
     Debug,
+    DryRun,
     Expression,
     Granularity,
     Limit,
@@ -125,6 +126,10 @@ class QueryVisitor(ABC, Generic[QVisited]):
     def _visit_debug(self, debug: Debug) -> QVisited:
         raise NotImplementedError
 
+    @abstractmethod
+    def _visit_dry_run(self, dry_run: DryRun) -> QVisited:
+        raise NotImplementedError
+
 
 class Printer(QueryVisitor[str]):
     def __init__(self, pretty: bool = False, is_inner: bool = False) -> None:
@@ -139,7 +144,7 @@ class Printer(QueryVisitor[str]):
     def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
-        to_skip = ("dataset", "consistent", "turbo", "debug")
+        to_skip = ("dataset", "consistent", "turbo", "debug", "dry_run")
 
         separator = "\n" if (self.pretty and not self.is_inner) else " "
         formatted = separator.join(
@@ -235,6 +240,9 @@ class Printer(QueryVisitor[str]):
     def _visit_debug(self, debug: Debug) -> str:
         return str(debug) if debug else ""
 
+    def _visit_dry_run(self, dry_run: DryRun) -> str:
+        return str(dry_run) if dry_run else ""
+
 
 class Translator(Printer):
     def __init__(self) -> None:
@@ -255,6 +263,8 @@ class Translator(Printer):
             body["turbo"] = query.turbo.value
         if query.debug:
             body["debug"] = query.debug.value
+        if query.dry_run:
+            body["dry_run"] = query.dry_run.value
 
         return json.dumps(body)
 
@@ -332,6 +342,9 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
 
     def _visit_debug(self, debug: Debug) -> Set[Expression]:
         return self.expression_finder.visit(debug) if debug else set()
+
+    def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
+        return self.expression_finder.visit(dry_run) if dry_run else set()
 
 
 class Validator(QueryVisitor[None]):
@@ -471,3 +484,6 @@ class Validator(QueryVisitor[None]):
 
     def _visit_debug(self, debug: Debug) -> None:
         debug.validate()
+
+    def _visit_dry_run(self, dry_run: DryRun) -> None:
+        dry_run.validate()

@@ -10,6 +10,7 @@ from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.expressions import (
     Consistent,
     Debug,
+    DryRun,
     Expression,
     Granularity,
     InvalidExpression,
@@ -103,6 +104,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_turbo(node)
         elif isinstance(node, Debug):
             return self._visit_debug(node)
+        elif isinstance(node, DryRun):
+            return self._visit_dry_run(node)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -160,6 +163,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_debug(self, debug: Debug) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_dry_run(self, dry_run: DryRun) -> TVisited:
         raise NotImplementedError
 
 
@@ -258,6 +265,9 @@ class Translation(ExpressionVisitor[str]):
     def _visit_debug(self, debug: Debug) -> str:
         return str(debug)
 
+    def _visit_dry_run(self, dry_run: DryRun) -> str:
+        return str(dry_run)
+
 
 class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def __init__(self, exp_type: Any) -> None:
@@ -351,4 +361,9 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_debug(self, debug: Debug) -> Set[Expression]:
         if isinstance(debug, self.exp_type):
             return set([debug])
+        return set()
+
+    def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
+        if isinstance(dry_run, self.exp_type):
+            return set([dry_run])
         return set()

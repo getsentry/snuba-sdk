@@ -287,6 +287,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         "consistent",
         "turbo",
         "debug",
+        "dry_run",
     )
     for extra in extras:
         if body.get(extra) is not None:
