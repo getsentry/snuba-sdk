@@ -508,6 +508,43 @@ discover_tests = [
         "discover_events",
         id="dry_run_flag",
     ),
+    pytest.param(
+        {
+            "selected_columns": ["first_session_started", "last_session_started"],
+            "project": [5711520],
+            "organization": 566818,
+            "dataset": "sessions",
+            "from_date": "2021-01-12T20:04:37.175368",
+            "to_date": "2021-04-12T20:04:38.173543",
+            "groupby": [],
+            "conditions": [
+                ["release", "=", "c9ce0ea82708e46d524e07f9e6dec9ed2de8428e"],
+                ["project_id", "IN", [5711520]],
+                ["org_id", "IN", [566818]],
+            ],
+            "aggregations": [
+                ["min(started)", None, "first_session_started"],
+                ["max(started)", None, "last_session_started"],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT min(started) AS first_session_started, max(started) AS last_session_started, first_session_started, last_session_started",
+            (
+                "WHERE org_id = 566818 "
+                "AND started >= toDateTime('2021-01-12T20:04:37.175368') "
+                "AND started < toDateTime('2021-04-12T20:04:38.173543') "
+                "AND project_id IN tuple(5711520) "
+                "AND release = 'c9ce0ea82708e46d524e07f9e6dec9ed2de8428e' "
+                "AND project_id IN tuple(5711520) "
+                "AND org_id IN tuple(566818)"
+            ),
+        ),
+        "sessions",
+        id="aliases_in_select",
+    ),
 ]
 
 
@@ -517,4 +554,5 @@ def test_discover_json_to_snuba(
 ) -> None:
     expected = "\n".join(clauses)
     query = json_to_snql(json_body, entity)
+    query.validate()
     assert query.print() == expected
