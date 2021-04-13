@@ -400,8 +400,10 @@ class Validator(QueryVisitor[None]):
         non_aggregates: List[Union[Column, CurriedFunction, Function]] = []
         has_aggregates = False
 
-        # Legacy queries use aliases as Columns, so we need to compile all the possible
-        # aliases to use in the checks.
+        # Legacy queries use aliases of aggregates in the select clause. This validation
+        # needs to understand the difference between a Column and something that looks
+        # like a Column but is actually an alias to an aggregate. Gather these "alias
+        # columns" here so the validator can properly check.
         alias_columns = set()
         for exp in query.select:
             if (
@@ -412,6 +414,8 @@ class Validator(QueryVisitor[None]):
                 alias_columns.add(Column(exp.alias))
 
         for exp in query.select:
+            # If a column is actually an alias for an aggregate, it shouldn't be counted as
+            # a non-aggregate.
             if isinstance(exp, Column) and exp not in alias_columns:
                 non_aggregates.append(exp)
             elif (
