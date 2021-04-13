@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.9
+---------
+
+- Fix a bug with aliases in legacy queries
+
 0.0.8
 ---------
 

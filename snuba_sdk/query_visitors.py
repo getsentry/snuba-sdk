@@ -5,6 +5,7 @@ from typing import (
     Generic,
     Mapping,
     MutableMapping,
+    List,
     Optional,
     Sequence,
     Set,
@@ -396,12 +397,29 @@ class Validator(QueryVisitor[None]):
             raise InvalidQuery("query must have at least one expression in select")
 
         # Non-aggregate expressions must be in the groupby if there is an aggregate
-        non_aggregates = []
+        non_aggregates: List[Union[Column, CurriedFunction, Function]] = []
         has_aggregates = False
+
+        # Legacy queries use aliases of aggregates in the select clause. This validation
+        # needs to understand the difference between a Column and something that looks
+        # like a Column but is actually an alias to an aggregate. Gather these "alias
+        # columns" here so the validator can properly check.
+        alias_columns = set()
         for exp in query.select:
             if (
-                not isinstance(exp, (CurriedFunction, Function))
-                or not exp.is_aggregate()
+                isinstance(exp, (CurriedFunction, Function))
+                and exp.is_aggregate()
+                and exp.alias
+            ):
+                alias_columns.add(Column(exp.alias))
+
+        for exp in query.select:
+            # If a column is actually an alias for an aggregate, it shouldn't be counted as
+            # a non-aggregate.
+            if isinstance(exp, Column) and exp not in alias_columns:
+                non_aggregates.append(exp)
+            elif (
+                isinstance(exp, (CurriedFunction, Function)) and not exp.is_aggregate()
             ):
                 non_aggregates.append(exp)
             else:
