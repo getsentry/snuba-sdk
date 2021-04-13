@@ -405,8 +405,10 @@ class Validator(QueryVisitor[None]):
         alias_columns = set()
         for exp in query.select:
             if (
-                isinstance(exp, (CurriedFunction, Function)) and exp.is_aggregate()
-            ) and exp.alias:
+                isinstance(exp, (CurriedFunction, Function))
+                and exp.is_aggregate()
+                and exp.alias
+            ):
                 alias_columns.add(Column(exp.alias))
 
         for exp in query.select:
