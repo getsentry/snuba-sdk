@@ -67,7 +67,7 @@ def parse_scalar(value: Any) -> Any:
     :type value: Any
 
     """
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple, set)):
         return tuple(map(parse_scalar, value))
 
     if isinstance(value, str):

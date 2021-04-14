@@ -511,16 +511,16 @@ discover_tests = [
     pytest.param(
         {
             "selected_columns": ["first_session_started", "last_session_started"],
-            "project": [5711520],
-            "organization": 566818,
+            "project": [2],
+            "organization": 1,
             "dataset": "sessions",
             "from_date": "2021-01-12T20:04:37.175368",
             "to_date": "2021-04-12T20:04:38.173543",
             "groupby": [],
             "conditions": [
-                ["release", "=", "c9ce0ea82708e46d524e07f9e6dec9ed2de8428e"],
-                ["project_id", "IN", [5711520]],
-                ["org_id", "IN", [566818]],
+                ["release", "=", "stuff-2"],
+                ["project_id", "IN", [2]],
+                ["org_id", "IN", [1]],
             ],
             "aggregations": [
                 ["min(started)", None, "first_session_started"],
@@ -533,17 +533,56 @@ discover_tests = [
             "MATCH (sessions)",
             "SELECT min(started) AS first_session_started, max(started) AS last_session_started, first_session_started, last_session_started",
             (
-                "WHERE org_id = 566818 "
+                "WHERE org_id = 1 "
                 "AND started >= toDateTime('2021-01-12T20:04:37.175368') "
                 "AND started < toDateTime('2021-04-12T20:04:38.173543') "
-                "AND project_id IN tuple(5711520) "
-                "AND release = 'c9ce0ea82708e46d524e07f9e6dec9ed2de8428e' "
-                "AND project_id IN tuple(5711520) "
-                "AND org_id IN tuple(566818)"
+                "AND project_id IN tuple(2) "
+                "AND release = 'stuff-2' "
+                "AND project_id IN tuple(2) "
+                "AND org_id IN tuple(1)"
             ),
         ),
         "sessions",
         id="aliases_in_select",
+    ),
+    pytest.param(
+        {
+            "selected_columns": ["first_session_started", "last_session_started"],
+            "project": [2],
+            "organization": 1,
+            "dataset": "sessions",
+            "from_date": "2021-01-14T17:07:48.124240",
+            "to_date": "2021-04-14T17:07:49.078996",
+            "groupby": [],
+            "conditions": [
+                ["release", "=", "stuff-02"],
+                ["environment", "IN", set(["production"])],
+                ["project_id", "IN", [2]],
+                ["org_id", "IN", [1]],
+            ],
+            "aggregations": [
+                ["min(started)", None, "first_session_started"],
+                ["max(started)", None, "last_session_started"],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT min(started) AS first_session_started, max(started) AS last_session_started, first_session_started, last_session_started",
+            (
+                "WHERE org_id = 1 "
+                "AND started >= toDateTime('2021-01-14T17:07:48.124240') "
+                "AND started < toDateTime('2021-04-14T17:07:49.078996') "
+                "AND project_id IN tuple(2) "
+                "AND release = 'stuff-02' "
+                "AND environment IN tuple('production') "
+                "AND project_id IN tuple(2) "
+                "AND org_id IN tuple(1)"
+            ),
+        ),
+        "sessions",
+        id="convert_sets_in_legacy",
     ),
 ]
 
