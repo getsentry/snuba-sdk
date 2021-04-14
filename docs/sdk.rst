@@ -6,6 +6,7 @@
     conditions
     entity
     expressions
+    joins
     legacy
     query_visitors
     visitors
