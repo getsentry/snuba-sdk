@@ -157,6 +157,16 @@ tests = [
         id="unary condition",
     ),
     pytest.param(
+        Query("discover", Entity("events"))
+        .set_select([Column("event_id"), Column("title")])
+        .set_array_join(Column("exception_stacks"))
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        id="array join",
+    ),
+    pytest.param(
         Query(
             "discover",
             Query(

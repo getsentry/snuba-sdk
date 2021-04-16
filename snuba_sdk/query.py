@@ -47,6 +47,7 @@ class Query:
     match: Union[Entity, Join, "Query"]
     select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
     groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
+    array_join: Optional[Column] = None
     where: Optional[List[Union[BooleanCondition, Condition]]] = None
     having: Optional[List[Union[BooleanCondition, Condition]]] = None
     orderby: Optional[List[OrderBy]] = None
@@ -117,6 +118,12 @@ class Query:
                 "groupby clause must be a list of Column and/or Function"
             )
         return self._replace("groupby", groupby)
+
+    def set_array_join(self, array_join: Column) -> "Query":
+        if not isinstance(array_join, Column):
+            raise InvalidQuery("array join must be a Column")
+
+        return self._replace("array_join", array_join)
 
     def set_where(
         self, conditions: Sequence[Union[BooleanCondition, Condition]]

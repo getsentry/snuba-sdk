@@ -181,7 +181,8 @@ tests = [
         (
             "-- DATASET: sessions",
             "MATCH (sessions)",
-            "SELECT project_id, release, array_stuff, arrayJoin(array_stuff) AS array_stuff",
+            "SELECT project_id, release, array_stuff",
+            "ARRAY JOIN array_stuff",
             (
                 "WHERE org_id IN tuple(2) "
                 "AND started >= toDateTime('2020-10-17T20:51:46.110774') "
