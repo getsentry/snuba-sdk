@@ -589,6 +589,47 @@ discover_tests = [
             "selected_columns": [],
             "orderby": "-last_seen",
             "limit": 1000,
+            "project": [2],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:08:40",
+            "to_date": "2021-04-15T20:08:40",
+            "groupby": ["tags[_userEmail]"],
+            "conditions": [
+                ["tags[_userEmail]", "LIKE", "%%b%%"],
+                ["type", "!=", "transaction"],
+                ["project_id", "IN", [2]],
+            ],
+            "aggregations": [
+                ["count()", "", "times_seen"],
+                ["min", "timestamp", "first_seen"],
+                ["max", "timestamp", "last_seen"],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "BY tags[_userEmail]",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:08:40') "
+                "AND timestamp < toDateTime('2021-04-15T20:08:40') "
+                "AND project_id IN tuple(2) "
+                "AND tags[_userEmail] LIKE '%%b%%' "
+                "AND type != 'transaction' "
+                "AND project_id IN tuple(2)"
+            ),
+            "ORDER BY last_seen DESC",
+            "LIMIT 1000",
+        ),
+        "events",
+        id="handle_underscore_in_columns",
+    ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "orderby": "-last_seen",
+            "limit": 1000,
             "arrayjoin": "exception_frames",
             "project": [2],
             "dataset": "events",

@@ -10,7 +10,7 @@ class InvalidColumn(InvalidExpression):
     pass
 
 
-column_name_re = re.compile(r"^[a-zA-Z](\w|\.|:)*(\[([a-zA-Z](\w|\.|:)*)\])?$")
+column_name_re = re.compile(r"^[a-zA-Z_](\w|\.|:)*(\[([^\[\]]*)\])?$")
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,7 @@ class Column(Expression):
     A representation of a single column in the database. Columns are
     expected to be alpha-numeric, with '.', '_`, and `:` allowed as well.
     If the column is subscriptable then you can specify the column in the
-    form `column[key]`. The `column` attribute will contain the outer
+    form `subscriptable[key]`. The `subscriptable` attribute will contain the outer
     column and `key` will contain the inner key.
 
     :param name: The column name.

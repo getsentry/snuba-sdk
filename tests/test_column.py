@@ -51,17 +51,10 @@ tests = [
         id="only one subscriptable",
     ),
     pytest.param(
-        "a1[a?]",
+        ":_valid",
         None,
         None,
-        InvalidColumn("column 'a1[a?]' is empty or contains invalid characters"),
-        id="invalid subscriptable",
-    ),
-    pytest.param(
-        "_valid",
-        None,
-        None,
-        InvalidColumn("column '_valid' is empty or contains invalid characters"),
+        InvalidColumn("column ':_valid' is empty or contains invalid characters"),
         id="underscore column test",
     ),
     pytest.param(
