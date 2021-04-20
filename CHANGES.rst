@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+0.0.11
+---------
+
+- Add arrayjoin support
+- Expand column regex to allow any tag
+
 0.0.10
 ---------
 

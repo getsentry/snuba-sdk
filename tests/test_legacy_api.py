@@ -625,6 +625,47 @@ discover_tests = [
         "events",
         id="handle_underscore_in_columns",
     ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "orderby": "-last_seen",
+            "limit": 1000,
+            "arrayjoin": "exception_frames",
+            "project": [2],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["exception_frames.filename"],
+            "conditions": [
+                ["exception_frames.filename", "LIKE", "%/stuff/things/%"],
+                ["project_id", "IN", [2]],
+            ],
+            "aggregations": [
+                ["count()", "", "times_seen"],
+                ["min", "timestamp", "first_seen"],
+                ["max", "timestamp", "last_seen"],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "BY exception_frames.filename",
+            "ARRAY JOIN exception_frames",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(2) "
+                "AND exception_frames.filename LIKE '%/stuff/things/%' "
+                "AND project_id IN tuple(2)"
+            ),
+            "ORDER BY last_seen DESC",
+            "LIMIT 1000",
+        ),
+        "events",
+        id="arrayjoin_clause_with_groupby",
+    ),
 ]
 
 

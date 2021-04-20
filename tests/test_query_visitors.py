@@ -151,6 +151,26 @@ tests = [
     pytest.param(
         Query("discover", Entity("events"))
         .set_select([Column("event_id"), Column("title")])
+        .set_array_join(Column("exception_stacks[stuff]"))
+        .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH (events)",
+            "SELECT event_id, title",
+            "ARRAY JOIN exception_stacks[stuff]",
+            "WHERE timestamp IS NOT NULL",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        None,
+        id="array join",
+    ),
+    pytest.param(
+        Query("discover", Entity("events"))
+        .set_select([Column("event_id"), Column("title")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_having(
             [
