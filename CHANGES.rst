@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.12
+---------
+
+- Small fix for legacy queries
+
 0.0.11
 ---------
 
