@@ -251,6 +251,48 @@ tests = [
         ),
         id="curried/string functions",
     ),
+    pytest.param(
+        {
+            "selected_columns": [
+                "bucketed_started",
+                "sessions_crashed",
+                "sessions_abnormal",
+                "sessions",
+                "sessions_errored",
+            ],
+            "project": [2],
+            "organization": 1,
+            "dataset": "sessions",
+            "from_date": "2021-04-07T17:00:00",
+            "to_date": "2021-04-21T16:49:00",
+            "groupby": ["bucketed_started"],
+            "conditions": [
+                ["release", "=", "1.1.4"],
+                [["environment", "=", "production"]],
+                ["project_id", "IN", [2]],
+            ],
+            "aggregations": [],
+            "granularity": 3600,
+            "consistent": False,
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT bucketed_started, sessions_crashed, sessions_abnormal, sessions, sessions_errored",
+            "BY bucketed_started",
+            (
+                "WHERE org_id = 1 "
+                "AND started >= toDateTime('2021-04-07T17:00:00') "
+                "AND started < toDateTime('2021-04-21T16:49:00') "
+                "AND project_id IN tuple(2) "
+                "AND release = '1.1.4' "
+                "AND environment = 'production' "
+                "AND project_id IN tuple(2)"
+            ),
+            "GRANULARITY 3600",
+        ),
+        id="nested_conditions",
+    ),
 ]
 
 

@@ -230,7 +230,10 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
             for or_cond in cond:
                 or_conditions.append(parse_condition(or_cond))
 
-            conditions.append(Or(or_conditions))
+            if len(or_conditions) > 1:
+                conditions.append(Or(or_conditions))
+            else:
+                conditions.extend(or_conditions)
         else:
             conditions.append(parse_condition(cond))
 
