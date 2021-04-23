@@ -666,6 +666,196 @@ discover_tests = [
         "events",
         id="arrayjoin_clause_with_groupby",
     ),
+    pytest.param(
+        {
+            "selected_columns": [
+                "transaction",
+                "project_id",
+                [
+                    "transform",
+                    [
+                        ["toString", ["project_id"]],
+                        ["array", ["'2'"]],
+                        ["array", ["'project_mc_projectpants'"]],
+                        "''",
+                    ],
+                    "project",
+                ],
+            ],
+            "having": [
+                ["tpm", ">", 0.01],
+                ["count_percentage", ">", 0.25],
+                ["count_percentage", "<", 4.0],
+                ["trend_percentage", "<", 1.0],
+                ["t_test", ">", 6.0],
+            ],
+            "orderby": ["trend_percentage"],
+            "limit": 6,
+            "offset": 0,
+            "project": [2],
+            "dataset": "discover",
+            "from_date": "2021-04-22T19:37:49",
+            "to_date": "2021-04-23T19:37:49",
+            "groupby": ["transaction", "project_id"],
+            "conditions": [
+                ["duration", ">", 0.0],
+                ["duration", "<", 900000.0],
+                ["type", "=", "transaction"],
+                ["project_id", "IN", [2]],
+            ],
+            "aggregations": [
+                [
+                    "varSampIf",
+                    [
+                        "duration",
+                        [
+                            "greater",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "variance_range_1",
+                ],
+                [
+                    "varSampIf",
+                    [
+                        "duration",
+                        [
+                            "lessOrEquals",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "variance_range_2",
+                ],
+                [
+                    "avgIf",
+                    [
+                        "duration",
+                        [
+                            "greater",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "avg_range_1",
+                ],
+                [
+                    "avgIf",
+                    [
+                        "duration",
+                        [
+                            "lessOrEquals",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "avg_range_2",
+                ],
+                [
+                    "divide(minus(avg_range_1,avg_range_2),sqrt(plus(divide(variance_range_1,count_range_1),divide(variance_range_2,count_range_2))))",
+                    None,
+                    "t_test",
+                ],
+                [
+                    "quantileIf(0.50)",
+                    [
+                        "duration",
+                        [
+                            "greater",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "aggregate_range_1",
+                ],
+                [
+                    "quantileIf(0.50)",
+                    [
+                        "duration",
+                        [
+                            "lessOrEquals",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ],
+                    ],
+                    "aggregate_range_2",
+                ],
+                [
+                    "if(greater(aggregate_range_1,0),divide(aggregate_range_2,aggregate_range_1),null)",
+                    None,
+                    "trend_percentage",
+                ],
+                [
+                    "minus",
+                    ["aggregate_range_2", "aggregate_range_1"],
+                    "trend_difference",
+                ],
+                [
+                    "countIf",
+                    [
+                        [
+                            "greater",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ]
+                    ],
+                    "count_range_1",
+                ],
+                [
+                    "countIf",
+                    [
+                        [
+                            "lessOrEquals",
+                            [["toDateTime", ["'2021-04-23T07:37:49'"]], "timestamp"],
+                        ]
+                    ],
+                    "count_range_2",
+                ],
+                [
+                    "if(greater(count_range_1,0),divide(count_range_2,count_range_1),null)",
+                    None,
+                    "count_percentage",
+                ],
+                ["divide(count(), divide(86400, 60))", None, "tpm"],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (discover_transactions)",
+            (
+                "SELECT varSampIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS variance_range_1, "
+                "varSampIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS variance_range_2, "
+                "avgIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS avg_range_1, "
+                "avgIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS avg_range_2, "
+                "divide(minus(avg_range_1,avg_range_2),sqrt(plus(divide(variance_range_1,count_range_1),divide(variance_range_2,count_range_2)))) AS t_test, "
+                "quantileIf(0.50)(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS aggregate_range_1, "
+                "quantileIf(0.50)(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS aggregate_range_2, "
+                "if(greater(aggregate_range_1,0),divide(aggregate_range_2,aggregate_range_1),null) AS trend_percentage, "
+                "minus(aggregate_range_2, aggregate_range_1) AS trend_difference, "
+                "countIf(greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS count_range_1, "
+                "countIf(lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS count_range_2, "
+                "if(greater(count_range_1,0),divide(count_range_2,count_range_1),null) AS count_percentage, divide(count(), divide(86400, 60)) AS tpm, "
+                "transaction, project_id, transform(toString(project_id), array('2'), array('project_mc_projectpants'), '') AS project"
+            ),
+            "BY transaction, project_id",
+            (
+                "WHERE finish_ts >= toDateTime('2021-04-22T19:37:49') "
+                "AND finish_ts < toDateTime('2021-04-23T19:37:49') "
+                "AND project_id IN tuple(2) "
+                "AND duration > 0.0 "
+                "AND duration < 900000.0 "
+                "AND type = 'transaction' "
+                "AND project_id IN tuple(2)"
+            ),
+            (
+                "HAVING tpm > 0.01 "
+                "AND count_percentage > 0.25 "
+                "AND count_percentage < 4.0 "
+                "AND trend_percentage < 1.0 "
+                "AND t_test > 6.0"
+            ),
+            "ORDER BY trend_percentage ASC",
+            "LIMIT 6",
+            "OFFSET 0",
+        ),
+        "discover_transactions",
+        id="largs_aggregates_not_in_groupby",
+    ),
 ]
 
 

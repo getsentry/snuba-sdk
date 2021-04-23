@@ -28,8 +28,9 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
-from snuba_sdk.relationships import Join
 from snuba_sdk.orderby import LimitBy, OrderBy
+from snuba_sdk.relationships import Join
+from snuba_sdk.snuba import is_aggregation_function
 from snuba_sdk.visitors import ExpressionFinder, Translation
 
 # Import the module due to sphinx autodoc problems
@@ -42,6 +43,44 @@ class InvalidQuery(Exception):
 
 
 QVisited = TypeVar("QVisited")
+
+
+def is_aggregate(
+    function: Union[Function, CurriedFunction],
+    aggregate_aliases: Optional[Set[str]] = None,
+) -> bool:
+    if is_aggregation_function(function.function, aggregate_aliases):
+        return True
+
+    if function.parameters is not None:
+        for param in function.parameters:
+            if (
+                aggregate_aliases
+                and isinstance(param, Column)
+                and param.name in aggregate_aliases
+            ):
+                return True
+            elif isinstance(param, (CurriedFunction, Function)) and is_aggregate(
+                param, aggregate_aliases
+            ):
+                return True
+
+    return False
+
+
+def find_column_in_function(
+    column: Column, function: Union[Function, CurriedFunction]
+) -> bool:
+    if function.parameters is not None:
+        for param in function.parameters:
+            if param == column:
+                return True
+            elif isinstance(
+                param, (Function, CurriedFunction)
+            ) and find_column_in_function(column, param):
+                return True
+
+    return False
 
 
 class QueryVisitor(ABC, Generic[QVisited]):
@@ -417,21 +456,23 @@ class Validator(QueryVisitor[None]):
         # like a Column but is actually an alias to an aggregate. Gather these "alias
         # columns" here so the validator can properly check.
         alias_columns = set()
+        aggregate_aliases = set()
         for exp in query.select:
             if (
                 isinstance(exp, (CurriedFunction, Function))
-                and exp.is_aggregate()
+                and is_aggregate(exp)
                 and exp.alias
             ):
                 alias_columns.add(Column(exp.alias))
+                aggregate_aliases.add(exp.alias)
 
         for exp in query.select:
             # If a column is actually an alias for an aggregate, it shouldn't be counted as
             # a non-aggregate.
             if isinstance(exp, Column) and exp not in alias_columns:
                 non_aggregates.append(exp)
-            elif (
-                isinstance(exp, (CurriedFunction, Function)) and not exp.is_aggregate()
+            elif isinstance(exp, (CurriedFunction, Function)) and not is_aggregate(
+                exp, aggregate_aliases
             ):
                 non_aggregates.append(exp)
             else:
@@ -447,8 +488,23 @@ class Validator(QueryVisitor[None]):
                 # Legacy passes aliases in the groupby instead of whole expressions.
                 # We need to check for both.
                 if isinstance(group_exp, Function):
-                    assert group_exp.alias is not None
-                    if Column(group_exp.alias) in query.groupby:
+                    if (
+                        group_exp.alias is not None
+                        and Column(group_exp.alias) in query.groupby
+                    ):
+                        continue
+
+                    # If this is a function wrapper around a groupby column, then this is also allowed
+                    # e.g. BY x, toString(x)
+                    is_wrapper = False
+                    for exp in query.groupby:
+                        if isinstance(exp, Column) and find_column_in_function(
+                            exp, group_exp
+                        ):
+                            is_wrapper = True
+                            break
+
+                    if is_wrapper:
                         continue
 
                 if group_exp not in query.groupby:

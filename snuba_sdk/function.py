@@ -11,7 +11,6 @@ from snuba_sdk.expressions import (
     ScalarLiteralType,
     ScalarType,
 )
-from snuba_sdk.snuba import is_aggregation_function
 
 
 class InvalidFunction(InvalidExpression):
@@ -35,20 +34,6 @@ class CurriedFunction(Expression):
         Sequence[Union[ScalarType, Column, "CurriedFunction", "Function"]]
     ] = None
     alias: Optional[str] = None
-
-    def is_aggregate(self) -> bool:
-        if is_aggregation_function(self.function):
-            return True
-
-        if self.parameters is not None:
-            for param in self.parameters:
-                if (
-                    isinstance(param, (CurriedFunction, Function))
-                    and param.is_aggregate()
-                ):
-                    return True
-
-        return False
 
     def validate(self) -> None:
         if not isinstance(self.function, str):
