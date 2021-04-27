@@ -856,6 +856,46 @@ discover_tests = [
         "discover_transactions",
         id="largs_aggregates_not_in_groupby",
     ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "orderby": "-times_seen",
+            "project": [2],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["project_id", "tags[sentry:release]"],
+            "conditions": [
+                ["tags[sentry:release]", "IN", ["2021-04-26T14:57:14"]],
+                ["type", "!=", "transaction"],
+                ["project_id", "IN", [2]],
+            ],
+            "aggregations": [
+                ["count()", "", "times_seen"],
+                ["min", "timestamp", "first_seen"],
+                ["max", "timestamp", "last_seen"],
+            ],
+            "consistent": False,
+            "debug": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "BY project_id, tags[sentry:release]",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(2) "
+                "AND tags[sentry:release] IN tuple('2021-04-26T14:57:14') "
+                "AND type != 'transaction' "
+                "AND project_id IN tuple(2)"
+            ),
+            "ORDER BY times_seen DESC",
+        ),
+        "events",
+        id="tags_are_always_strings",
+    ),
 ]
 
 

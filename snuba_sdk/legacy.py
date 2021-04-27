@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import partial
 from typing import Any, List, Mapping, Optional, Sequence, Union
 
 from snuba_sdk.column import Column
@@ -59,7 +60,7 @@ def parse_datetime(date_str: str) -> datetime:
     raise ValueError(f"{date_str} is not a recognized datetime")
 
 
-def parse_scalar(value: Any) -> Any:
+def parse_scalar(value: Any, only_strings: Optional[bool] = False) -> Any:
     """
     Convert a scalar value into the expected value for the SDK.
 
@@ -68,15 +69,18 @@ def parse_scalar(value: Any) -> Any:
 
     """
     if isinstance(value, (list, tuple, set)):
-        return tuple(map(parse_scalar, value))
+        return tuple(map(partial(parse_scalar, only_strings=only_strings), value))
 
-    if isinstance(value, str):
+    if isinstance(value, str) and not only_strings:
         try:
-            date_scalar = parse_datetime(value)
-            return date_scalar
+            if not only_strings:
+                date_scalar = parse_datetime(value)
+                return date_scalar
         except ValueError:
             escaped = value.replace("'", "\\'")
             return escaped
+    elif isinstance(value, str):
+        return value.replace("'", "\\'")
 
     return value
 
@@ -157,8 +161,12 @@ def parse_condition(cond: Sequence[Any]) -> Condition:
 
     """
     rhs = None
+    lhs = parse_exp(cond[0])
     if cond[1] not in ["IS NULL", "IS NOT NULL"]:
-        rhs = parse_scalar(cond[2])
+        only_strings = False
+        if isinstance(lhs, Column) and lhs.subscriptable == "tags":
+            only_strings = True
+        rhs = parse_scalar(cond[2], only_strings=only_strings)
 
     return Condition(parse_exp(cond[0]), Op(cond[1]), rhs)
 
