@@ -1,6 +1,6 @@
 import numbers
 import re
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Set
 
 # This is supposed to enumerate the functions snuba supports (with their
 # validator) so we can keep control of the functions snuba
@@ -33,6 +33,7 @@ _AGGREGATION_FUNCTIONS_BASE = {
     "avgWeighted",
     "topK",
     "topKWeighted",
+    "transform",
     "groupArray",
     "groupUniqArray",
     "groupArrayInsertAt",
@@ -109,11 +110,15 @@ AGGREGATION_FUNCTIONS = {
 FUNCTION_NAME = re.compile(r"([a-zA-Z_]+)\(")
 
 
-def is_aggregation_function(func_name: str) -> bool:
+def is_aggregation_function(func_name: str, aliases: Optional[Set[str]] = None) -> bool:
     # Special case for legacy functions
     if "(" in func_name:
         matches = FUNCTION_NAME.findall(func_name)
-        return any(func in AGGREGATION_FUNCTIONS for func in matches)
+        if any(func in AGGREGATION_FUNCTIONS for func in matches):
+            return True
+
+        if aliases is not None and any(alias in func_name for alias in aliases):
+            return True
 
     return func_name in AGGREGATION_FUNCTIONS
 
