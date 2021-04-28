@@ -896,6 +896,52 @@ discover_tests = [
         "events",
         id="tags_are_always_strings",
     ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "project": [2],
+            "dataset": "discover",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": [],
+            "conditions": [
+                ["type", "=", "transaction"],
+                ["transaction", "=", "/some/stuff"],
+            ],
+            "aggregations": [
+                [
+                    "uniqIf",
+                    ["user", ["greater", ["duration", 1200.0]]],
+                    "count_miserable_user_300",
+                ],
+                ["divide(count(), divide(1.2096e+06, 60))", None, "tpm"],
+                [
+                    "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0)",
+                    None,
+                    "user_misery_300",
+                ],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (discover_transactions)",
+            (
+                "SELECT uniqIf(user, greater(duration, 1200.0)) AS count_miserable_user_300, "
+                "divide(count(), divide(1.2096e+06, 60)) AS tpm, "
+                "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0) AS user_misery_300"
+            ),
+            (
+                "WHERE finish_ts >= toDateTime('2021-04-01T20:05:27') "
+                "AND finish_ts < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(2) "
+                "AND type = 'transaction' "
+                "AND transaction = '/some/stuff'"
+            ),
+        ),
+        "discover_transactions",
+        id="legacy_functions_with_exponents",
+    ),
 ]
 
 
