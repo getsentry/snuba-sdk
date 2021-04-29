@@ -896,6 +896,43 @@ discover_tests = [
         "events",
         id="tags_are_always_strings",
     ),
+    pytest.param(
+        {
+            "selected_columns": (
+                "time",
+                "outcome",
+                "category",
+                "quantity",
+                ("toString", ("category",)),
+            ),
+            "limit": 10000,
+            "organization": 1,
+            "dataset": "outcomes_raw",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["time", "outcome", "category", ("toString", ("category",))],
+            "conditions": [("project_id", "IN", [2, 3, 4, 5, 6])],
+            "aggregations": [("sum", "quantity", "quantity")],
+            "granularity": 60,
+            "consistent": False,
+        },
+        (
+            "-- DATASET: outcomes_raw",
+            "MATCH (outcomes_raw)",
+            "SELECT sum(quantity) AS quantity, time, outcome, category, quantity, toString(tuple('category'))",
+            "BY time, outcome, category, toString(tuple('category'))",
+            (
+                "WHERE org_id = 1 "
+                "AND timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(2, 3, 4, 5, 6)"
+            ),
+            "LIMIT 10000",
+            "GRANULARITY 60",
+        ),
+        "outcomes_raw",
+        id="tuples_in_weird_spots",
+    ),
 ]
 
 

@@ -195,8 +195,16 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     selected_columns = []
     for a in body.get("aggregations", []):
-        selected_columns.append(parse_exp(a))
-    selected_columns.extend(list(map(parse_exp, body.get("selected_columns", []))))
+        selected_columns.append(parse_exp(list(a)))
+
+    selected = []
+    for s in body.get("selected_columns", []):
+        if isinstance(s, tuple):
+            selected.append(list(s))
+        else:
+            selected.append(s)
+
+    selected_columns.extend(list(map(parse_exp, selected)))
 
     arrayjoin = body.get("arrayjoin")
     if arrayjoin:
@@ -208,7 +216,12 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     if groupby and not isinstance(groupby, list):
         groupby = [groupby]
 
-    query = query.set_groupby(list(map(parse_exp, groupby)))
+    parsed_groupby = []
+    for g in groupby:
+        if isinstance(g, tuple):
+            g = list(g)
+        parsed_groupby.append(parse_exp(g))
+    query = query.set_groupby(parsed_groupby)
 
     conditions: List[Union[Or, Condition]] = []
     if body.get("organization"):
