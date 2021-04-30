@@ -3,6 +3,7 @@ Changelog and versioning
 
 0.0.13
 ---------
+- Remove "transform"  as an aggregate function
 - Fix for legacy queries that have raw string functions with nested aggregates
 - Stop conditions on tags[...] from being converted to dates if the rhs was a date string.
 - Some legacy queries use tuples for some of the fields. Convert them to lists where appropriate.
