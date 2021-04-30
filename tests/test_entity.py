@@ -1,10 +1,10 @@
-import pytest
 import re
 from typing import Any, Optional
 
+import pytest
+
 from snuba_sdk.entity import Entity, InvalidEntity
 from snuba_sdk.visitors import Translation
-
 
 TRANSLATOR = Translation(use_entity_aliases=True)
 

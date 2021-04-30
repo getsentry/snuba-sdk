@@ -21,10 +21,15 @@ repos:
     hooks:
       - id: flake8
         language_version: python3.9
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        name: isort (python)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: ''
+    rev: 'v0.800'
     hooks:
     -   id: mypy
         args: [--config-file, mypy.ini, --ignore-missing-imports]
 default_language_version:
-  python: python3.9
+  python: python3.6

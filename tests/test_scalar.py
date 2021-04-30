@@ -1,6 +1,7 @@
-import pytest
 import re
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta, timezone
+
+import pytest
 
 from snuba_sdk.expressions import InvalidArray, InvalidExpression, ScalarType
 from snuba_sdk.visitors import _stringify_scalar
