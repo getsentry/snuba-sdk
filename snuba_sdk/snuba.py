@@ -33,7 +33,6 @@ _AGGREGATION_FUNCTIONS_BASE = {
     "avgWeighted",
     "topK",
     "topKWeighted",
-    "transform",
     "groupArray",
     "groupUniqArray",
     "groupArrayInsertAt",
