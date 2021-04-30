@@ -933,6 +933,66 @@ discover_tests = [
         "outcomes_raw",
         id="tuples_in_weird_spots",
     ),
+    pytest.param(
+        {
+            "aggregations": [],
+            "conditions": [
+                [["coalesce", ["email", "username", "ip_address"]], "=", "8.8.8.8"],
+                ["project_id", "IN", [1]],
+                ["group_id", "IN", [33]],
+            ],
+            "granularity": 3600,
+            "groupby": [],
+            "having": [],
+            "limit": 51,
+            "offset": 0,
+            "orderby": ["-timestamp.to_hour"],
+            "project": [1],
+            "selected_columns": [
+                ["coalesce", ["email", "username", "ip_address"], "user.display"],
+                "release",
+                ["toStartOfHour", ["timestamp"], "timestamp.to_hour"],
+                "event_id",
+                "project_id",
+                [
+                    "transform",
+                    [
+                        ["toString", ["project_id"]],
+                        ["array", ["'1'"]],
+                        ["array", ["'stuff'"]],
+                        "''",
+                    ],
+                    "project.name",
+                ],
+            ],
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "totals": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            (
+                "SELECT coalesce(email, username, ip_address) AS user.display, "
+                "release, toStartOfHour(timestamp) AS timestamp.to_hour, event_id, "
+                "project_id, transform(toString(project_id), array('1'), array('stuff'), '') AS project.name"
+            ),
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND coalesce(email, username, ip_address) = '8.8.8.8' "
+                "AND project_id IN tuple(1) "
+                "AND group_id IN tuple(33)"
+            ),
+            "ORDER BY timestamp.to_hour DESC",
+            "LIMIT 51",
+            "OFFSET 0",
+            "GRANULARITY 3600",
+        ),
+        "events",
+        id="transform_is_not_an_aggregate",
+    ),
 ]
 
 
