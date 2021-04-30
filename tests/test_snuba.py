@@ -1,5 +1,6 @@
-import pytest
 from typing import Any, List
+
+import pytest
 
 from snuba_sdk.snuba import check_array_type
 

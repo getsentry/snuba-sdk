@@ -1,21 +1,16 @@
 import json
-import pytest
 from datetime import datetime, timezone
 from typing import Any, MutableMapping, Optional, Sequence, Tuple
+
+import pytest
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
+from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
-from snuba_sdk.expressions import (
-    Granularity,
-    Limit,
-    Offset,
-    Totals,
-)
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
-
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 tests = [

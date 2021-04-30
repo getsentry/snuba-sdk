@@ -1,8 +1,8 @@
-import pytest
 from typing import Any, Mapping, Sequence
 
-from snuba_sdk.legacy import json_to_snql
+import pytest
 
+from snuba_sdk.legacy import json_to_snql
 
 tests = [
     pytest.param(

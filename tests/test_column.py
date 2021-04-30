@@ -1,6 +1,7 @@
-import pytest
 import re
 from typing import Any, Optional, Tuple
+
+import pytest
 
 from snuba_sdk.column import Column, InvalidColumn
 from snuba_sdk.entity import Entity

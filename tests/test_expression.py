@@ -1,6 +1,7 @@
-import pytest
 import re
 from typing import Any, Optional
+
+import pytest
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (

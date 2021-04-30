@@ -1,17 +1,13 @@
-import pytest
 import re
 from typing import Any, Callable, Optional
 
+import pytest
+
 from snuba_sdk.column import Column, InvalidColumn
 from snuba_sdk.conditions import Op
-from snuba_sdk.function import (
-    CurriedFunction,
-    Function,
-    InvalidFunction,
-)
+from snuba_sdk.function import CurriedFunction, Function, InvalidFunction
 from snuba_sdk.visitors import Translation
-from tests import col, func, cur_func
-
+from tests import col, cur_func, func
 
 tests = [
     pytest.param(
