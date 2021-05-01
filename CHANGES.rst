@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.14
+------
+
+- No documented changes.
+
 0.0.13
 ---------
 - Remove "transform"  as an aggregate function
