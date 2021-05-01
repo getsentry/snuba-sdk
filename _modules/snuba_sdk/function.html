@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>snuba_sdk.function &mdash; snuba-sdk 0.0.14 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> snuba-sdk
+          
+
+          
+            
+            <img src="../../_static/sentry-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conditions.html">Conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../entity.html">Entity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../expressions.html">Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../joins.html">Joins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legacy.html">Legacy Conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../query_visitors.html">Query Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visitors.html">Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../snuba.html">Snuba</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">snuba-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>snuba_sdk.function</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for snuba_sdk.function</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">snuba_sdk.column</span> <span class="kn">import</span> <span class="n">Column</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Expression</span><span class="p">,</span>
+    <span class="n">InvalidExpression</span><span class="p">,</span>
+    <span class="n">is_literal</span><span class="p">,</span>
+    <span class="n">is_scalar</span><span class="p">,</span>
+    <span class="n">ScalarLiteralType</span><span class="p">,</span>
+    <span class="n">ScalarType</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="InvalidFunction"><a class="viewcode-back" href="../../expressions.html#snuba_sdk.function.InvalidFunction">[docs]</a><span class="k">class</span> <span class="nc">InvalidFunction</span><span class="p">(</span><span class="n">InvalidExpression</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<span class="n">alias_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z](\w|\.)+$&quot;</span><span class="p">)</span>
+<span class="c1"># In theory the function matcher should be the same as the column one.</span>
+<span class="c1"># However legacy API sends curried functions as raw strings, and it</span>
+<span class="c1"># wasn&#39;t worth it to import an entire parsing grammar into the SDK</span>
+<span class="c1"># just to accomodate that one case. Instead, allow it for now and</span>
+<span class="c1"># once that use case is eliminated we can remove this.</span>
+<span class="n">function_name_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z](\w|[().,]| |\[|\])+$&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CurriedFunction"><a class="viewcode-back" href="../../expressions.html#snuba_sdk.function.CurriedFunction">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">CurriedFunction</span><span class="p">(</span><span class="n">Expression</span><span class="p">):</span>
+    <span class="n">function</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">initializers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ScalarLiteralType</span><span class="p">,</span> <span class="n">Column</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+        <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ScalarType</span><span class="p">,</span> <span class="n">Column</span><span class="p">,</span> <span class="s2">&quot;CurriedFunction&quot;</span><span class="p">,</span> <span class="s2">&quot;Function&quot;</span><span class="p">]]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">alias</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="CurriedFunction.validate"><a class="viewcode-back" href="../../expressions.html#snuba_sdk.function.CurriedFunction.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;function &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2">&#39; must be a string&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="c1"># TODO: Have a whitelist of valid functions to check, maybe even with more</span>
+            <span class="c1"># specific parameter type checking</span>
+            <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span><span class="s2">&quot;function cannot be empty&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">function_name_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;function &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2">&#39; contains invalid characters&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initializers</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;initializers of function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> must be a Sequence&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">Column</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_literal</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;initializers to function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> must be a scalar or column&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;alias &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="si">}</span><span class="s2">&#39; of function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> must be None or a non-empty string&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">alias_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;alias &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="si">}</span><span class="s2">&#39; of function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> contains invalid characters&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;parameters of function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> must be a Sequence&quot;</span>
+                <span class="p">)</span>
+            <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+                    <span class="n">param</span><span class="p">,</span> <span class="p">(</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">)</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_scalar</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+                    <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>  <span class="c1"># mypy</span>
+                    <span class="k">raise</span> <span class="n">InvalidFunction</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;parameter &#39;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">&#39; of function </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="si">}</span><span class="s2"> is an invalid type&quot;</span>
+                    <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># Don&#39;t use the alias to compare equality</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">function</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">function</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">initializers</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Function"><a class="viewcode-back" href="../../expressions.html#snuba_sdk.function.Function">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Function</span><span class="p">(</span><span class="n">CurriedFunction</span><span class="p">):</span>
+    <span class="n">initializers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ScalarLiteralType</span><span class="p">,</span> <span class="n">Column</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sentry Team and Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

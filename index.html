@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>SDK for generating SnQL queries for Snuba &mdash; snuba-sdk 0.0.14 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="sdk.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> snuba-sdk
+          
+
+          
+            
+            <img src="_static/sentry-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conditions.html">Conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entity.html">Entity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="joins.html">Joins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query_visitors.html">Query Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visitors.html">Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snuba.html">Snuba</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">snuba-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>SDK for generating SnQL queries for Snuba</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="sdk-for-generating-snql-queries-for-snuba">
+<h1>SDK for generating SnQL queries for Snuba<a class="headerlink" href="#sdk-for-generating-snql-queries-for-snuba" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://sentry.io"><img alt="https://sentry-brand.storage.googleapis.com/sentry-logo-black.png" src="https://sentry-brand.storage.googleapis.com/sentry-logo-black.png" style="width: 280px;" /></a>
+<p>See here for the full <a class="reference external" href="https://getsentry.github.io/snuba-sdk/">documentation</a>.</p>
+</div>
+<div class="section" id="status">
+<h1>Status<a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/snuba-sdk"><img alt="https://img.shields.io/pypi/v/snuba-sdk.svg" src="https://img.shields.io/pypi/v/snuba-sdk.svg" /></a>
+<a class="reference external image-reference" href="https://github.com/getsentry/snuba-sdk/actions"><img alt="https://github.com/getsentry/snuba-sdk/workflows/tests/badge.svg" src="https://github.com/getsentry/snuba-sdk/workflows/tests/badge.svg" /></a>
+<a class="reference external image-reference" href="https://discord.gg/cWnMQeA"><img alt="https://img.shields.io/discord/621778831602221064" src="https://img.shields.io/discord/621778831602221064" /></a>
+</div>
+<div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>Snuba SDK is a tool that allows SnQL queries (the language that Snuba uses) to be built programatically. A SnQL query is represented by a Query object, and has a number of attributes corresponding to different parts of the query.</p>
+<p>Queries can be created directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">&quot;discover&quot;</span><span class="p">,</span>
+    <span class="n">match</span><span class="o">=</span><span class="n">Entity</span><span class="p">(</span><span class="s2">&quot;events&quot;</span><span class="p">),</span>
+    <span class="n">select</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Column</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">),</span>
+        <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;uniq&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">)],</span> <span class="s2">&quot;uniq_events&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">groupby</span><span class="o">=</span><span class="p">[</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)],</span>
+    <span class="n">where</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Condition</span><span class="p">(</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">),</span> <span class="n">Op</span><span class="o">.</span><span class="n">GT</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">Condition</span><span class="p">(</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;project_id&quot;</span><span class="p">),</span> <span class="n">Op</span><span class="o">.</span><span class="n">IN</span><span class="p">,</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;tuple&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])),</span>
+    <span class="p">],</span>
+    <span class="n">limit</span><span class="o">=</span><span class="n">Limit</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+    <span class="n">offset</span><span class="o">=</span><span class="n">Offset</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">granularity</span><span class="o">=</span><span class="n">Granularity</span><span class="p">(</span><span class="mi">3600</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Queries can also be built incrementally:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="s2">&quot;discover&quot;</span><span class="p">,</span> <span class="n">Entity</span><span class="p">(</span><span class="s2">&quot;events&quot;</span><span class="p">))</span>
+<span class="o">.</span><span class="n">set_select</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">),</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;uniq&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">)],</span> <span class="s2">&quot;uniq_events&quot;</span><span class="p">)]</span>
+<span class="p">)</span>
+<span class="o">.</span><span class="n">set_groupby</span><span class="p">([</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)])</span>
+<span class="o">.</span><span class="n">set_where</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">Condition</span><span class="p">(</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">),</span> <span class="n">Op</span><span class="o">.</span><span class="n">GT</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">Condition</span><span class="p">(</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;project_id&quot;</span><span class="p">),</span> <span class="n">Op</span><span class="o">.</span><span class="n">IN</span><span class="p">,</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;tuple&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="o">.</span><span class="n">set_limit</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="o">.</span><span class="n">set_offset</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="o">.</span><span class="n">set_granularity</span><span class="p">(</span><span class="mi">3600</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once the query is built, it can be translated into a SnQL query that can be sent to Snuba or a human readable query.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Outputs a formatted SnQL query</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">print</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This outputs:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">MATCH</span> <span class="p">(</span><span class="n">events</span><span class="p">)</span>
+<span class="k">SELECT</span> <span class="n">title</span><span class="p">,</span> <span class="n">uniq</span><span class="p">(</span><span class="n">event_id</span><span class="p">)</span> <span class="k">AS</span> <span class="n">uniq_events</span>
+<span class="k">BY</span> <span class="n">title</span>
+<span class="k">WHERE</span> <span class="k">timestamp</span> <span class="o">&gt;</span> <span class="n">toDateTime</span><span class="p">(</span><span class="s1">&#39;2021-01-01T00:00:00.000000&#39;</span><span class="p">)</span>
+<span class="k">AND</span> <span class="n">project_id</span> <span class="k">IN</span> <span class="n">tuple</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">LIMIT</span> <span class="mi">10</span>
+<span class="k">OFFSET</span> <span class="mi">0</span>
+<span class="n">GRANULARITY</span> <span class="mi">3600</span>
+</pre></div>
+</div>
+<p>If an expression in the query is invalid (e.g. <code class="docutils literal notranslate"><span class="pre">Column(1)</span></code>) then an <code class="docutils literal notranslate"><span class="pre">InvalidExpression</span></code> exception will be thrown.
+If there is a problem with a query, it will throw an <code class="docutils literal notranslate"><span class="pre">InvalidQuery</span></code> exception when <code class="docutils literal notranslate"><span class="pre">.validate()</span></code> or <code class="docutils literal notranslate"><span class="pre">.translate()</span></code> is called.</p>
+</div>
+<div class="section" id="todo-list">
+<h1>TODO List<a class="headerlink" href="#todo-list" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p>Join support</p></li>
+<li><p>Have the Entity object take a set of columns</p></li>
+<li><p>Syntactic sugar</p></li>
+</ul>
+</div>
+<div class="section" id="contributing-to-the-sdk">
+<h1>Contributing to the SDK<a class="headerlink" href="#contributing-to-the-sdk" title="Permalink to this headline">¶</a></h1>
+<p>Please refer to <a class="reference external" href="https://github.com/getsentry/snuba-sdk/blob/master/CONTRIBUTING.rst">CONTRIBUTING.rst</a>.</p>
+</div>
+<div class="section" id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
+<p>Licensed under MIT, see <a class="reference external" href="https://github.com/getsentry/snuba-sdk/blob/master/LICENSE">LICENSE</a>.</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="sdk.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sentry Team and Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

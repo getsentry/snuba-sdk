@@ -1,0 +1,597 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Expressions &mdash; snuba-sdk 0.0.14 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Joins" href="joins.html" />
+    <link rel="prev" title="Entity" href="entity.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> snuba-sdk
+          
+
+          
+            
+            <img src="_static/sentry-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conditions.html">Conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entity.html">Entity</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="joins.html">Joins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query_visitors.html">Query Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visitors.html">Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snuba.html">Snuba</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">snuba-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="sdk.html">&lt;no title&gt;</a> &raquo;</li>
+        
+      <li>Expressions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/expressions.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-snuba_sdk.column">
+<span id="expressions"></span><h1>Expressions<a class="headerlink" href="#module-snuba_sdk.column" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="snuba_sdk.column.Column">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.column.</span></code><code class="sig-name descname"><span class="pre">Column</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/column.html#Column"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.column.Column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<p>A representation of a single column in the database. Columns are
+expected to be alpha-numeric, with ‘.’, ‘<span class="target" id="and">, and `:</span> allowed as well.
+If the column is subscriptable then you can specify the column in the
+form <cite>subscriptable[key]</cite>. The <cite>subscriptable</cite> attribute will contain the outer
+column and <cite>key</cite> will contain the inner key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The column name.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#snuba_sdk.column.InvalidColumn" title="snuba_sdk.column.InvalidColumn"><strong>InvalidColumn</strong></a> – If the column name is not a string or has an
+invalid format.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="snuba_sdk.column.Column.entity">
+<code class="sig-name descname"><span class="pre">entity</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="entity.html#snuba_sdk.entity.Entity" title="snuba_sdk.entity.Entity"><span class="pre">snuba_sdk.entity.Entity</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.column.Column.entity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.column.Column.key">
+<code class="sig-name descname"><span class="pre">key</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.column.Column.key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.column.Column.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#snuba_sdk.column.Column.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.column.Column.subscriptable">
+<code class="sig-name descname"><span class="pre">subscriptable</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.column.Column.subscriptable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.column.Column.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/column.html#Column.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.column.Column.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="snuba_sdk.column.InvalidColumn">
+<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.column.</span></code><code class="sig-name descname"><span class="pre">InvalidColumn</span></code><a class="reference internal" href="_modules/snuba_sdk/column.html#InvalidColumn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.column.InvalidColumn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.InvalidExpression" title="snuba_sdk.expressions.InvalidExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.InvalidExpression</span></code></a></p>
+</dd></dl>
+
+<span class="target" id="module-snuba_sdk.function"></span><dl class="py class">
+<dt id="snuba_sdk.function.CurriedFunction">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.function.</span></code><code class="sig-name descname"><span class="pre">CurriedFunction</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initializers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/function.html#CurriedFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.function.CurriedFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.function.CurriedFunction.alias">
+<code class="sig-name descname"><span class="pre">alias</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.function.CurriedFunction.alias" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.function.CurriedFunction.function">
+<code class="sig-name descname"><span class="pre">function</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#snuba_sdk.function.CurriedFunction.function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.function.CurriedFunction.initializers">
+<code class="sig-name descname"><span class="pre">initializers</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">datetime.date</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#snuba_sdk.column.Column" title="snuba_sdk.column.Column"><span class="pre">snuba_sdk.column.Column</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.function.CurriedFunction.initializers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.function.CurriedFunction.parameters">
+<code class="sig-name descname"><span class="pre">parameters</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">datetime.date</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">datetime.date</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#snuba_sdk.column.Column" title="snuba_sdk.column.Column"><span class="pre">snuba_sdk.column.Column</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#snuba_sdk.function.CurriedFunction" title="snuba_sdk.function.CurriedFunction"><span class="pre">snuba_sdk.function.CurriedFunction</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.function.CurriedFunction.parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.function.CurriedFunction.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/function.html#CurriedFunction.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.function.CurriedFunction.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.function.Function">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.function.</span></code><code class="sig-name descname"><span class="pre">Function</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/function.html#Function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.function.Function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.function.CurriedFunction" title="snuba_sdk.function.CurriedFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.function.CurriedFunction</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.function.Function.initializers">
+<code class="sig-name descname"><span class="pre">initializers</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">datetime.date</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#snuba_sdk.column.Column" title="snuba_sdk.column.Column"><span class="pre">snuba_sdk.column.Column</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#snuba_sdk.function.Function.initializers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="snuba_sdk.function.InvalidFunction">
+<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.function.</span></code><code class="sig-name descname"><span class="pre">InvalidFunction</span></code><a class="reference internal" href="_modules/snuba_sdk/function.html#InvalidFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.function.InvalidFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.InvalidExpression" title="snuba_sdk.expressions.InvalidExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.InvalidExpression</span></code></a></p>
+</dd></dl>
+
+<span class="target" id="module-snuba_sdk.orderby"></span><dl class="py class">
+<dt id="snuba_sdk.orderby.Direction">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.orderby.</span></code><code class="sig-name descname"><span class="pre">Direction</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/orderby.html#Direction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.orderby.Direction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.Direction.ASC">
+<code class="sig-name descname"><span class="pre">ASC</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'ASC'</span></em><a class="headerlink" href="#snuba_sdk.orderby.Direction.ASC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.Direction.DESC">
+<code class="sig-name descname"><span class="pre">DESC</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'DESC'</span></em><a class="headerlink" href="#snuba_sdk.orderby.Direction.DESC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.orderby.LimitBy">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.orderby.</span></code><code class="sig-name descname"><span class="pre">LimitBy</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/orderby.html#LimitBy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.orderby.LimitBy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.LimitBy.column">
+<code class="sig-name descname"><span class="pre">column</span></code><em class="property"><span class="pre">:</span> <a class="reference internal" href="#snuba_sdk.column.Column" title="snuba_sdk.column.Column"><span class="pre">snuba_sdk.column.Column</span></a></em><a class="headerlink" href="#snuba_sdk.orderby.LimitBy.column" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.LimitBy.count">
+<code class="sig-name descname"><span class="pre">count</span></code><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#snuba_sdk.orderby.LimitBy.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.orderby.LimitBy.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/orderby.html#LimitBy.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.orderby.LimitBy.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.orderby.OrderBy">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.orderby.</span></code><code class="sig-name descname"><span class="pre">OrderBy</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/orderby.html#OrderBy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.orderby.OrderBy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.OrderBy.direction">
+<code class="sig-name descname"><span class="pre">direction</span></code><em class="property"><span class="pre">:</span> <a class="reference internal" href="#snuba_sdk.orderby.Direction" title="snuba_sdk.orderby.Direction"><span class="pre">snuba_sdk.orderby.Direction</span></a></em><a class="headerlink" href="#snuba_sdk.orderby.OrderBy.direction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.orderby.OrderBy.exp">
+<code class="sig-name descname"><span class="pre">exp</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#snuba_sdk.column.Column" title="snuba_sdk.column.Column"><span class="pre">snuba_sdk.column.Column</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#snuba_sdk.function.CurriedFunction" title="snuba_sdk.function.CurriedFunction"><span class="pre">snuba_sdk.function.CurriedFunction</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#snuba_sdk.orderby.OrderBy.exp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.orderby.OrderBy.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/orderby.html#OrderBy.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.orderby.OrderBy.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-snuba_sdk.expressions"></span><dl class="py class">
+<dt id="snuba_sdk.expressions.BooleanFlag">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">BooleanFlag</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#BooleanFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.BooleanFlag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.BooleanFlag.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">''</span></em><a class="headerlink" href="#snuba_sdk.expressions.BooleanFlag.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.expressions.BooleanFlag.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#BooleanFlag.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.BooleanFlag.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.BooleanFlag.value">
+<code class="sig-name descname"><span class="pre">value</span></code><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#snuba_sdk.expressions.BooleanFlag.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Consistent">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Consistent</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'consistent'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Consistent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.BooleanFlag" title="snuba_sdk.expressions.BooleanFlag"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.BooleanFlag</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Consistent.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'consistent'</span></em><a class="headerlink" href="#snuba_sdk.expressions.Consistent.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Debug">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Debug</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'debug'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Debug"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.BooleanFlag" title="snuba_sdk.expressions.BooleanFlag"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.BooleanFlag</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Debug.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'debug'</span></em><a class="headerlink" href="#snuba_sdk.expressions.Debug.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.DryRun">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">DryRun</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dry_run'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#DryRun"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.DryRun" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.BooleanFlag" title="snuba_sdk.expressions.BooleanFlag"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.BooleanFlag</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.DryRun.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'dry_run'</span></em><a class="headerlink" href="#snuba_sdk.expressions.DryRun.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Expression">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Expression</span></code><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Expression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dl class="py method">
+<dt id="snuba_sdk.expressions.Expression.validate">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Expression.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Expression.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Granularity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Granularity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">granularity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Granularity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Granularity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Granularity.granularity">
+<code class="sig-name descname"><span class="pre">granularity</span></code><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#snuba_sdk.expressions.Granularity.granularity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.expressions.Granularity.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Granularity.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Granularity.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="snuba_sdk.expressions.InvalidArray">
+<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">InvalidArray</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#InvalidArray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.InvalidArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt id="snuba_sdk.expressions.InvalidExpression">
+<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">InvalidExpression</span></code><a class="reference internal" href="_modules/snuba_sdk/expressions.html#InvalidExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.InvalidExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Limit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Limit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limit</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Limit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Limit.limit">
+<code class="sig-name descname"><span class="pre">limit</span></code><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#snuba_sdk.expressions.Limit.limit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.expressions.Limit.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Limit.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Limit.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Offset">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Offset</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Offset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.Expression" title="snuba_sdk.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.Expression</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Offset.offset">
+<code class="sig-name descname"><span class="pre">offset</span></code><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#snuba_sdk.expressions.Offset.offset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="snuba_sdk.expressions.Offset.validate">
+<code class="sig-name descname"><span class="pre">validate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Offset.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Offset.validate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Totals">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Totals</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'totals'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Totals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Totals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.BooleanFlag" title="snuba_sdk.expressions.BooleanFlag"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.BooleanFlag</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Totals.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'totals'</span></em><a class="headerlink" href="#snuba_sdk.expressions.Totals.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="snuba_sdk.expressions.Turbo">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">Turbo</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'turbo'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#Turbo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.Turbo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#snuba_sdk.expressions.BooleanFlag" title="snuba_sdk.expressions.BooleanFlag"><code class="xref py py-class docutils literal notranslate"><span class="pre">snuba_sdk.expressions.BooleanFlag</span></code></a></p>
+<dl class="py attribute">
+<dt id="snuba_sdk.expressions.Turbo.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'turbo'</span></em><a class="headerlink" href="#snuba_sdk.expressions.Turbo.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="snuba_sdk.expressions.is_literal">
+<code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">is_literal</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#is_literal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.is_literal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow simple scalar types but not lists/tuples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="snuba_sdk.expressions.is_scalar">
+<code class="sig-prename descclassname"><span class="pre">snuba_sdk.expressions.</span></code><code class="sig-name descname"><span class="pre">is_scalar</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snuba_sdk/expressions.html#is_scalar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#snuba_sdk.expressions.is_scalar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="joins.html" class="btn btn-neutral float-right" title="Joins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="entity.html" class="btn btn-neutral float-left" title="Entity" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sentry Team and Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

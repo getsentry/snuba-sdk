@@ -1,0 +1,403 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>snuba_sdk.query &mdash; snuba-sdk 0.0.14 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> snuba-sdk
+          
+
+          
+            
+            <img src="../../_static/sentry-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conditions.html">Conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../entity.html">Entity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../expressions.html">Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../joins.html">Joins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legacy.html">Legacy Conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../query_visitors.html">Query Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visitors.html">Visitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../snuba.html">Snuba</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">snuba-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>snuba_sdk.query</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for snuba_sdk.query</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">replace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">snuba_sdk.column</span> <span class="kn">import</span> <span class="n">Column</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.conditions</span> <span class="kn">import</span> <span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.function</span> <span class="kn">import</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.entity</span> <span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Consistent</span><span class="p">,</span>
+    <span class="n">Debug</span><span class="p">,</span>
+    <span class="n">DryRun</span><span class="p">,</span>
+    <span class="n">Granularity</span><span class="p">,</span>
+    <span class="n">Limit</span><span class="p">,</span>
+    <span class="n">Offset</span><span class="p">,</span>
+    <span class="n">Totals</span><span class="p">,</span>
+    <span class="n">Turbo</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.relationships</span> <span class="kn">import</span> <span class="n">Join</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.orderby</span> <span class="kn">import</span> <span class="n">LimitBy</span><span class="p">,</span> <span class="n">OrderBy</span>
+<span class="kn">from</span> <span class="nn">snuba_sdk.query_visitors</span> <span class="kn">import</span> <span class="n">InvalidQuery</span><span class="p">,</span> <span class="n">Printer</span><span class="p">,</span> <span class="n">Translator</span><span class="p">,</span> <span class="n">Validator</span>
+
+
+<div class="viewcode-block" id="list_type"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.list_type">[docs]</a><span class="k">def</span> <span class="nf">list_type</span><span class="p">(</span><span class="n">vals</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">type_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">type_classes</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vals</span>
+    <span class="p">)</span></div>
+
+
+<span class="n">PRINTER</span> <span class="o">=</span> <span class="n">Printer</span><span class="p">()</span>
+<span class="n">PRETTY_PRINTER</span> <span class="o">=</span> <span class="n">Printer</span><span class="p">(</span><span class="n">pretty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">VALIDATOR</span> <span class="o">=</span> <span class="n">Validator</span><span class="p">()</span>
+<span class="n">TRANSLATOR</span> <span class="o">=</span> <span class="n">Translator</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Query"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Query</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A code representation of a SnQL query. It is immutable, so any set functions</span>
+<span class="sd">    return a new copy of the query. Unlike Expressions it is possible to</span>
+<span class="sd">    instantiate a Query that is invalid. Any of the translation functions will</span>
+<span class="sd">    validate the query before translating them, so the query must be valid before</span>
+<span class="sd">    they are called.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># These must be listed in the order that they must appear in the SnQL query.</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">match</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Entity</span><span class="p">,</span> <span class="n">Join</span><span class="p">,</span> <span class="s2">&quot;Query&quot;</span><span class="p">]</span>
+    <span class="n">select</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">groupby</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">array_join</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Column</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">where</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">having</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">orderby</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">limitby</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LimitBy</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Limit</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Offset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">granularity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Granularity</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">totals</span><span class="p">:</span> <span class="n">Totals</span> <span class="o">=</span> <span class="n">Totals</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">consistent</span><span class="p">:</span> <span class="n">Consistent</span> <span class="o">=</span> <span class="n">Consistent</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">turbo</span><span class="p">:</span> <span class="n">Turbo</span> <span class="o">=</span> <span class="n">Turbo</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="n">Debug</span> <span class="o">=</span> <span class="n">Debug</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="n">DryRun</span> <span class="o">=</span> <span class="n">DryRun</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This has a different validation flow from normal expressions, since a query</span>
+<span class="sd">        is not necessarily always correct. For example, you can create a Query with</span>
+<span class="sd">        no select columns, which will fail in the validate. However it shouldn&#39;t fail</span>
+<span class="sd">        right away since the select columns can be added later.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Whitelist of Datasets and possible entities</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;queries must have a valid dataset&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">match</span><span class="p">,</span> <span class="p">(</span><span class="n">Query</span><span class="p">,</span> <span class="n">Join</span><span class="p">,</span> <span class="n">Entity</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;queries must have a valid Entity, Join or Query&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">match</span><span class="p">,</span> <span class="n">Query</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">match</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;inner query is invalid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">field</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">new</span>
+
+<div class="viewcode-block" id="Query.get_fields"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.get_fields">[docs]</a>    <span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">self_fields</span> <span class="o">=</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c1"># Verified the order in the Python source</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">self_fields</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_match"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_match">[docs]</a>    <span class="k">def</span> <span class="nf">set_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">match</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Entity</span><span class="p">,</span> <span class="n">Join</span><span class="p">,</span> <span class="s2">&quot;Query&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="p">(</span><span class="n">Entity</span><span class="p">,</span> <span class="n">Join</span><span class="p">,</span> <span class="n">Query</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">match</span><span class="si">}</span><span class="s2"> must be a valid Entity, Join or Query&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="n">Query</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">match</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;inner query is invalid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;match&quot;</span><span class="p">,</span> <span class="n">match</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_select"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_select">[docs]</a>    <span class="k">def</span> <span class="nf">set_select</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">select</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">list_type</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="p">(</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">select</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span>
+                <span class="s2">&quot;select clause must be a non-empty list of Column and/or Function&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="n">select</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_groupby"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_groupby">[docs]</a>    <span class="k">def</span> <span class="nf">set_groupby</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">groupby</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">list_type</span><span class="p">(</span><span class="n">groupby</span><span class="p">,</span> <span class="p">(</span><span class="n">Column</span><span class="p">,</span> <span class="n">CurriedFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span>
+                <span class="s2">&quot;groupby clause must be a list of Column and/or Function&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;groupby&quot;</span><span class="p">,</span> <span class="n">groupby</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_array_join"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_array_join">[docs]</a>    <span class="k">def</span> <span class="nf">set_array_join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array_join</span><span class="p">:</span> <span class="n">Column</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">array_join</span><span class="p">,</span> <span class="n">Column</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;array join must be a Column&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;array_join&quot;</span><span class="p">,</span> <span class="n">array_join</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_where"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_where">[docs]</a>    <span class="k">def</span> <span class="nf">set_where</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">conditions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">list_type</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="p">(</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;where clause must be a list of conditions&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;where&quot;</span><span class="p">,</span> <span class="n">conditions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_having"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_having">[docs]</a>    <span class="k">def</span> <span class="nf">set_having</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">conditions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">list_type</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="p">(</span><span class="n">BooleanCondition</span><span class="p">,</span> <span class="n">Condition</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;having clause must be a list of conditions&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;having&quot;</span><span class="p">,</span> <span class="n">conditions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_orderby"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_orderby">[docs]</a>    <span class="k">def</span> <span class="nf">set_orderby</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orderby</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">list_type</span><span class="p">(</span><span class="n">orderby</span><span class="p">,</span> <span class="p">(</span><span class="n">OrderBy</span><span class="p">,)):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;orderby clause must be a list of OrderBy&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;orderby&quot;</span><span class="p">,</span> <span class="n">orderby</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_limitby"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_limitby">[docs]</a>    <span class="k">def</span> <span class="nf">set_limitby</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limitby</span><span class="p">:</span> <span class="n">LimitBy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">limitby</span><span class="p">,</span> <span class="n">LimitBy</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidQuery</span><span class="p">(</span><span class="s2">&quot;limitby clause must be a LimitBy&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;limitby&quot;</span><span class="p">,</span> <span class="n">limitby</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.set_limit"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_limit">[docs]</a>    <span class="k">def</span> <span class="nf">set_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="n">Limit</span><span class="p">(</span><span class="n">limit</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_offset"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_offset">[docs]</a>    <span class="k">def</span> <span class="nf">set_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;offset&quot;</span><span class="p">,</span> <span class="n">Offset</span><span class="p">(</span><span class="n">offset</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_granularity"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_granularity">[docs]</a>    <span class="k">def</span> <span class="nf">set_granularity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;granularity&quot;</span><span class="p">,</span> <span class="n">Granularity</span><span class="p">(</span><span class="n">granularity</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_totals"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_totals">[docs]</a>    <span class="k">def</span> <span class="nf">set_totals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">totals</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;totals&quot;</span><span class="p">,</span> <span class="n">Totals</span><span class="p">(</span><span class="n">totals</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_consistent"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_consistent">[docs]</a>    <span class="k">def</span> <span class="nf">set_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">consistent</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;consistent&quot;</span><span class="p">,</span> <span class="n">Consistent</span><span class="p">(</span><span class="n">consistent</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_turbo"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_turbo">[docs]</a>    <span class="k">def</span> <span class="nf">set_turbo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">turbo</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;turbo&quot;</span><span class="p">,</span> <span class="n">Turbo</span><span class="p">(</span><span class="n">turbo</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_debug"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_debug">[docs]</a>    <span class="k">def</span> <span class="nf">set_debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="n">Debug</span><span class="p">(</span><span class="n">debug</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.set_dry_run"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.set_dry_run">[docs]</a>    <span class="k">def</span> <span class="nf">set_dry_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Query&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="s2">&quot;dry_run&quot;</span><span class="p">,</span> <span class="n">DryRun</span><span class="p">(</span><span class="n">dry_run</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Query.validate"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">VALIDATOR</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PRINTER</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Query.print"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.print">[docs]</a>    <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PRETTY_PRINTER</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Query.snuba"><a class="viewcode-back" href="../../query.html#snuba_sdk.query.Query.snuba">[docs]</a>    <span class="k">def</span> <span class="nf">snuba</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">TRANSLATOR</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sentry Team and Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
