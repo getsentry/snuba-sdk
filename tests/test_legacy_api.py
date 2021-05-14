@@ -993,6 +993,102 @@ discover_tests = [
         "events",
         id="transform_is_not_an_aggregate",
     ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "having": [],
+            "limit": 51,
+            "offset": 0,
+            "project": [1],
+            "dataset": "discover",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": [],
+            "conditions": [
+                ["type", "=", "transaction"],
+                [
+                    "transaction",
+                    "=",
+                    "GET /some/stuff",
+                ],
+                ["project_id", "IN", [1]],
+            ],
+            "aggregations": [
+                ["apdex(duration, 300)", None, "apdex_300"],
+                [
+                    "uniqIf",
+                    ["user", ["greater", ["duration", 1200.0]]],
+                    "count_miserable_user_300",
+                ],
+                ["quantile(0.95)", "duration", "p95"],
+                ["count", None, "count"],
+                ["uniq", "user", "count_unique_user"],
+                ["failure_rate()", None, "failure_rate"],
+                ["divide(count(), divide(1.2096e+06, 60))", None, "tpm"],
+                [
+                    "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0)",
+                    None,
+                    "user_misery_300",
+                ],
+                [
+                    "quantile(0.75)",
+                    "measurements[fp]",
+                    "percentile_measurements_fp_0_75",
+                ],
+                [
+                    "quantile(0.75)",
+                    "measurements[fcp]",
+                    "percentile_measurements_fcp_0_75",
+                ],
+                [
+                    "quantile(0.75)",
+                    "measurements[lcp]",
+                    "percentile_measurements_lcp_0_75",
+                ],
+                [
+                    "quantile(0.75)",
+                    "measurements[fid]",
+                    "percentile_measurements_fid_0_75",
+                ],
+                [
+                    "quantile(0.75)",
+                    "measurements[cls]",
+                    "percentile_measurements_cls_0_75",
+                ],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (transactions)",
+            (
+                "SELECT apdex(duration, 300) AS apdex_300, "
+                "uniqIf(user, greater(duration, 1200.0)) AS count_miserable_user_300, "
+                "quantile(0.95)(duration) AS p95, count() AS count, "
+                "uniq(user) AS count_unique_user, "
+                "failure_rate() AS failure_rate, "
+                "divide(count(), divide(1.2096e+06, 60)) AS tpm, "
+                "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0) AS user_misery_300, "
+                "quantile(0.75)(measurements[fp]) AS percentile_measurements_fp_0_75, "
+                "quantile(0.75)(measurements[fcp]) AS percentile_measurements_fcp_0_75, "
+                "quantile(0.75)(measurements[lcp]) AS percentile_measurements_lcp_0_75, "
+                "quantile(0.75)(measurements[fid]) AS percentile_measurements_fid_0_75, "
+                "quantile(0.75)(measurements[cls]) AS percentile_measurements_cls_0_75"
+            ),
+            (
+                "WHERE finish_ts >= toDateTime('2021-04-01T20:05:27') "
+                "AND finish_ts < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND type = 'transaction' "
+                "AND transaction = 'GET /some/stuff' "
+                "AND project_id IN tuple(1)"
+            ),
+            "LIMIT 51",
+            "OFFSET 0",
+        ),
+        "transactions",
+        id="plus_in_numbers",
+    ),
 ]
 
 

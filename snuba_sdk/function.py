@@ -6,10 +6,10 @@ from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
     Expression,
     InvalidExpression,
-    is_literal,
-    is_scalar,
     ScalarLiteralType,
     ScalarType,
+    is_literal,
+    is_scalar,
 )
 
 
@@ -23,7 +23,7 @@ alias_re = re.compile(r"^[a-zA-Z](\w|\.)+$")
 # wasn't worth it to import an entire parsing grammar into the SDK
 # just to accomodate that one case. Instead, allow it for now and
 # once that use case is eliminated we can remove this.
-function_name_re = re.compile(r"^[a-zA-Z](\w|[().,]| |\[|\])+$")
+function_name_re = re.compile(r"^[a-zA-Z](\w|[().,+]| |\[|\])+$")
 
 
 @dataclass(frozen=True)
