@@ -309,6 +309,39 @@ tests = [
         [("consistent", True)],
         id="multiple nested",
     ),
+    pytest.param(
+        Query("discover", Entity("discover"))
+        .set_select(
+            [
+                Function(
+                    "arrayMax",
+                    [[1, Function("indexOf", ["a", Column("hierarchical_hashes")])]],
+                )
+            ]
+        )
+        .set_where(
+            [
+                Condition(
+                    Column("event_id"),
+                    Op.IN,
+                    (Column("group_id"), Column("primary_hash")),
+                )
+            ]
+        )
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH (discover)",
+            "SELECT arrayMax(array(1, indexOf('a', hierarchical_hashes)))",
+            "WHERE event_id IN tuple(group_id, primary_hash)",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        None,
+        id="sequences can mix expressions with literals",
+    ),
 ]
 
 

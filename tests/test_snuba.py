@@ -2,7 +2,8 @@ from typing import Any, List
 
 import pytest
 
-from snuba_sdk.snuba import check_array_type
+from snuba_sdk.column import Column
+from snuba_sdk.expressions import check_array_type
 
 tests = [
     pytest.param([1, 2, 3], True),
@@ -19,6 +20,7 @@ tests = [
     pytest.param([[None], [1]], True),
     pytest.param([[[1]]], True),
     pytest.param([[[1]], [[2.0]]], True),
+    pytest.param([1, Column("quantity")], True),
     pytest.param([1, 2, "a"], False),
     pytest.param([1, "a", None], False),
     pytest.param([None, 2, "a"], False),
