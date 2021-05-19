@@ -91,13 +91,11 @@ def check_array_type(pot_array: List[Any]) -> bool:
         if base_type is not None:
             break
 
-    print("BASE", base_type)
     if base_type is None:
         return True
 
     for elem in pot_array:
         elem_type = find_base(elem)
-        print("NEXT", elem_type, elem)
         if elem_type is not None and elem_type != base_type:
             return False
         elif isinstance(elem, list) and not check_array_type(elem):
