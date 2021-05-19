@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from typing import (
     Any,
     Generic,
+    List,
     Mapping,
     MutableMapping,
-    List,
     Optional,
     Sequence,
     Set,
@@ -13,9 +13,11 @@ from typing import (
     Union,
 )
 
+# Import the module due to sphinx autodoc problems
+# https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
+from snuba_sdk import query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
-from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
@@ -23,19 +25,17 @@ from snuba_sdk.expressions import (
     DryRun,
     Expression,
     Granularity,
+    Legacy,
     Limit,
     Offset,
     Totals,
     Turbo,
 )
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join
 from snuba_sdk.snuba import is_aggregation_function
 from snuba_sdk.visitors import ExpressionFinder, Translation
-
-# Import the module due to sphinx autodoc problems
-# https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
-from snuba_sdk import query as main
 
 
 class InvalidQuery(Exception):
@@ -174,6 +174,10 @@ class QueryVisitor(ABC, Generic[QVisited]):
     def _visit_dry_run(self, dry_run: DryRun) -> QVisited:
         raise NotImplementedError
 
+    @abstractmethod
+    def _visit_legacy(self, legacy: Legacy) -> QVisited:
+        raise NotImplementedError
+
 
 class Printer(QueryVisitor[str]):
     def __init__(self, pretty: bool = False, is_inner: bool = False) -> None:
@@ -188,7 +192,7 @@ class Printer(QueryVisitor[str]):
     def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
-        to_skip = ("dataset", "consistent", "turbo", "debug", "dry_run")
+        to_skip = ("dataset", "consistent", "turbo", "debug", "dry_run", "legacy")
 
         separator = "\n" if (self.pretty and not self.is_inner) else " "
         formatted = separator.join(
@@ -292,6 +296,9 @@ class Printer(QueryVisitor[str]):
     def _visit_dry_run(self, dry_run: DryRun) -> str:
         return str(dry_run) if dry_run else ""
 
+    def _visit_legacy(self, legacy: Legacy) -> str:
+        return str(legacy) if legacy else ""
+
 
 class Translator(Printer):
     def __init__(self) -> None:
@@ -314,6 +321,8 @@ class Translator(Printer):
             body["debug"] = query.debug.value
         if query.dry_run:
             body["dry_run"] = query.dry_run.value
+        if query.legacy:
+            body["legacy"] = query.legacy.value
 
         return json.dumps(body)
 
@@ -397,6 +406,9 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
 
     def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
         return self.expression_finder.visit(dry_run) if dry_run else set()
+
+    def _visit_legacy(self, legacy: Legacy) -> Set[Expression]:
+        return self.expression_finder.visit(legacy) if legacy else set()
 
 
 class Validator(QueryVisitor[None]):
@@ -576,3 +588,6 @@ class Validator(QueryVisitor[None]):
 
     def _visit_dry_run(self, dry_run: DryRun) -> None:
         dry_run.validate()
+
+    def _visit_legacy(self, legacy: Legacy) -> None:
+        legacy.validate()

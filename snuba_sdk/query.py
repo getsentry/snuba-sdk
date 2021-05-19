@@ -3,21 +3,22 @@ from typing import Any, List, Optional, Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
-from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
     Debug,
     DryRun,
     Granularity,
+    Legacy,
     Limit,
     Offset,
     Totals,
     Turbo,
 )
-from snuba_sdk.relationships import Join
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
+from snuba_sdk.relationships import Join
 
 
 def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
@@ -60,6 +61,7 @@ class Query:
     turbo: Turbo = Turbo(False)
     debug: Debug = Debug(False)
     dry_run: DryRun = DryRun(False)
+    legacy: Legacy = Legacy(False)
 
     def __post_init__(self) -> None:
         """
@@ -172,6 +174,9 @@ class Query:
 
     def set_dry_run(self, dry_run: bool) -> "Query":
         return self._replace("dry_run", DryRun(dry_run))
+
+    def set_legacy(self, legacy: bool) -> "Query":
+        return self._replace("legacy", Legacy(legacy))
 
     def validate(self) -> None:
         VALIDATOR.visit(self)

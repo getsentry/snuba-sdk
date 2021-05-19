@@ -9,7 +9,6 @@ from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 
-
 CONDITION_OPERATORS = set(op.value for op in Op)
 
 
@@ -317,4 +316,5 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         if body.get(extra) is not None:
             query = getattr(query, f"set_{extra}")(body.get(extra))
 
+    query.set_legacy(True)
     return query
