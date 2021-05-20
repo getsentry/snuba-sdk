@@ -10,6 +10,7 @@ from snuba_sdk.expressions import (
     DryRun,
     Granularity,
     InvalidExpression,
+    Legacy,
     Limit,
     Offset,
     Totals,
@@ -136,6 +137,7 @@ boolean_tests = [
     pytest.param("turbo", Turbo),
     pytest.param("debug", Debug),
     pytest.param("dry_run", DryRun),
+    pytest.param("legacy", Legacy),
 ]
 
 

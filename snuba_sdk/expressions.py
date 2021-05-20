@@ -145,3 +145,8 @@ class Debug(BooleanFlag):
 @dataclass(frozen=True)
 class DryRun(BooleanFlag):
     name: str = "dry_run"
+
+
+@dataclass(frozen=True)
+class Legacy(BooleanFlag):
+    name: str = "legacy"
