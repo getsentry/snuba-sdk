@@ -1135,6 +1135,54 @@ discover_tests = [
         "events",
         id="condition_on_empty_string",
     ),
+    pytest.param(
+        {
+            "selected_columns": [
+                "timestamp",
+                "message",
+                "title",
+                "event_id",
+                "project_id",
+                [
+                    "transform",
+                    [
+                        ["toString", ["project_id"]],
+                        ["array", ["'1'"]],
+                        ["array", ["'proj'"]],
+                        "''",
+                    ],
+                    "`project.name`",
+                ],
+            ],
+            "having": [],
+            "limit": 81,
+            "offset": 0,
+            "project": [1],
+            "dataset": "discover",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": [],
+            "conditions": [[["environment", "=", "PROD"]], ["project_id", "IN", [1]]],
+            "aggregations": [],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (events)",
+            "SELECT timestamp, message, title, event_id, project_id, transform(toString(project_id), array('1'), array('proj'), '') AS project.name",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND environment = 'PROD' "
+                "AND project_id IN tuple(1)"
+            ),
+            "LIMIT 81",
+            "OFFSET 0",
+        ),
+        "events",
+        id="dots_in_alias",
+    ),
 ]
 
 
