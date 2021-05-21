@@ -92,11 +92,12 @@ def parse_exp(value: Any) -> Any:
     :type value: Any
 
     """
-
     if isinstance(value, str):
-        # Legacy sends raw strings in single quotes
-        if not value or value.startswith("'"):
-            value = value.strip("'")
+        # Legacy sends raw strings in single quotes, so strip enclosing quotes only
+        if not value:
+            return value
+        elif value.startswith("'") and value.endswith("'"):
+            value = value[1:-1]
             return value
 
         return Column(value)
