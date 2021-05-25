@@ -9,7 +9,6 @@ from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 
-
 CONDITION_OPERATORS = set(op.value for op in Op)
 
 
@@ -93,11 +92,12 @@ def parse_exp(value: Any) -> Any:
     :type value: Any
 
     """
-
     if isinstance(value, str):
-        # Legacy sends raw strings in single quotes
-        if not value or value.startswith("'"):
-            value = value.strip("'")
+        # Legacy sends raw strings in single quotes, so strip enclosing quotes only
+        if not value:
+            return value
+        elif value.startswith("'") and value.endswith("'"):
+            value = value[1:-1]
             return value
 
         return Column(value)
@@ -105,6 +105,8 @@ def parse_exp(value: Any) -> Any:
         return parse_scalar(value)
 
     alias = value[2] if len(value) > 2 else None
+    if alias and alias.startswith("`") and alias.endswith("`"):
+        alias = alias[1:-1]
 
     if value[0].endswith("()") and not value[1]:
         return Function(value[0].strip("()"), [], alias)
@@ -317,4 +319,5 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         if body.get(extra) is not None:
             query = getattr(query, f"set_{extra}")(body.get(extra))
 
+    query.set_legacy(True)
     return query

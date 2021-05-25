@@ -13,6 +13,7 @@ from snuba_sdk.expressions import (
     Expression,
     Granularity,
     InvalidExpression,
+    Legacy,
     Limit,
     Offset,
     Scalar,
@@ -69,6 +70,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_debug(node)
         elif isinstance(node, DryRun):
             return self._visit_dry_run(node)
+        elif isinstance(node, Legacy):
+            return self._visit_legacy(node)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -130,6 +133,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_dry_run(self, dry_run: DryRun) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_legacy(self, legacy: Legacy) -> TVisited:
         raise NotImplementedError
 
 
@@ -268,6 +275,9 @@ class Translation(ExpressionVisitor[str]):
     def _visit_dry_run(self, dry_run: DryRun) -> str:
         return str(dry_run)
 
+    def _visit_legacy(self, legacy: Legacy) -> str:
+        return str(legacy)
+
 
 class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def __init__(self, exp_type: Any) -> None:
@@ -366,4 +376,9 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
         if isinstance(dry_run, self.exp_type):
             return set([dry_run])
+        return set()
+
+    def _visit_legacy(self, legacy: Legacy) -> Set[Expression]:
+        if isinstance(legacy, self.exp_type):
+            return set([legacy])
         return set()

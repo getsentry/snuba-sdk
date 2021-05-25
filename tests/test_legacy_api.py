@@ -1006,11 +1006,7 @@ discover_tests = [
             "groupby": [],
             "conditions": [
                 ["type", "=", "transaction"],
-                [
-                    "transaction",
-                    "=",
-                    "GET /some/stuff",
-                ],
+                ["transaction", "=", "GET /some/stuff"],
                 ["project_id", "IN", [1]],
             ],
             "aggregations": [
@@ -1088,6 +1084,104 @@ discover_tests = [
         ),
         "transactions",
         id="plus_in_numbers",
+    ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "having": [],
+            "orderby": ["-last_seen", "group_id"],
+            "limit": 150,
+            "offset": 0,
+            "totals": True,
+            "turbo": False,
+            "sample": 1,
+            "project": [1],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["group_id"],
+            "conditions": [
+                [["positionCaseInsensitive", ["message", "''''"]], "!=", 0],
+                ["project_id", "IN", [1]],
+                ["environment", "IN", ["production"]],
+                ["group_id", "IN", [3]],
+            ],
+            "aggregations": [
+                ["multiply(toUInt64(max(timestamp)), 1000)", "", "last_seen"],
+                ["uniq", "group_id", "total"],
+            ],
+            "consistent": False,
+            "debug": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events SAMPLE 1.0)",
+            "SELECT multiply(toUInt64(max(timestamp)), 1000) AS last_seen, uniq(group_id) AS total",
+            "BY group_id",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND positionCaseInsensitive(message, '\\'\\'') != 0 "
+                "AND project_id IN tuple(1) "
+                "AND environment IN tuple('production') "
+                "AND group_id IN tuple(3)"
+            ),
+            "ORDER BY last_seen DESC, group_id ASC",
+            "LIMIT 150",
+            "OFFSET 0",
+            "TOTALS True",
+        ),
+        "events",
+        id="condition_on_empty_string",
+    ),
+    pytest.param(
+        {
+            "selected_columns": [
+                "timestamp",
+                "message",
+                "title",
+                "event_id",
+                "project_id",
+                [
+                    "transform",
+                    [
+                        ["toString", ["project_id"]],
+                        ["array", ["'1'"]],
+                        ["array", ["'proj'"]],
+                        "''",
+                    ],
+                    "`project.name`",
+                ],
+            ],
+            "having": [],
+            "limit": 81,
+            "offset": 0,
+            "project": [1],
+            "dataset": "discover",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": [],
+            "conditions": [[["environment", "=", "PROD"]], ["project_id", "IN", [1]]],
+            "aggregations": [],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (events)",
+            "SELECT timestamp, message, title, event_id, project_id, transform(toString(project_id), array('1'), array('proj'), '') AS project.name",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND environment = 'PROD' "
+                "AND project_id IN tuple(1)"
+            ),
+            "LIMIT 81",
+            "OFFSET 0",
+        ),
+        "events",
+        id="dots_in_alias",
     ),
 ]
 

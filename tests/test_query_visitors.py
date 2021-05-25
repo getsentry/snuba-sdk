@@ -112,6 +112,8 @@ tests = [
         .set_totals(False)
         .set_consistent(True)
         .set_turbo(True)
+        .set_dry_run(True)
+        .set_legacy(True)
         .set_debug(True),
         (
             "MATCH (events SAMPLE 0.200000)",
@@ -122,7 +124,13 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
-        [("consistent", True), ("turbo", True), ("debug", True)],
+        [
+            ("consistent", True),
+            ("turbo", True),
+            ("debug", True),
+            ("dry_run", True),
+            ("legacy", True),
+        ],
         id="multiple ORDER BY",
     ),
     pytest.param(
