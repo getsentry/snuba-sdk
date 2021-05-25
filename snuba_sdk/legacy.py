@@ -105,6 +105,8 @@ def parse_exp(value: Any) -> Any:
         return parse_scalar(value)
 
     alias = value[2] if len(value) > 2 else None
+    if alias and alias.startswith("`") and alias.endswith("`"):
+        alias = alias[1:-1]
 
     if value[0].endswith("()") and not value[1]:
         return Function(value[0].strip("()"), [], alias)
