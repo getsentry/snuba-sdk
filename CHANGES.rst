@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.15
+------
+
+- No documented changes.
+
 0.0.14
 ------
 
