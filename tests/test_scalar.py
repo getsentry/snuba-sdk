@@ -3,8 +3,9 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from snuba_sdk.expressions import InvalidArray, InvalidExpression, ScalarType
-from snuba_sdk.visitors import _stringify_scalar
+from snuba_sdk.column import Column
+from snuba_sdk.expressions import InvalidExpression, ScalarType
+from snuba_sdk.visitors import Translation
 
 tests = [
     pytest.param(None, "NULL"),
@@ -38,38 +39,38 @@ tests = [
     pytest.param(
         [[1, 2, None], [None, 5, 6]], "array(array(1, 2, NULL), array(NULL, 5, 6))"
     ),
+    pytest.param(
+        [[1, 2, Column("stuff")], [Column("things"), 5, 6]],
+        "array(array(1, 2, stuff), array(things, 5, 6))",
+    ),
     pytest.param(("a", "b", "c"), "tuple('a', 'b', 'c')"),
     pytest.param(
         (("a", 1, True), (None, "b", None)),
         "tuple(tuple('a', 1, TRUE), tuple(NULL, 'b', NULL))",
+    ),
+    pytest.param(
+        (("a", 1, True), (Column("stuff"), "b", None)),
+        "tuple(tuple('a', 1, TRUE), tuple(stuff, 'b', NULL))",
     ),
 ]
 
 
 @pytest.mark.parametrize("scalar, expected", tests)
 def test_scalars(scalar: ScalarType, expected: str) -> None:
-    assert _stringify_scalar(scalar) == expected, scalar
+    translator = Translation()
+    assert translator._stringify_scalar(scalar) == expected, scalar
 
 
 def test_invalid_scalars() -> None:
+    translator = Translation()
     with pytest.raises(
-        InvalidArray,
-        match=re.escape(
-            "invalid array ['a', 1]: arrays must have the same data type or None, perhaps use a tuple instead"
-        ),
+        InvalidExpression,
+        match=re.escape("tuple/array must contain only scalar values"),
     ):
-        _stringify_scalar(["a", 1])
-
-    with pytest.raises(
-        InvalidArray,
-        match=re.escape(
-            "invalid array ['a', 1, 2...]: arrays must have the same data type or None, perhaps use a tuple instead"
-        ),
-    ):
-        _stringify_scalar(["a", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+        translator._stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore
 
     with pytest.raises(
         InvalidExpression,
-        match=re.escape("tuple must contain only scalar values"),
+        match=re.escape("tuple/array must contain only scalar values"),
     ):
-        _stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore
+        translator._stringify_scalar([{"a": 1}, {1, 2, 3}])  # type: ignore

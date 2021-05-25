@@ -3,8 +3,6 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, List, Optional, Sequence, Set, Union
 
-from snuba_sdk.snuba import check_array_type
-
 
 class InvalidExpression(Exception):
     pass
@@ -21,7 +19,7 @@ class Expression(ABC):
 
 # For type hinting
 ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]
-ScalarSequenceType = Sequence[ScalarLiteralType]
+ScalarSequenceType = Sequence[Union[Expression, ScalarLiteralType]]
 ScalarType = Union[ScalarLiteralType, ScalarSequenceType]
 
 # For type checking
@@ -58,14 +56,9 @@ def is_literal(value: Any) -> bool:
 def is_scalar(value: Any) -> bool:
     if isinstance(value, tuple(Scalar)):
         return True
-    elif isinstance(value, tuple):
-        if not all(is_scalar(v) for v in value):
-            raise InvalidExpression("tuple must contain only scalar values")
-        return True
-    elif isinstance(value, list):
-        if not check_array_type(value):
-            raise InvalidArray(value)
-
+    elif isinstance(value, (tuple, list)):
+        if not all(is_scalar(v) or isinstance(v, Expression) for v in value):
+            raise InvalidExpression("tuple/array must contain only scalar values")
         return True
 
     return False

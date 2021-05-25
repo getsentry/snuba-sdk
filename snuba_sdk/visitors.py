@@ -31,42 +31,6 @@ unescaped_quotes = re.compile(r"(?<!\\)'")
 unescaped_newline = re.compile(r"(?<!\\)\n")
 
 
-def _stringify_scalar(value: ScalarType) -> str:
-    if value is None:
-        return "NULL"
-    elif isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    if isinstance(value, (str, bytes)):
-        if isinstance(value, bytes):
-            decoded = value.decode()
-        else:
-            decoded = value
-
-        decoded = unescaped_quotes.sub("\\'", decoded)
-        decoded = unescaped_newline.sub("\\\\n", decoded)
-        return f"'{decoded}'"
-    elif isinstance(value, (int, float)):
-        return f"{value}"
-    elif isinstance(value, datetime):
-        # Snuba expects naive UTC datetimes, so convert to that
-        if value.tzinfo is not None:
-            delta = value.utcoffset()
-            assert delta is not None
-            value = value - delta
-            value = value.replace(tzinfo=None)
-        return f"toDateTime('{value.isoformat()}')"
-    elif isinstance(value, date):
-        return f"toDateTime('{value.isoformat()}')"
-    elif isinstance(value, list):
-        is_scalar(value)  # Throws on an invalid array
-        return f"array({', '.join([_stringify_scalar(v) for v in value])})"
-    elif isinstance(value, tuple):
-        is_scalar(value)  # Throws on an invalid tuple
-        return f"tuple({', '.join([_stringify_scalar(v) for v in value])})"
-
-    raise InvalidExpression(f"'{value}' is not a valid scalar")
-
-
 TVisited = TypeVar("TVisited")
 
 
@@ -182,6 +146,43 @@ class Translation(ExpressionVisitor[str]):
         # don't support entity aliases.
         self.use_entity_aliases = use_entity_aliases
 
+    def _stringify_scalar(self, value: ScalarType) -> str:
+        if value is None:
+            return "NULL"
+        elif isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        if isinstance(value, (str, bytes)):
+            if isinstance(value, bytes):
+                decoded = value.decode()
+            else:
+                decoded = value
+
+            decoded = unescaped_quotes.sub("\\'", decoded)
+            decoded = unescaped_newline.sub("\\\\n", decoded)
+            return f"'{decoded}'"
+        elif isinstance(value, (int, float)):
+            return f"{value}"
+        elif isinstance(value, datetime):
+            # Snuba expects naive UTC datetimes, so convert to that
+            if value.tzinfo is not None:
+                delta = value.utcoffset()
+                assert delta is not None
+                value = value - delta
+                value = value.replace(tzinfo=None)
+            return f"toDateTime('{value.isoformat()}')"
+        elif isinstance(value, date):
+            return f"toDateTime('{value.isoformat()}')"
+        elif isinstance(value, Expression):
+            return self.visit(value)
+        elif isinstance(value, list):
+            is_scalar(value)  # Throws on an invalid array
+            return f"array({', '.join([self._stringify_scalar(v) for v in value])})"
+        elif isinstance(value, tuple):
+            is_scalar(value)  # Throws on an invalid tuple
+            return f"tuple({', '.join([self._stringify_scalar(v) for v in value])})"
+
+        raise InvalidExpression(f"'{value}' is not a valid scalar")
+
     def _visit_column(self, column: Column) -> str:
         alias_clause = ""
         if column.entity is not None and self.use_entity_aliases:
@@ -197,7 +198,7 @@ class Translation(ExpressionVisitor[str]):
                 if isinstance(initer, Column):
                     initializers.append(self.visit(initer))
                 elif isinstance(initer, tuple(Scalar)):
-                    initializers.append(_stringify_scalar(initer))
+                    initializers.append(self._stringify_scalar(initer))
 
             initialize_clause = f"({', '.join(initializers)})"
 
@@ -208,7 +209,7 @@ class Translation(ExpressionVisitor[str]):
                 if isinstance(param, (Column, CurriedFunction, Function)):
                     params.append(self.visit(param))
                 elif is_scalar(param):
-                    params.append(_stringify_scalar(param))
+                    params.append(self._stringify_scalar(param))
 
             param_clause = f"({', '.join(params)})"
 
@@ -243,7 +244,7 @@ class Translation(ExpressionVisitor[str]):
         elif isinstance(cond.rhs, (Column, CurriedFunction, Function)):
             rhs = f" {self.visit(cond.rhs)}"
         elif is_scalar(cond.rhs):
-            rhs = f" {_stringify_scalar(cond.rhs)}"
+            rhs = f" {self._stringify_scalar(cond.rhs)}"
 
         assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value}{rhs}"
