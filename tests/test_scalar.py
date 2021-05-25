@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import InvalidArray, InvalidExpression, ScalarType
+from snuba_sdk.expressions import InvalidExpression, ScalarType
 from snuba_sdk.visitors import Translation
 
 tests = [
@@ -64,23 +64,13 @@ def test_scalars(scalar: ScalarType, expected: str) -> None:
 def test_invalid_scalars() -> None:
     translator = Translation()
     with pytest.raises(
-        InvalidArray,
-        match=re.escape(
-            "invalid array ['a', 1]: arrays must have the same data type or None, perhaps use a tuple instead"
-        ),
+        InvalidExpression,
+        match=re.escape("tuple/array must contain only scalar values"),
     ):
-        translator._stringify_scalar(["a", 1])
-
-    with pytest.raises(
-        InvalidArray,
-        match=re.escape(
-            "invalid array ['a', 1, 2...]: arrays must have the same data type or None, perhaps use a tuple instead"
-        ),
-    ):
-        translator._stringify_scalar(["a", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+        translator._stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore
 
     with pytest.raises(
         InvalidExpression,
-        match=re.escape("tuple must contain only scalar values"),
+        match=re.escape("tuple/array must contain only scalar values"),
     ):
-        translator._stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore
+        translator._stringify_scalar([{"a": 1}, {1, 2, 3}])  # type: ignore
