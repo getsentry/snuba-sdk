@@ -4,12 +4,20 @@ Changelog and versioning
 0.0.15
 ------
 
-- No documented changes.
+Features:
+    - Support embedding expressions in lists/tuples
+    - Add a "legacy" flag that gets sent to Snuba for tracking
+
+Fixes:
+    - Fix for "+" in numbers
+    - Don't strip more than the outer quotes on a string
+    - Strip backticks out of strings from legacy queries
+
 
 0.0.14
 ------
 
-- No documented changes.
+- Add isort
 
 0.0.13
 ---------
