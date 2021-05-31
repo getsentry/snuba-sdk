@@ -173,7 +173,9 @@ def parse_condition(cond: Sequence[Any]) -> Condition:
     return Condition(parse_exp(cond[0]), Op(cond[1]), rhs)
 
 
-def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
+def json_to_snql(
+    body: Mapping[str, Any], entity: str, skip_time: bool = False
+) -> Query:
     """
     This will output a Query object that matches the Legacy query body that was passed in.
     The entity is necessary since the SnQL API requires an explicit entity. This doesn't
@@ -233,7 +235,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     assert isinstance(query.match, Entity)
     time_column = get_required_time_column(query.match.name)
-    if time_column:
+    if time_column and not skip_time:
         time_cols = (("from_date", Op.GTE), ("to_date", Op.LT))
         for col, op in time_cols:
             date_val = body.get(col)
@@ -242,8 +244,9 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
                     Condition(Column(time_column), op, parse_datetime(date_val))
                 )
 
-    if body.get("project"):
-        proj_cond = parse_extension_condition("project_id", body["project"], True)
+    project_id = body.get("project") or body.get("project_id")
+    if project_id:
+        proj_cond = parse_extension_condition("project_id", project_id, True)
         if proj_cond:
             conditions.append(proj_cond)
 
