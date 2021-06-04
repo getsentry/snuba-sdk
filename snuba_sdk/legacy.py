@@ -59,6 +59,14 @@ def parse_datetime(date_str: str) -> datetime:
     raise ValueError(f"{date_str} is not a recognized datetime")
 
 
+def parse_string(value: str) -> str:
+    escaped = value.replace("'", "\\'")
+    if escaped and escaped[-1] == "\\":
+        if len(escaped) == 1 or escaped[-2] != "\\":
+            escaped += "\\"
+    return escaped
+
+
 def parse_scalar(value: Any, only_strings: Optional[bool] = False) -> Any:
     """
     Convert a scalar value into the expected value for the SDK.
@@ -76,10 +84,9 @@ def parse_scalar(value: Any, only_strings: Optional[bool] = False) -> Any:
                 date_scalar = parse_datetime(value)
                 return date_scalar
         except ValueError:
-            escaped = value.replace("'", "\\'")
-            return escaped
+            return parse_string(value)
     elif isinstance(value, str):
-        return value.replace("'", "\\'")
+        return parse_string(value)
 
     return value
 
@@ -98,7 +105,7 @@ def parse_exp(value: Any) -> Any:
             return value
         elif value.startswith("'") and value.endswith("'"):
             value = value[1:-1]
-            return value
+            return parse_string(value)
 
         return Column(value)
     elif not isinstance(value, list):

@@ -1183,6 +1183,51 @@ discover_tests = [
         "events",
         id="dots_in_alias",
     ),
+    pytest.param(
+        {
+            "project": [1],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["group_id"],
+            "conditions": [
+                [["positionCaseInsensitive", ["message", "'Api\\'"]], "!=", 0],
+                ["project_id", "IN", [1]],
+                ["group_id", "IN", [1234567890]],
+                ["environment", "IN", ["production"]],
+            ],
+            "aggregations": [
+                ["count()", "", "times_seen"],
+                ["min", "timestamp", "first_seen"],
+                ["max", "timestamp", "last_seen"],
+                ["uniq", "tags[sentry:user]", "count"],
+            ],
+            "consistent": False,
+            "debug": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            (
+                "SELECT count() AS times_seen, "
+                "min(timestamp) AS first_seen, "
+                "max(timestamp) AS last_seen, "
+                "uniq(tags[sentry:user]) AS count"
+            ),
+            "BY group_id",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND positionCaseInsensitive(message, 'Api\\\\') != 0 "
+                "AND project_id IN tuple(1) "
+                "AND group_id IN tuple(1234567890) "
+                "AND environment IN tuple('production')"
+            ),
+        ),
+        "events",
+        id="quotes_escaped_with_backslash",
+    ),
 ]
 
 
