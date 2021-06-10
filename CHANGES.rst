@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+0.0.16
+------
+
+- Fix bug with weirdly escaped slashes
+
+
 0.0.15
 ------
 
