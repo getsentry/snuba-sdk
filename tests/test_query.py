@@ -3,13 +3,24 @@ from datetime import datetime, timezone
 
 import pytest
 
-from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
-from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Debug, Granularity, Limit, Offset
-from snuba_sdk.function import CurriedFunction, Function
-from snuba_sdk.orderby import Direction, LimitBy, OrderBy
-from snuba_sdk.query import Query
+from snuba_sdk import (
+    BooleanCondition,
+    BooleanOp,
+    Column,
+    Condition,
+    CurriedFunction,
+    Debug,
+    Direction,
+    Entity,
+    Function,
+    Granularity,
+    Limit,
+    LimitBy,
+    Offset,
+    Op,
+    OrderBy,
+    Query,
+)
 from snuba_sdk.query_visitors import InvalidQuery
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
@@ -91,11 +102,7 @@ tests = [
                 BooleanCondition(
                     BooleanOp.OR,
                     [
-                        Condition(
-                            Function("uniq", [Column("event_id")]),
-                            Op.GTE,
-                            10,
-                        ),
+                        Condition(Function("uniq", [Column("event_id")]), Op.GTE, 10),
                         Condition(
                             CurriedFunction("quantile", [0.5], [Column("duration")]),
                             Op.GTE,

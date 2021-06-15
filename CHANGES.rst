@@ -4,6 +4,7 @@ Changelog and versioning
 0.0.17
 ------
 
+- Allow importing directly from snuba_sdk, e.g. `from snuba_sdk import Column, Function`
 - Fix bug where conditions on releases were being incorrectly parsed.
 
 0.0.16
