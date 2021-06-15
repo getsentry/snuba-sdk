@@ -1,26 +1,24 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
-from snuba_sdk import (
-    BooleanCondition,
-    Column,
-    Condition,
+from snuba_sdk.column import Column
+from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.entity import Entity
+from snuba_sdk.expressions import (
     Consistent,
-    CurriedFunction,
     Debug,
-    Entity,
-    Function,
+    DryRun,
     Granularity,
-    Join,
+    Legacy,
     Limit,
-    LimitBy,
     Offset,
-    OrderBy,
     Totals,
     Turbo,
 )
-from snuba_sdk.expressions import DryRun, Legacy
+from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
+from snuba_sdk.relationships import Join
 
 
 def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
