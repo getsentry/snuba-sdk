@@ -1228,6 +1228,46 @@ discover_tests = [
         "events",
         id="quotes_escaped_with_backslash",
     ),
+    pytest.param(
+        {
+            "aggregations": [],
+            "conditions": [
+                ["release", "=", "2021-06-15T13:07:34"],
+                ("project_id", "IN", [1]),
+            ],
+            "dataset": "sessions",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "granularity": 3600,
+            "groupby": ["bucketed_started", "project_id", "release"],
+            "organization": 2,
+            "project": 1,
+            "selected_columns": [
+                "bucketed_started",
+                "sessions",
+                "users",
+                "project_id",
+                "release",
+            ],
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT bucketed_started, sessions, users, project_id, release",
+            "BY bucketed_started, project_id, release",
+            (
+                "WHERE org_id = 2 "
+                "AND started >= toDateTime('2021-04-01T20:05:27') "
+                "AND started < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND release = '2021-06-15T13:07:34' "
+                "AND project_id IN tuple(1)"
+            ),
+            "GRANULARITY 3600",
+        ),
+        "sessions",
+        id="strings_that_look_like_datetimes",
+    ),
 ]
 
 

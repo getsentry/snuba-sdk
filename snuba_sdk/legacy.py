@@ -173,7 +173,9 @@ def parse_condition(cond: Sequence[Any]) -> Condition:
     lhs = parse_exp(cond[0])
     if cond[1] not in ["IS NULL", "IS NOT NULL"]:
         only_strings = False
-        if isinstance(lhs, Column) and lhs.subscriptable == "tags":
+        if isinstance(lhs, Column) and (
+            lhs.subscriptable == "tags" or lhs.name == "release"
+        ):
             only_strings = True
         rhs = parse_scalar(cond[2], only_strings=only_strings)
 
