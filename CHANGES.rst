@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.17
+------
+
+- Fix bug where conditions on releases were being incorrectly parsed.
+
 0.0.16
 ------
 
