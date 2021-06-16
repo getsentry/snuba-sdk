@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.18
+------
+
+- Add some more allowed characters to the function regex
+
 0.0.17
 ------
 
