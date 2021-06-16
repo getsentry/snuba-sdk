@@ -1268,6 +1268,63 @@ discover_tests = [
         "sessions",
         id="strings_that_look_like_datetimes",
     ),
+    pytest.param(
+        {
+            "selected_columns": [
+                ["tuple", ["'duration'", 300], "project_threshold_config"]
+            ],
+            "having": [],
+            "orderby": ["-tpm"],
+            "limit": 2,
+            "offset": 0,
+            "project": [1],
+            "dataset": "discover",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["project_threshold_config"],
+            "conditions": [
+                ["duration", "<", 900000.0],
+                ["type", "=", "transaction"],
+                ["project_id", "IN", [1]],
+            ],
+            "aggregations": [
+                ["quantile(0.75)", "duration", "p75_transaction_duration"],
+                ["divide(count(), divide(86400, 60))", None, "tpm"],
+                ["failure_rate()", None, "failure_rate"],
+                [
+                    "apdex(multiIf(equals(tupleElement(project_threshold_config,1),'lcp'),if(has(measurements.key,'lcp'),arrayElement(measurements.value,indexOf(measurements.key,'lcp')),NULL),duration),tupleElement(project_threshold_config,2))",
+                    None,
+                    "apdex",
+                ],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: discover",
+            "MATCH (discover)",
+            (
+                "SELECT quantile(0.75)(duration) AS p75_transaction_duration, "
+                "divide(count(), divide(86400, 60)) AS tpm, "
+                "failure_rate() AS failure_rate, "
+                "apdex(multiIf(equals(tupleElement(project_threshold_config,1),'lcp'),if(has(measurements.key,'lcp'),arrayElement(measurements.value,indexOf(measurements.key,'lcp')),NULL),duration),tupleElement(project_threshold_config,2)) AS apdex, "
+                "tuple('duration', 300) AS project_threshold_config"
+            ),
+            "BY project_threshold_config",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND duration < 900000.0 "
+                "AND type = 'transaction' "
+                "AND project_id IN tuple(1)"
+            ),
+            "ORDER BY tpm DESC",
+            "LIMIT 2",
+            "OFFSET 0",
+        ),
+        "discover",
+        id="crazy_apdex_functions",
+    ),
 ]
 
 
