@@ -33,7 +33,7 @@ tests = [
     pytest.param("abc", "'abc'"),
     pytest.param(b"abc", "'abc'"),
     pytest.param("a'b''c'", "'a\\'b\\'\\'c\\''"),
-    pytest.param("a\\''b''c'", "'a\\'\\'b\\'\\'c\\''"),
+    pytest.param("a\\''b''c'", "'a\\\\\\'\\'b\\'\\'c\\''"),
     pytest.param("a\nb\nc", "'a\\nb\\nc'"),
     pytest.param([1, 2, 3], "array(1, 2, 3)"),
     pytest.param(

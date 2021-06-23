@@ -1,4 +1,3 @@
-import re
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Any, Generic, Set, TypeVar
@@ -25,11 +24,6 @@ from snuba_sdk.expressions import (
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
-
-# validation regexes
-unescaped_quotes = re.compile(r"(?<!\\)'")
-unescaped_newline = re.compile(r"(?<!\\)\n")
-
 
 TVisited = TypeVar("TVisited")
 
@@ -157,8 +151,12 @@ class Translation(ExpressionVisitor[str]):
             else:
                 decoded = value
 
-            decoded = unescaped_quotes.sub("\\'", decoded)
-            decoded = unescaped_newline.sub("\\\\n", decoded)
+            # The ' and \ character are escaped in the string to ensure
+            # the query is valid. They are de-escaped in the SnQL parser.
+            # Also escape newlines since they break the SnQL grammar.
+            decoded = (
+                decoded.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+            )
             return f"'{decoded}'"
         elif isinstance(value, (int, float)):
             return f"{value}"

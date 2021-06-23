@@ -60,11 +60,7 @@ def parse_datetime(date_str: str) -> datetime:
 
 
 def parse_string(value: str) -> str:
-    escaped = value.replace("'", "\\'")
-    if escaped and escaped[-1] == "\\":
-        if len(escaped) == 1 or escaped[-2] != "\\":
-            escaped += "\\"
-    return escaped
+    return value
 
 
 def parse_scalar(value: Any, only_strings: Optional[bool] = False) -> Any:

@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.19
+------
+
+- Fix escaping in queries. Move escaping from the legacy parser to the translator.
+
 0.0.18
 ------
 
