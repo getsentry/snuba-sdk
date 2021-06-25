@@ -203,7 +203,7 @@ discover_tests = [
             "dataset": "events",
             "project": 2,
             "selected_columns": ["event_id"],
-            "conditions": [["event_id", "LIKE", "stuff \\\" ' \\' stuff"]],
+            "conditions": [["event_id", "LIKE", "stuff \\\" ' \\' stuff\\"]],
             "limit": 4,
             "orderby": ["event_id"],
             "from_date": "2020-10-17T20:51:46.110774",
@@ -217,7 +217,7 @@ discover_tests = [
                 "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
                 "AND timestamp < toDateTime('2021-01-15T20:51:47.110825') "
                 "AND project_id IN tuple(2) "
-                "AND event_id LIKE 'stuff \\\" \\' \\\\' stuff'"
+                "AND event_id LIKE 'stuff \\\\\" \\' \\\\\\' stuff\\\\'"
             ),
             "ORDER BY event_id ASC",
             "LIMIT 4",
