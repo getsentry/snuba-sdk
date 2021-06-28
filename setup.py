@@ -22,11 +22,11 @@ def get_file_text(file_name: str) -> str:
 setup(
     name="snuba-sdk",
     version="0.0.19",
-    author="Sentry Team and Contributors",
-    author_email="hello@sentry.io",
+    author="Sentry",
+    author_email="oss@sentry.io",
     url="https://github.com/getsentry/snuba-sdk",
     project_urls={
-        "Changelog": "https://github.com/getsentry/snuba-sdk/blob/main/CHANGES.md",
+        "Changelog": "https://github.com/getsentry/snuba-sdk/blob/main/CHANGES.rst",
     },
     description="Snuba SDK for generating SnQL queries.",
     long_description=get_file_text("README.rst"),
@@ -35,13 +35,13 @@ setup(
     # PEP 561
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
-    license="BSD",
+    license="MIT",
     install_requires=["dataclasses"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
