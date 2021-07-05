@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.20
+------
+
+- Remove brittle, inconsistent and incomplete group by checks.
+
 0.0.19
 ------
 

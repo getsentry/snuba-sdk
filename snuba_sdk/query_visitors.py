@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from typing import (
     Any,
     Generic,
-    List,
     Mapping,
     MutableMapping,
     Optional,
@@ -458,69 +457,6 @@ class Validator(QueryVisitor[None]):
 
         if query.select is None or len(query.select) == 0:
             raise InvalidQuery("query must have at least one expression in select")
-
-        # Non-aggregate expressions must be in the groupby if there is an aggregate
-        non_aggregates: List[Union[Column, CurriedFunction, Function]] = []
-        has_aggregates = False
-
-        # Legacy queries use aliases of aggregates in the select clause. This validation
-        # needs to understand the difference between a Column and something that looks
-        # like a Column but is actually an alias to an aggregate. Gather these "alias
-        # columns" here so the validator can properly check.
-        alias_columns = set()
-        aggregate_aliases = set()
-        for exp in query.select:
-            if (
-                isinstance(exp, (CurriedFunction, Function))
-                and is_aggregate(exp)
-                and exp.alias
-            ):
-                alias_columns.add(Column(exp.alias))
-                aggregate_aliases.add(exp.alias)
-
-        for exp in query.select:
-            # If a column is actually an alias for an aggregate, it shouldn't be counted as
-            # a non-aggregate.
-            if isinstance(exp, Column) and exp not in alias_columns:
-                non_aggregates.append(exp)
-            elif isinstance(exp, (CurriedFunction, Function)) and not is_aggregate(
-                exp, aggregate_aliases
-            ):
-                non_aggregates.append(exp)
-            else:
-                has_aggregates = True
-
-        if has_aggregates and len(non_aggregates) > 0:
-            if not query.groupby or len(query.groupby) == 0:
-                raise InvalidQuery(
-                    "groupby must be included if there are aggregations in the select"
-                )
-
-            for group_exp in non_aggregates:
-                # Legacy passes aliases in the groupby instead of whole expressions.
-                # We need to check for both.
-                if isinstance(group_exp, Function):
-                    if (
-                        group_exp.alias is not None
-                        and Column(group_exp.alias) in query.groupby
-                    ):
-                        continue
-
-                    # If this is a function wrapper around a groupby column, then this is also allowed
-                    # e.g. BY x, toString(x)
-                    is_wrapper = False
-                    for exp in query.groupby:
-                        if isinstance(exp, Column) and find_column_in_function(
-                            exp, group_exp
-                        ):
-                            is_wrapper = True
-                            break
-
-                    if is_wrapper:
-                        continue
-
-                if group_exp not in query.groupby:
-                    raise InvalidQuery(f"{group_exp} missing from the groupby")
 
         if query.totals and not query.groupby:
             raise InvalidQuery("totals is only valid with a groupby")
