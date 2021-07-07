@@ -281,59 +281,6 @@ invalid_tests = [
         Query(
             dataset="discover",
             match=Entity("events"),
-            select=[Column("title"), Function("count", [], "count")],
-            groupby=None,
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "groupby must be included if there are aggregations in the select"
-        ),
-        id="groupby can't be None with aggregate",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
-            select=[
-                Column("title"),
-                Function(
-                    "plus", [Function("count", []), Function("count", [])], "added"
-                ),
-            ],
-            groupby=None,
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "groupby must be included if there are aggregations in the select"
-        ),
-        id="groupby can't be None with nested aggregate",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
-            select=[Column("title"), Function("count", [], "count")],
-            groupby=[Column("day")],
-            where=[Condition(Column("timestamp"), Op.GT, NOW)],
-            limit=Limit(10),
-            offset=Offset(1),
-            granularity=Granularity(3600),
-        ),
-        InvalidQuery(
-            "Column(name='title', entity=None, subscriptable=None, key=None) missing from the groupby"
-        ),
-        id="groupby must include all non aggregates",
-    ),
-    pytest.param(
-        Query(
-            dataset="discover",
-            match=Entity("events"),
             select=[Column("title")],
             where=[Condition(Column("timestamp"), Op.GT, NOW)],
             limit=Limit(10),
