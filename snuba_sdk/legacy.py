@@ -173,6 +173,18 @@ def parse_condition(cond: Sequence[Any]) -> Condition:
             lhs.subscriptable == "tags" or lhs.name == "release"
         ):
             only_strings = True
+        elif (
+            isinstance(lhs, Function)
+            and lhs.function == "ifNull"
+            and lhs.parameters
+            and len(lhs.parameters) > 1
+        ):
+            first = lhs.parameters[0]
+            if isinstance(first, Column) and (
+                first.subscriptable == "tags" or first.name == "release"
+            ):
+                only_strings = True
+
         rhs = parse_scalar(cond[2], only_strings=only_strings)
 
     return Condition(parse_exp(cond[0]), Op(cond[1]), rhs)

@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.21
+------
+
+- Try to convert wrapped conditions on tags to always use string comparisons.
+
 0.0.20
 ------
 
