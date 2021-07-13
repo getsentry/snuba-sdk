@@ -1325,6 +1325,48 @@ discover_tests = [
         "discover",
         id="crazy_apdex_functions",
     ),
+    pytest.param(
+        {
+            "conditions": [
+                [
+                    ["ifNull", ["tags[event.timestamp]", "''"]],
+                    "=",
+                    "2021-06-06T01:00:00",
+                ],
+                ["type", "!=", "transaction"],
+                ("project_id", "IN", [1]),
+                ("group_id", "IN", [1234567890]),
+            ],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": [],
+            "limit": 101,
+            "offset": 0,
+            "orderby": ["-timestamp", "-event_id"],
+            "project": ["1818675"],
+            "selected_columns": ["event_id", "group_id", "project_id", "timestamp"],
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            "SELECT event_id, group_id, project_id, timestamp",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple('1818675') "
+                "AND ifNull(tags[event.timestamp], '') = '2021-06-06T01:00:00' "
+                "AND type != 'transaction' "
+                "AND project_id IN tuple(1) "
+                "AND group_id IN tuple(1234567890)"
+            ),
+            "ORDER BY timestamp DESC, event_id DESC",
+            "LIMIT 101",
+            "OFFSET 0",
+        ),
+        "events",
+        id="wrapped_tag_functions",
+    ),
 ]
 
 
