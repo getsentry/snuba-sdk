@@ -50,6 +50,13 @@ tests = [
         id="all possible parameter types",
     ),
     pytest.param(
+        func("foo", [Column("foo")], "equation[0]"),
+        Function("foo", [Column("foo")], "equation[0]"),
+        "foo(foo) AS equation[0]",
+        None,
+        id="alias with square brackets",
+    ),
+    pytest.param(
         func(1, ["foo"], "invalid"),
         None,
         "",
@@ -87,10 +94,10 @@ tests = [
         id="empty alias",
     ),
     pytest.param(
-        func("foo", ["foo"], "¡amigo!"),
+        func("foo", ["foo"], "'amigo!"),
         None,
         "",
-        InvalidFunction("alias '¡amigo!' of function foo contains invalid characters"),
+        InvalidFunction("alias ''amigo!' of function foo contains invalid characters"),
         id="invalid alias",
     ),
     pytest.param(
