@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.22
+------
+
+- Allow square brackets in aliases
+
 0.0.21
 ------
 
