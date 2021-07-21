@@ -4,7 +4,7 @@ Changelog and versioning
 0.0.22
 ------
 
-- Make aliases less restrictive
+- Allow square brackets in aliases
 
 0.0.21
 ------
