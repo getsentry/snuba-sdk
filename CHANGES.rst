@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+0.0.23
+------
+
+- Fix bug with legacy queries sending nested functions in a different structure
+- Allow datetimes in legacy function strings (add : and - to allowed character list)
+
 0.0.22
 ------
 
