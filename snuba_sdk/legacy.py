@@ -1,6 +1,6 @@
 from datetime import datetime
 from functools import partial
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op, Or
@@ -87,6 +87,83 @@ def parse_scalar(value: Any, only_strings: Optional[bool] = False) -> Any:
     return value
 
 
+def is_function(value: Any, depth: int) -> Optional[Tuple[str, Any, Optional[str]]]:
+    if (
+        isinstance(value, (tuple, list))
+        and len(value) >= 2
+        and isinstance(value[0], str)
+        and isinstance(value[1], (tuple, list))
+        and (depth > 0 or len(value) <= 3)
+    ):
+        alias = value[2] if len(value) > 2 else None
+        if alias and alias.startswith("`") and alias.endswith("`"):
+            alias = alias[1:-1]
+
+        return (value[0], value[1], alias)
+
+    return None
+
+
+def parse_legacy_function(
+    expr: Any,
+    depth: int = 0,
+) -> Optional[Function]:
+    function_tuple = is_function(expr, depth)
+    if function_tuple is None:
+        return None
+
+    name, args, alias = function_tuple
+
+    out: List[Any] = []
+    i = 0
+    while i < len(args):
+        next_2 = args[i : i + 2]
+        if is_function(next_2, depth + 1):
+            out.append(
+                parse_legacy_function(
+                    next_2,
+                    depth + 1,
+                )
+            )
+            i += 2
+        else:
+            nxt = args[i]
+            if is_function(nxt, depth + 1):  # Embedded function
+                out.append(
+                    parse_legacy_function(
+                        nxt,
+                        depth + 1,
+                    )
+                )
+            elif isinstance(nxt, str):
+                out.append(parse_exp(nxt))
+            else:
+                out.append(parse_exp(nxt))
+            i += 1
+
+    return Function(name, out, alias)
+
+
+def parse_function(value: Sequence[Any]) -> Optional[Function]:
+    alias = value[2] if len(value) > 2 else None
+    if alias and alias.startswith("`") and alias.endswith("`"):
+        alias = alias[1:-1]
+
+    if value[0].endswith("()") and not value[1]:
+        return Function(value[0].strip("()"), [], alias)
+    if not value[0].endswith(")") and not value[1]:
+        # ["count", None, "count"]
+        return Function(value[0], [], alias)
+
+    children = None
+    if isinstance(value[1], list):
+        children = list(map(parse_exp, value[1]))
+    elif value[1]:
+        children = [parse_exp(value[1])]
+
+    return Function(value[0], children, alias)
+
+
 def parse_exp(value: Any) -> Any:
     """
     Takes a legacy expression and converts it to an equivalent SDK Expression.
@@ -107,23 +184,17 @@ def parse_exp(value: Any) -> Any:
     elif not isinstance(value, list):
         return parse_scalar(value)
 
-    alias = value[2] if len(value) > 2 else None
-    if alias and alias.startswith("`") and alias.endswith("`"):
-        alias = alias[1:-1]
+    return parse_function(value)
 
-    if value[0].endswith("()") and not value[1]:
-        return Function(value[0].strip("()"), [], alias)
-    if not value[0].endswith(")") and not value[1]:
-        # ["count", None, "count"]
-        return Function(value[0], [], alias)
 
-    children = None
-    if isinstance(value[1], list):
-        children = list(map(parse_exp, value[1]))
-    elif value[1]:
-        children = [parse_exp(value[1])]
+def parse(value: Any) -> Any:
+    if not isinstance(value, list):
+        return parse_exp(value)
 
-    return Function(value[0], children, alias)
+    try:
+        return parse_exp(value)
+    except Exception:
+        return parse_legacy_function(value)
 
 
 def parse_extension_condition(
@@ -214,7 +285,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     selected_columns = []
     for a in body.get("aggregations", []):
-        selected_columns.append(parse_exp(list(a)))
+        selected_columns.append(parse(list(a)))
 
     selected = []
     for s in body.get("selected_columns", []):
@@ -223,7 +294,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         else:
             selected.append(s)
 
-    selected_columns.extend(list(map(parse_exp, selected)))
+    selected_columns.extend(list(map(parse, selected)))
 
     arrayjoin = body.get("arrayjoin")
     if arrayjoin:
@@ -239,7 +310,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     for g in groupby:
         if isinstance(g, tuple):
             g = list(g)
-        parsed_groupby.append(parse_exp(g))
+        parsed_groupby.append(parse(g))
     query = query.set_groupby(parsed_groupby)
 
     conditions: List[Union[Or, Condition]] = []

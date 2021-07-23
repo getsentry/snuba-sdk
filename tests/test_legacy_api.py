@@ -1344,7 +1344,7 @@ discover_tests = [
             "limit": 101,
             "offset": 0,
             "orderby": ["-timestamp", "-event_id"],
-            "project": ["1818675"],
+            "project": ["1"],
             "selected_columns": ["event_id", "group_id", "project_id", "timestamp"],
         },
         (
@@ -1354,7 +1354,7 @@ discover_tests = [
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
                 "AND timestamp < toDateTime('2021-04-15T20:05:27') "
-                "AND project_id IN tuple('1818675') "
+                "AND project_id IN tuple('1') "
                 "AND ifNull(tags[event.timestamp], '') = '2021-06-06T01:00:00' "
                 "AND type != 'transaction' "
                 "AND project_id IN tuple(1) "
@@ -1366,6 +1366,49 @@ discover_tests = [
         ),
         "events",
         id="wrapped_tag_functions",
+    ),
+    pytest.param(
+        {
+            "selected_columns": [
+                [
+                    "if",
+                    [
+                        ["in", ["tags[sentry:release]", "tuple", ["'foo'"]]],
+                        "tags[sentry:release]",
+                        "'other'",
+                    ],
+                    "release",
+                ]
+            ],
+            "orderby": ["-time"],
+            "limit": 1000,
+            "project": [1],
+            "dataset": "events",
+            "from_date": "2021-04-01T20:05:27",
+            "to_date": "2021-04-15T20:05:27",
+            "groupby": ["time", "release"],
+            "conditions": [("project_id", "IN", [1])],
+            "aggregations": [["count()", None, "count"]],
+            "granularity": 86400,
+            "consistent": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events)",
+            "SELECT count() AS count, if(in(tags[sentry:release], tuple('foo')), tags[sentry:release], 'other') AS release",
+            "BY time, release",
+            (
+                "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
+                "AND timestamp < toDateTime('2021-04-15T20:05:27') "
+                "AND project_id IN tuple(1) "
+                "AND project_id IN tuple(1)"
+            ),
+            "ORDER BY time DESC",
+            "LIMIT 1000",
+            "GRANULARITY 86400",
+        ),
+        "events",
+        id="nested_functions",
     ),
 ]
 
