@@ -1367,6 +1367,57 @@ discover_tests = [
         "events",
         id="wrapped_tag_functions",
     ),
+    pytest.param(
+        {
+            "selected_columns": [],
+            "having": [],
+            "orderby": ["-trend", "group_id"],
+            "limit": 2,
+            "offset": 0,
+            "totals": True,
+            "turbo": False,
+            "sample": 1,
+            "project": [1],
+            "dataset": "events",
+            "from_date": "2021-07-22T18:23:15",
+            "to_date": "2021-07-23T18:23:14",
+            "groupby": ["group_id"],
+            "conditions": [("project_id", "IN", [1]), ("group_id", "IN", [1, 2])],
+            "aggregations": [
+                ["uniq", "group_id", "total"],
+                [
+                    "if(greater(countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp)), 0), divide(countIf(lessOrEquals(toDateTime('2021-07-23T06:23:14'), timestamp)), countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp))), 0)",
+                    "",
+                    "trend",
+                ],
+            ],
+            "consistent": False,
+        },
+        (
+            "-- DATASET: events",
+            "MATCH (events SAMPLE 1.0)",
+            (
+                "SELECT uniq(group_id) AS total, "
+                "if(greater(countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp)), 0), "
+                "divide(countIf(lessOrEquals(toDateTime('2021-07-23T06:23:14'), timestamp)), "
+                "countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp))), 0) AS trend"
+            ),
+            "BY group_id",
+            (
+                "WHERE timestamp >= toDateTime('2021-07-22T18:23:15') "
+                "AND timestamp < toDateTime('2021-07-23T18:23:14') "
+                "AND project_id IN tuple(1) "
+                "AND project_id IN tuple(1) "
+                "AND group_id IN tuple(1, 2)"
+            ),
+            "ORDER BY trend DESC, group_id ASC",
+            "LIMIT 2",
+            "OFFSET 0",
+            "TOTALS True",
+        ),
+        "events",
+        id="string_functions_with_datetimes",
+    ),
 ]
 
 
