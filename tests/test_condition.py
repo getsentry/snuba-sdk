@@ -219,7 +219,7 @@ boolean_tests = [
         None,
         None,
         InvalidCondition(
-            "invalid boolean: Column(name='event_id', entity=None, subscriptable=None, key=None) is not a valid condition"
+            "invalid boolean: Column(name='event_id', entity=None, output_alias=None, subscriptable=None, key=None) is not a valid condition"
         ),
         id="not all conditions",
     ),

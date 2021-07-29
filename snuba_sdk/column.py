@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Expression, InvalidExpression
+from snuba_sdk.expressions import Expression, InvalidExpression, alias_re
 
 
 class InvalidColumn(InvalidExpression):
@@ -32,6 +32,7 @@ class Column(Expression):
 
     name: str
     entity: Optional[Entity] = None
+    output_alias: Optional[str] = None
     subscriptable: Optional[str] = field(init=False, default=None)
     key: Optional[str] = field(init=False, default=None)
 
@@ -43,6 +44,17 @@ class Column(Expression):
             raise InvalidColumn(
                 f"column '{self.name}' is empty or contains invalid characters"
             )
+
+        if self.output_alias is not None:
+            if not isinstance(self.output_alias, str) or self.output_alias == "":
+                raise InvalidColumn(
+                    f"output_alias '{self.output_alias}' of column {self.name} must be None or a non-empty string"
+                )
+            if not alias_re.match(self.output_alias):
+                raise InvalidColumn(
+                    f"output_alias '{self.output_alias}' of column {self.name} contains invalid characters"
+                )
+
         if self.entity is not None:
             if not isinstance(self.entity, Entity):
                 raise InvalidColumn(f"column {self.name} expects an Entity")

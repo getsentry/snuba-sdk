@@ -350,6 +350,54 @@ tests = [
         None,
         id="sequences can mix expressions with literals",
     ),
+    pytest.param(
+        Query("discover", Entity("events"))
+        .set_select(
+            [
+                Column("transaction", output_alias="tn"),
+                Function("count", [], "equation[0]"),
+            ]
+        )
+        .set_groupby(
+            [
+                Column("project_id", output_alias="pi"),
+                Column("transaction", output_alias="tn"),
+            ]
+        )
+        .set_where([Condition(Column("project_id"), Op.IN, (1,))]),
+        (
+            "MATCH (events)",
+            "SELECT transaction AS tn, count() AS equation[0]",
+            "BY project_id AS pi, transaction AS tn",
+            "WHERE project_id IN tuple(1)",
+        ),
+        None,
+        id="columns can have aliases",
+    ),
+    pytest.param(
+        Query("discover", Entity("events"))
+        .set_select(
+            [
+                Column("transaction", output_alias="tn"),
+                Function("count", [], "equation[0]"),
+            ]
+        )
+        .set_groupby(
+            [
+                Column("project_id", output_alias="pi"),
+                Column("transaction", output_alias="tn"),
+            ]
+        )
+        .set_where([Condition(Column("project_id", output_alias="pi"), Op.IN, (1,))]),
+        (
+            "MATCH (events)",
+            "SELECT transaction AS tn, count() AS equation[0]",
+            "BY project_id AS pi, transaction AS tn",
+            "WHERE project_id IN tuple(1)",
+        ),
+        None,
+        id="columns aliases are only used in the select",
+    ),
 ]
 
 

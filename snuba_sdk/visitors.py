@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from datetime import date, datetime
-from typing import Any, Generic, Set, TypeVar
+from typing import Any, Generator, Generic, Set, TypeVar
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, is_unary
@@ -135,10 +136,11 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
 
 class Translation(ExpressionVisitor[str]):
-    def __init__(self, use_entity_aliases: bool = False):
-        # Eventually JOINs will set this to True, but single entity/sub queries
-        # don't support entity aliases.
+    def __init__(
+        self, use_entity_aliases: bool = False, use_output_aliases: bool = False
+    ):
         self.use_entity_aliases = use_entity_aliases
+        self.use_output_aliases = use_output_aliases
 
     def _stringify_scalar(self, value: ScalarType) -> str:
         if value is None:
@@ -182,10 +184,15 @@ class Translation(ExpressionVisitor[str]):
         raise InvalidExpression(f"'{value}' is not a valid scalar")
 
     def _visit_column(self, column: Column) -> str:
-        alias_clause = ""
+        entity_alias_clause = ""
         if column.entity is not None and self.use_entity_aliases:
-            alias_clause = f"{column.entity.alias}."
-        return f"{alias_clause}{column.name}"
+            entity_alias_clause = f"{column.entity.alias}."
+
+        alias_clause = ""
+        if column.output_alias and self.use_output_aliases:
+            alias_clause = f" AS {column.output_alias}"
+
+        return f"{entity_alias_clause}{column.name}{alias_clause}"
 
     def _visit_curried_function(self, func: CurriedFunction) -> str:
         alias = "" if func.alias is None else f" AS {func.alias}"
@@ -275,6 +282,20 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_legacy(self, legacy: Legacy) -> str:
         return str(legacy)
+
+
+@contextmanager
+def entity_aliases(translator: Translation) -> Generator[None, None, None]:
+    translator.use_entity_aliases = True
+    yield
+    translator.use_entity_aliases = False
+
+
+@contextmanager
+def output_aliases(translator: Translation) -> Generator[None, None, None]:
+    translator.use_output_aliases = True
+    yield
+    translator.use_output_aliases = False
 
 
 class ExpressionFinder(ExpressionVisitor[Set[Expression]]):

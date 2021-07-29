@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -16,6 +17,8 @@ class Expression(ABC):
     def validate(self) -> None:
         raise NotImplementedError
 
+
+alias_re = re.compile(r"^[a-zA-Z](\w|\.|\[|\])*$")
 
 # For type hinting
 ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]

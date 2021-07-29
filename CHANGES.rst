@@ -4,7 +4,8 @@ Changelog and versioning
 0.0.23
 ------
 
-- Fix bug with legacy queries sending nested functions in a different structure
+- Add an `output_alias` field to Columns that is used if the expression is in the select or groupby, which allows an alias of the results returned from Snuba. The alias is not used in any other clauses and is not available in the generated query in Snuba.
+- Fix alias_re to allow single letter aliases
 - Allow datetimes in legacy function strings (add : and - to allowed character list)
 
 0.0.22

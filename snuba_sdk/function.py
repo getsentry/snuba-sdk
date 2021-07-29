@@ -8,6 +8,7 @@ from snuba_sdk.expressions import (
     InvalidExpression,
     ScalarLiteralType,
     ScalarType,
+    alias_re,
     is_literal,
     is_scalar,
 )
@@ -17,7 +18,6 @@ class InvalidFunction(InvalidExpression):
     pass
 
 
-alias_re = re.compile(r"^[a-zA-Z](\w|\.|\[|\])+$")
 # In theory the function matcher should be the same as the column one.
 # However legacy API sends curried functions as raw strings, and it
 # wasn't worth it to import an entire parsing grammar into the SDK

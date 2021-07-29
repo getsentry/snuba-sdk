@@ -34,7 +34,12 @@ from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join
 from snuba_sdk.snuba import is_aggregation_function
-from snuba_sdk.visitors import ExpressionFinder, Translation
+from snuba_sdk.visitors import (
+    ExpressionFinder,
+    Translation,
+    entity_aliases,
+    output_aliases,
+)
 
 
 class InvalidQuery(Exception):
@@ -185,7 +190,10 @@ class Printer(QueryVisitor[str]):
         self.is_inner = is_inner
 
     def visit(self, query: "main.Query") -> str:
-        self.translator.use_entity_aliases = isinstance(query.match, Join)
+        if isinstance(query.match, Join):
+            with entity_aliases(self.translator):
+                return super().visit(query)
+
         return super().visit(query)
 
     def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
@@ -224,14 +232,16 @@ class Printer(QueryVisitor[str]):
         self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> str:
         if select:
-            return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
+            with output_aliases(self.translator):
+                return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
     def _visit_groupby(
         self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
     ) -> str:
         if groupby:
-            return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
+            with output_aliases(self.translator):
+                return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
     def _visit_array_join(self, array_join: Optional[Column]) -> str:
