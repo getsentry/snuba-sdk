@@ -20,10 +20,16 @@ class Column(Expression):
     expected to be alpha-numeric, with '.', '_`, and `:` allowed as well.
     If the column is subscriptable then you can specify the column in the
     form `subscriptable[key]`. The `subscriptable` attribute will contain the outer
-    column and `key` will contain the inner key.
+    column and `key` will contain the inner key. The `output_alias` field can be
+    used to provide an alias to a column in the results. The alias is not used
+    anywhere except in the `select` and `groupby` sections of a query.
 
     :param name: The column name.
     :type name: str
+    :param entity: The entity for that column
+    :type name: Optional[Entity]
+    :param output_alias: An alias that will be applied to the results of the query.
+    :type name: Optional[str]
 
     :raises InvalidColumn: If the column name is not a string or has an
         invalid format.
