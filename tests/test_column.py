@@ -181,6 +181,14 @@ aliased_tests = [
         id="colon subscriptable",
     ),
     pytest.param(
+        "a1.2[a:bdsd]",
+        "complex-[some.tag-1]",
+        ("a1.2[a:bdsd]", "a1.2", "a:bdsd", "complex-[some.tag-1]"),
+        "a1.2[a:bdsd] AS complex-[some.tag-1]",
+        None,
+        id="colon subscriptable with complex alias",
+    ),
+    pytest.param(
         "a1",
         1,
         None,
@@ -202,11 +210,11 @@ aliased_tests = [
     ),
     pytest.param(
         "a1",
-        "___invalid**",
+        "___invalid*||*",
         None,
         None,
         InvalidColumn(
-            "output_alias '___invalid**' of column a1 contains invalid characters"
+            "output_alias '___invalid*||*' of column a1 contains invalid characters"
         ),
         id="alias must be string",
     ),

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Expression, InvalidExpression, alias_re
+from snuba_sdk.expressions import ALIAS_RE, Expression, InvalidExpression
 
 
 class InvalidColumn(InvalidExpression):
@@ -50,7 +50,7 @@ class Column(Expression):
                 raise InvalidColumn(
                     f"output_alias '{self.output_alias}' of column {self.name} must be None or a non-empty string"
                 )
-            if not alias_re.match(self.output_alias):
+            if not ALIAS_RE.match(self.output_alias):
                 raise InvalidColumn(
                     f"output_alias '{self.output_alias}' of column {self.name} contains invalid characters"
                 )

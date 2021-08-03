@@ -4,11 +4,11 @@ from typing import Optional, Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
+    ALIAS_RE,
     Expression,
     InvalidExpression,
     ScalarLiteralType,
     ScalarType,
-    alias_re,
     is_literal,
     is_scalar,
 )
@@ -65,7 +65,7 @@ class CurriedFunction(Expression):
                 raise InvalidFunction(
                     f"alias '{self.alias}' of function {self.function} must be None or a non-empty string"
                 )
-            if not alias_re.match(self.alias):
+            if not ALIAS_RE.match(self.alias):
                 raise InvalidFunction(
                     f"alias '{self.alias}' of function {self.function} contains invalid characters"
                 )

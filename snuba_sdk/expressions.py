@@ -18,7 +18,7 @@ class Expression(ABC):
         raise NotImplementedError
 
 
-alias_re = re.compile(r"^[a-zA-Z](\w|\.|\[|\])*$")
+ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
 
 # For type hinting
 ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]
