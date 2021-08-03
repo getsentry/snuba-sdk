@@ -3,7 +3,9 @@ from typing import Any, Mapping, Sequence
 
 import pytest
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
+from snuba_sdk.conditions import Condition, InvalidCondition, Op
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import InvalidExpression
 from snuba_sdk.function import Function
@@ -27,6 +29,20 @@ def test_invalid_query() -> None:
     ):
         Query(dataset="discover", match="events")  # type: ignore
 
+    with pytest.raises(
+        InvalidCondition,
+        match=re.escape(
+            "invalid condition: LHS of a condition must be a Column, CurriedFunction or Function, not <class 'snuba_sdk.aliased_expression.AliasedExpression'>"
+        ),
+    ):
+        (
+            Query("discover", Entity("events"))
+            .set_select([AliasedExpression(Column("transaction"), "tn")])
+            .set_where(
+                [Condition(AliasedExpression(Column("project_id"), "pi"), Op.IN, (1,))]  # type: ignore
+            )
+        )
+
 
 def test_invalid_query_set() -> None:
     query = Query("discover", Entity("events"))
@@ -35,12 +51,9 @@ def test_invalid_query_set() -> None:
         "match": (0, "0 must be a valid Entity"),
         "select": (
             (0, [], [0]),
-            "select clause must be a non-empty list of Column and/or Function",
+            "select clause must be a non-empty list of SelectableExpression",
         ),
-        "groupby": (
-            [0, [0]],
-            "groupby clause must be a list of Column and/or Function",
-        ),
+        "groupby": ([0, [0]], "groupby clause must be a list of SelectableExpression"),
         "where": ([0, [0]], "where clause must be a list of conditions"),
         "having": ([0, [0]], "having clause must be a list of conditions"),
         "orderby": ([0, [0]], "orderby clause must be a list of OrderBy"),

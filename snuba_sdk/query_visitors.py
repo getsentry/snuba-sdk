@@ -34,12 +34,7 @@ from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join
 from snuba_sdk.snuba import is_aggregation_function
-from snuba_sdk.visitors import (
-    ExpressionFinder,
-    Translation,
-    entity_aliases,
-    output_aliases,
-)
+from snuba_sdk.visitors import ExpressionFinder, Translation, entity_aliases
 
 
 class InvalidQuery(Exception):
@@ -112,13 +107,13 @@ class QueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, select: Optional[Sequence["main.SelectableExpression"]]
     ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, groupby: Optional[Sequence["main.SelectableExpression"]]
     ) -> QVisited:
         raise NotImplementedError
 
@@ -229,19 +224,17 @@ class Printer(QueryVisitor[str]):
         return "MATCH { %s }" % subquery
 
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, select: Optional[Sequence["main.SelectableExpression"]]
     ) -> str:
         if select:
-            with output_aliases(self.translator):
-                return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
+            return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, groupby: Optional[Sequence["main.SelectableExpression"]]
     ) -> str:
         if groupby:
-            with output_aliases(self.translator):
-                return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
+            return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
     def _visit_array_join(self, array_join: Optional[Column]) -> str:
@@ -364,12 +357,12 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
         return found
 
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, select: Optional[Sequence["main.SelectableExpression"]]
     ) -> Set[Expression]:
         return self.__aggregate(select)
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, groupby: Optional[Sequence["main.SelectableExpression"]]
     ) -> Set[Expression]:
         return self.__aggregate(groupby)
 
@@ -483,12 +476,12 @@ class Validator(QueryVisitor[None]):
                 v.validate()
 
     def _visit_select(
-        self, select: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, select: Optional[Sequence["main.SelectableExpression"]]
     ) -> None:
         self.__list_validate(select)
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence[Union[Column, CurriedFunction, Function]]]
+        self, groupby: Optional[Sequence["main.SelectableExpression"]]
     ) -> None:
         self.__list_validate(groupby)
 

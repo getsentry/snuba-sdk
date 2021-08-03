@@ -1,6 +1,7 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition
 from snuba_sdk.entity import Entity
@@ -33,6 +34,15 @@ VALIDATOR = Validator()
 TRANSLATOR = Translator()
 
 
+SelectableExpression = Union[AliasedExpression, Column, CurriedFunction, Function]
+SelectableExpressionType: List[type] = [
+    AliasedExpression,
+    Column,
+    CurriedFunction,
+    Function,
+]
+
+
 @dataclass(frozen=True)
 class Query:
     """
@@ -46,8 +56,8 @@ class Query:
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
     match: Union[Entity, Join, "Query"]
-    select: Optional[List[Union[Column, CurriedFunction, Function]]] = None
-    groupby: Optional[List[Union[Column, CurriedFunction, Function]]] = None
+    select: Optional[List[SelectableExpression]] = None
+    groupby: Optional[List[SelectableExpression]] = None
     array_join: Optional[Column] = None
     where: Optional[List[Union[BooleanCondition, Condition]]] = None
     having: Optional[List[Union[BooleanCondition, Condition]]] = None
@@ -104,21 +114,18 @@ class Query:
         return self._replace("match", match)
 
     def set_select(
-        self, select: Sequence[Union[Column, CurriedFunction, Function]]
+        self,
+        select: Sequence[SelectableExpression],
     ) -> "Query":
-        if not list_type(select, (Column, CurriedFunction, Function)) or not select:
+        if not list_type(select, SelectableExpressionType) or not select:
             raise InvalidQuery(
-                "select clause must be a non-empty list of Column and/or Function"
+                "select clause must be a non-empty list of SelectableExpression"
             )
         return self._replace("select", select)
 
-    def set_groupby(
-        self, groupby: Sequence[Union[Column, CurriedFunction, Function]]
-    ) -> "Query":
-        if not list_type(groupby, (Column, CurriedFunction, Function)):
-            raise InvalidQuery(
-                "groupby clause must be a list of Column and/or Function"
-            )
+    def set_groupby(self, groupby: Sequence[SelectableExpression]) -> "Query":
+        if not list_type(groupby, SelectableExpressionType):
+            raise InvalidQuery("groupby clause must be a list of SelectableExpression")
         return self._replace("groupby", groupby)
 
     def set_array_join(self, array_join: Column) -> "Query":

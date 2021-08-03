@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from datetime import date, datetime
 from typing import Any, Generator, Generic, Set, TypeVar
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, is_unary
 from snuba_sdk.entity import Entity
@@ -31,6 +32,8 @@ TVisited = TypeVar("TVisited")
 
 class ExpressionVisitor(ABC, Generic[TVisited]):
     def visit(self, node: Expression) -> TVisited:
+        if isinstance(node, AliasedExpression):
+            return self._visit_aliased_expression(node)
         if isinstance(node, Column):
             return self._visit_column(node)
         elif isinstance(node, (CurriedFunction, Function)):
@@ -69,6 +72,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_legacy(node)
 
         assert False, f"Unhandled Expression: {node}"
+
+    @abstractmethod
+    def _visit_aliased_expression(self, aliased: AliasedExpression) -> TVisited:
+        raise NotImplementedError
 
     @abstractmethod
     def _visit_column(self, column: Column) -> TVisited:
@@ -136,11 +143,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
 
 class Translation(ExpressionVisitor[str]):
-    def __init__(
-        self, use_entity_aliases: bool = False, use_output_aliases: bool = False
-    ):
+    def __init__(self, use_entity_aliases: bool = False):
         self.use_entity_aliases = use_entity_aliases
-        self.use_output_aliases = use_output_aliases
 
     def _stringify_scalar(self, value: ScalarType) -> str:
         if value is None:
@@ -183,16 +187,19 @@ class Translation(ExpressionVisitor[str]):
 
         raise InvalidExpression(f"'{value}' is not a valid scalar")
 
+    def _visit_aliased_expression(self, aliased: AliasedExpression) -> str:
+        alias_clause = ""
+        if aliased.alias is not None:
+            alias_clause = f" AS {aliased.alias}"
+
+        return f"{self.visit(aliased.exp)}{alias_clause}"
+
     def _visit_column(self, column: Column) -> str:
         entity_alias_clause = ""
         if column.entity is not None and self.use_entity_aliases:
             entity_alias_clause = f"{column.entity.alias}."
 
-        alias_clause = ""
-        if column.output_alias and self.use_output_aliases:
-            alias_clause = f" AS {column.output_alias}"
-
-        return f"{entity_alias_clause}{column.name}{alias_clause}"
+        return f"{entity_alias_clause}{column.name}"
 
     def _visit_curried_function(self, func: CurriedFunction) -> str:
         alias = "" if func.alias is None else f" AS {func.alias}"
@@ -291,16 +298,15 @@ def entity_aliases(translator: Translation) -> Generator[None, None, None]:
     translator.use_entity_aliases = False
 
 
-@contextmanager
-def output_aliases(translator: Translation) -> Generator[None, None, None]:
-    translator.use_output_aliases = True
-    yield
-    translator.use_output_aliases = False
-
-
 class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def __init__(self, exp_type: Any) -> None:
         self.exp_type = exp_type
+
+    def _visit_aliased_expression(self, aliased: AliasedExpression) -> Set[Expression]:
+        if isinstance(aliased, self.exp_type):
+            return set([aliased])
+
+        return self.visit(aliased.exp)
 
     def _visit_column(self, column: Column) -> Set[Expression]:
         if isinstance(column, self.exp_type):

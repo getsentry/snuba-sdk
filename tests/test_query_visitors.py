@@ -4,6 +4,7 @@ from typing import Any, MutableMapping, Optional, Sequence, Tuple
 
 import pytest
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
@@ -354,14 +355,14 @@ tests = [
         Query("discover", Entity("events"))
         .set_select(
             [
-                Column("transaction", output_alias="tn"),
+                AliasedExpression(Column("transaction"), "tn"),
                 Function("count", [], "equation[0]"),
             ]
         )
         .set_groupby(
             [
-                Column("project_id", output_alias="pi"),
-                Column("transaction", output_alias="tn"),
+                AliasedExpression(Column("project_id"), "pi"),
+                AliasedExpression(Column("transaction"), "tn"),
             ]
         )
         .set_where([Condition(Column("project_id"), Op.IN, (1,))]),
@@ -373,30 +374,6 @@ tests = [
         ),
         None,
         id="columns can have aliases",
-    ),
-    pytest.param(
-        Query("discover", Entity("events"))
-        .set_select(
-            [
-                Column("transaction", output_alias="tn"),
-                Function("count", [], "equation[0]"),
-            ]
-        )
-        .set_groupby(
-            [
-                Column("project_id", output_alias="pi"),
-                Column("transaction", output_alias="tn"),
-            ]
-        )
-        .set_where([Condition(Column("project_id", output_alias="pi"), Op.IN, (1,))]),
-        (
-            "MATCH (events)",
-            "SELECT transaction AS tn, count() AS equation[0]",
-            "BY project_id AS pi, transaction AS tn",
-            "WHERE project_id IN tuple(1)",
-        ),
-        None,
-        id="columns aliases are only used in the select",
     ),
 ]
 

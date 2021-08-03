@@ -1,3 +1,4 @@
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.entity import Entity
@@ -16,6 +17,7 @@ from snuba_sdk.query import Query
 from snuba_sdk.relationships import Join, Relationship
 
 __all__ = [
+    "AliasedExpression",
     "And",
     "BooleanCondition",
     "BooleanOp",

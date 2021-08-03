@@ -20,6 +20,7 @@ class Expression(ABC):
 
 ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
 
+
 # For type hinting
 ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]
 ScalarSequenceType = Sequence[Union[Expression, ScalarLiteralType]]
