@@ -18,7 +18,8 @@ class AliasedExpression(Expression):
     :raises InvalidExpression: If the expression or alias is invalid.
     """
 
-    # TODO:
+    # TODO: We should eventually allow Functions here as well, once we think through
+    # how this should work with functions that already have aliases.
     exp: Column
     alias: Optional[str] = None
 
