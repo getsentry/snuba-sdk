@@ -21,7 +21,7 @@ def get_file_text(file_name: str) -> str:
 
 setup(
     name="snuba-sdk",
-    version="0.0.22",
+    version="0.0.23",
     author="Sentry",
     author_email="oss@sentry.io",
     url="https://github.com/getsentry/snuba-sdk",
