@@ -4,6 +4,7 @@ from typing import Any, MutableMapping, Optional, Sequence, Tuple
 
 import pytest
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
@@ -349,6 +350,30 @@ tests = [
         ),
         None,
         id="sequences can mix expressions with literals",
+    ),
+    pytest.param(
+        Query("discover", Entity("events"))
+        .set_select(
+            [
+                AliasedExpression(Column("transaction"), "tn"),
+                Function("count", [], "equation[0]"),
+            ]
+        )
+        .set_groupby(
+            [
+                AliasedExpression(Column("project_id"), "pi"),
+                AliasedExpression(Column("transaction"), "tn"),
+            ]
+        )
+        .set_where([Condition(Column("project_id"), Op.IN, (1,))]),
+        (
+            "MATCH (events)",
+            "SELECT transaction AS tn, count() AS equation[0]",
+            "BY project_id AS pi, transaction AS tn",
+            "WHERE project_id IN tuple(1)",
+        ),
+        None,
+        id="columns can have aliases",
     ),
 ]
 

@@ -92,7 +92,6 @@ If there is a problem with a query, it will throw an ``InvalidQuery`` exception 
 TODO List
 =========
 
-- Join support
 - Have the Entity object take a set of columns
 - Syntactic sugar
 

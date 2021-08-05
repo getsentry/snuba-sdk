@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -15,6 +16,9 @@ class Expression(ABC):
     @abstractmethod
     def validate(self) -> None:
         raise NotImplementedError
+
+
+ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
 
 
 # For type hinting

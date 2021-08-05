@@ -4,6 +4,7 @@ from typing import Optional, Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
+    ALIAS_RE,
     Expression,
     InvalidExpression,
     ScalarLiteralType,
@@ -17,7 +18,6 @@ class InvalidFunction(InvalidExpression):
     pass
 
 
-alias_re = re.compile(r"^[a-zA-Z](\w|\.|\[|\])+$")
 # In theory the function matcher should be the same as the column one.
 # However legacy API sends curried functions as raw strings, and it
 # wasn't worth it to import an entire parsing grammar into the SDK
@@ -65,7 +65,7 @@ class CurriedFunction(Expression):
                 raise InvalidFunction(
                     f"alias '{self.alias}' of function {self.function} must be None or a non-empty string"
                 )
-            if not alias_re.match(self.alias):
+            if not ALIAS_RE.match(self.alias):
                 raise InvalidFunction(
                     f"alias '{self.alias}' of function {self.function} contains invalid characters"
                 )

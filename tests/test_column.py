@@ -88,7 +88,7 @@ TRANSLATOR = Translation(use_entity_aliases=True)
 @pytest.mark.parametrize("column_name, valid, translated, exception", tests)
 def test_columns(
     column_name: str,
-    valid: Tuple[str, Optional[str], Optional[str]],
+    valid: Tuple[str, Optional[str], Optional[str], Optional[str]],
     translated: str,
     exception: Optional[Exception],
 ) -> None:

@@ -24,6 +24,8 @@ class Column(Expression):
 
     :param name: The column name.
     :type name: str
+    :param entity: The entity for that column
+    :type name: Optional[Entity]
 
     :raises InvalidColumn: If the column name is not a string or has an
         invalid format.
@@ -43,6 +45,7 @@ class Column(Expression):
             raise InvalidColumn(
                 f"column '{self.name}' is empty or contains invalid characters"
             )
+
         if self.entity is not None:
             if not isinstance(self.entity, Entity):
                 raise InvalidColumn(f"column {self.name} expects an Entity")
