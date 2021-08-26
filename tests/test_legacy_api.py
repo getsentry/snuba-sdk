@@ -1418,6 +1418,69 @@ discover_tests = [
         "events",
         id="string_functions_with_datetimes",
     ),
+    pytest.param(
+        {
+            "aggregations": [],
+            "conditions": [
+                [
+                    [
+                        "or",
+                        [
+                            ["release", "IN", ["hash"]],
+                            [
+                                "or",
+                                [
+                                    ["equals", ["release", "deadbeef"]],
+                                    [
+                                        "or",
+                                        [
+                                            ["equals", ["release", "abadcafe"]],
+                                            ["release", "IN", ["fullhash"]],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    "=",
+                    1,
+                ],
+                ["project_id", "IN", ["1"]],
+            ],
+            "dataset": "sessions",
+            "from_date": "2021-07-22T18:23:15",
+            "to_date": "2021-07-23T18:23:14",
+            "granularity": 86400,
+            "groupby": ["release", "project_id"],
+            "organization": 2,
+            "project": [1],
+            "selected_columns": [
+                "sessions_crashed",
+                "sessions_abnormal",
+                "sessions_errored",
+                "sessions",
+                "project_id",
+                "release",
+            ],
+        },
+        (
+            "-- DATASET: sessions",
+            "MATCH (sessions)",
+            "SELECT sessions_crashed, sessions_abnormal, sessions_errored, sessions, project_id, release",
+            "BY release, project_id",
+            (
+                "WHERE org_id = 2 "
+                "AND started >= toDateTime('2021-07-22T18:23:15') "
+                "AND started < toDateTime('2021-07-23T18:23:14') "
+                "AND project_id IN tuple(1) "
+                "AND or(in(release, tuple('hash')), or(equals(release, deadbeef), or(equals(release, abadcafe), in(release, tuple('fullhash'))))) = 1 "
+                "AND project_id IN tuple('1')"
+            ),
+            "GRANULARITY 86400",
+        ),
+        "sessions",
+        id="conditions_nested_in_or_functions",
+    ),
 ]
 
 
