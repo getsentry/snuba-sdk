@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.24
+------
+
+- Fix a bug in legacy converter that correctly handles infix conditions inside other functions
+
 0.0.23
 ------
 

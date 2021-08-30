@@ -1,9 +1,9 @@
 from datetime import datetime
 from functools import partial
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op, Or
+from snuba_sdk.conditions import OPERATOR_TO_FUNCTION, Condition, Op, Or
 from snuba_sdk.entity import Entity, get_required_time_column
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
@@ -107,6 +107,9 @@ def parse_exp(value: Any) -> Any:
     elif not isinstance(value, list):
         return parse_scalar(value)
 
+    if is_condition(value):
+        return parse_condition_to_function(value)
+
     alias = value[2] if len(value) > 2 else None
     if alias and alias.startswith("`") and alias.endswith("`"):
         alias = alias[1:-1]
@@ -157,13 +160,12 @@ def parse_extension_condition(
     return None
 
 
-def parse_condition(cond: Sequence[Any]) -> Condition:
+def _parse_condition_parts(cond: Sequence[Any]) -> Tuple[Any, Op, Any]:
     """
-    Convert a legacy condition into an SDK condition.
+    Parse the parts of a legacy condition and return them.
 
     :param cond: A legacy condition array.
     :type cond: Sequence[Any]
-
     """
     rhs = None
     lhs = parse_exp(cond[0])
@@ -187,7 +189,24 @@ def parse_condition(cond: Sequence[Any]) -> Condition:
 
         rhs = parse_scalar(cond[2], only_strings=only_strings)
 
-    return Condition(parse_exp(cond[0]), Op(cond[1]), rhs)
+    return (lhs, Op(cond[1]), rhs)
+
+
+def parse_condition(cond: Sequence[Any]) -> Condition:
+    """
+    Convert a legacy condition into an SDK condition.
+
+    :param cond: A legacy condition array.
+    :type cond: Sequence[Any]
+
+    """
+    lhs, op, rhs = _parse_condition_parts(cond)
+    return Condition(lhs, op, rhs)
+
+
+def parse_condition_to_function(cond: Sequence[Any]) -> Function:
+    lhs, op, rhs = _parse_condition_parts(cond)
+    return Function(OPERATOR_TO_FUNCTION[op].value, (lhs, rhs))
 
 
 def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
