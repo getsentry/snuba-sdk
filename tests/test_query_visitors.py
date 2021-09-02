@@ -115,7 +115,8 @@ tests = [
         .set_turbo(True)
         .set_dry_run(True)
         .set_legacy(True)
-        .set_debug(True),
+        .set_debug(True)
+        .set_parent_api("testing"),
         (
             "MATCH (events SAMPLE 0.200000)",
             "SELECT event_id, title",
@@ -131,6 +132,7 @@ tests = [
             ("debug", True),
             ("dry_run", True),
             ("legacy", True),
+            ("parent_api", "testing"),
         ],
         id="multiple ORDER BY",
     ),

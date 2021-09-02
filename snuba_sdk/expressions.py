@@ -104,6 +104,15 @@ class Granularity(Expression):
 
 
 @dataclass(frozen=True)
+class ParentAPI(Expression):
+    name: str
+
+    def validate(self) -> None:
+        if not isinstance(self.name, str) or self.name == "":
+            raise InvalidExpression(f"{self.name} must be non-empty string")
+
+
+@dataclass(frozen=True)
 class BooleanFlag(Expression):
     value: bool = False
     name: str = ""

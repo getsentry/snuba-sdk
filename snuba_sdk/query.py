@@ -13,6 +13,7 @@ from snuba_sdk.expressions import (
     Legacy,
     Limit,
     Offset,
+    ParentAPI,
     Totals,
     Turbo,
 )
@@ -66,6 +67,7 @@ class Query:
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
+    parent_api: Optional[ParentAPI] = None
     totals: Totals = Totals(False)
     consistent: Consistent = Consistent(False)
     turbo: Turbo = Turbo(False)
@@ -169,6 +171,9 @@ class Query:
 
     def set_totals(self, totals: bool) -> "Query":
         return self._replace("totals", Totals(totals))
+
+    def set_parent_api(self, parent_api: str) -> "Query":
+        return self._replace("parent_api", ParentAPI(parent_api))
 
     def set_consistent(self, consistent: bool) -> "Query":
         return self._replace("consistent", Consistent(consistent))
