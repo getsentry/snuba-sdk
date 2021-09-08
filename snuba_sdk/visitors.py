@@ -17,6 +17,7 @@ from snuba_sdk.expressions import (
     Legacy,
     Limit,
     Offset,
+    ParentAPI,
     Scalar,
     ScalarType,
     Totals,
@@ -60,6 +61,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_int_literal(node.granularity)
         elif isinstance(node, Totals):
             return self._visit_totals(node)
+        elif isinstance(node, ParentAPI):
+            return self._visit_parent_api(node)
         elif isinstance(node, Consistent):
             return self._visit_consistent(node)
         elif isinstance(node, Turbo):
@@ -119,6 +122,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_totals(self, totals: Totals) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_parent_api(self, parent_api: ParentAPI) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -275,6 +282,9 @@ class Translation(ExpressionVisitor[str]):
     def _visit_totals(self, totals: Totals) -> str:
         return str(totals)
 
+    def _visit_parent_api(self, parent_api: ParentAPI) -> str:
+        return parent_api.name
+
     def _visit_consistent(self, consistent: Consistent) -> str:
         return str(consistent)
 
@@ -386,6 +396,11 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_consistent(self, consistent: Consistent) -> Set[Expression]:
         if isinstance(consistent, self.exp_type):
             return set([consistent])
+        return set()
+
+    def _visit_parent_api(self, parent_api: ParentAPI) -> Set[Expression]:
+        if isinstance(parent_api, self.exp_type):
+            return set([parent_api])
         return set()
 
     def _visit_turbo(self, turbo: Turbo) -> Set[Expression]:

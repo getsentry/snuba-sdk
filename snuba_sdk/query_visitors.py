@@ -27,6 +27,7 @@ from snuba_sdk.expressions import (
     Legacy,
     Limit,
     Offset,
+    ParentAPI,
     Totals,
     Turbo,
 )
@@ -154,6 +155,10 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
+    def _visit_parent_api(self, parent_api: ParentAPI) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
     def _visit_totals(self, totals: Totals) -> QVisited:
         raise NotImplementedError
 
@@ -194,7 +199,15 @@ class Printer(QueryVisitor[str]):
     def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
-        to_skip = ("dataset", "consistent", "turbo", "debug", "dry_run", "legacy")
+        to_skip = (
+            "dataset",
+            "consistent",
+            "turbo",
+            "debug",
+            "dry_run",
+            "legacy",
+            "parent_api",
+        )
 
         separator = "\n" if (self.pretty and not self.is_inner) else " "
         formatted = separator.join(
@@ -281,6 +294,9 @@ class Printer(QueryVisitor[str]):
             return f"GRANULARITY {self.translator.visit(granularity)}"
         return ""
 
+    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> str:
+        return parent_api.name if parent_api is not None else ""
+
     def _visit_totals(self, totals: Totals) -> str:
         if totals:
             return f"TOTALS {self.translator.visit(totals)}"
@@ -325,6 +341,8 @@ class Translator(Printer):
             body["dry_run"] = query.dry_run.value
         if query.legacy:
             body["legacy"] = query.legacy.value
+        if query.parent_api:
+            body["parent_api"] = query.parent_api.name
 
         return json.dumps(body)
 
@@ -393,6 +411,9 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
 
     def _visit_granularity(self, granularity: Optional[Granularity]) -> Set[Expression]:
         return self.expression_finder.visit(granularity) if granularity else set()
+
+    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> Set[Expression]:
+        return self.expression_finder.visit(parent_api) if parent_api else set()
 
     def _visit_totals(self, totals: Totals) -> Set[Expression]:
         return self.expression_finder.visit(totals) if totals else set()
@@ -512,6 +533,9 @@ class Validator(QueryVisitor[None]):
 
     def _visit_granularity(self, granularity: Optional[Granularity]) -> None:
         granularity.validate() if granularity is not None else None
+
+    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> None:
+        parent_api.validate() if parent_api is not None else None
 
     def _visit_totals(self, totals: Totals) -> None:
         totals.validate()

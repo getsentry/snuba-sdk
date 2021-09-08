@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.25
+------
+
+- Add a parent_api flag that is used to track the name of the calling API
+
 0.0.24
 ------
 

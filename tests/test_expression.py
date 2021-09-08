@@ -13,6 +13,7 @@ from snuba_sdk.expressions import (
     Legacy,
     Limit,
     Offset,
+    ParentAPI,
     Totals,
     Turbo,
 )
@@ -147,3 +148,11 @@ def test_boolean_flags(name: str, flag: Any) -> None:
     assert flag(False) is not None
     with pytest.raises(InvalidExpression, match=re.escape(f"{name} must be a boolean")):
         flag(0)
+
+
+def test_parent_api() -> None:
+    assert ParentAPI("something") is not None
+    with pytest.raises(
+        InvalidExpression, match=re.escape("0 must be non-empty string")
+    ):
+        ParentAPI(0)  # type: ignore

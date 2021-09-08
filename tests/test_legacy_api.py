@@ -510,6 +510,37 @@ discover_tests = [
     ),
     pytest.param(
         {
+            "dataset": "discover",
+            "project": 2,
+            "selected_columns": ["type", "tags[custom_tag]", "release"],
+            "conditions": [["type", "!=", "transaction"]],
+            "orderby": "timestamp",
+            "limit": 1000,
+            "from_date": "2020-10-17T20:51:46.110774",
+            "to_date": "2021-01-15T20:51:47.110825",
+            "dry_run": True,
+            "parent_api": "testing",
+        },
+        (
+            "-- DATASET: discover",
+            "-- DRY_RUN: True",
+            "-- PARENT_API: testing",
+            "MATCH (discover_events)",
+            "SELECT type, tags[custom_tag], release",
+            (
+                "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
+                "AND timestamp < toDateTime('2021-01-15T20:51:47.110825') "
+                "AND project_id IN tuple(2) "
+                "AND type != 'transaction'"
+            ),
+            "ORDER BY timestamp ASC",
+            "LIMIT 1000",
+        ),
+        "discover_events",
+        id="parent_api_flag",
+    ),
+    pytest.param(
+        {
             "selected_columns": ["first_session_started", "last_session_started"],
             "project": [2],
             "organization": 1,
