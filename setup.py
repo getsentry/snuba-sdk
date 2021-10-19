@@ -36,7 +36,7 @@ setup(
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
     license="MIT",
-    install_requires=["dataclasses"],
+    install_requires=["dataclasses;python_version<='3.6'"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
