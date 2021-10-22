@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.0.26
+------
+
+- New release to fix dataclasses import issue with 3.8
+
 0.0.25
 ------
 
