@@ -9,7 +9,7 @@ from snuba_sdk.expressions import (
     Debug,
     DryRun,
     Granularity,
-    InvalidExpression,
+    InvalidExpressionError,
     Legacy,
     Limit,
     Offset,
@@ -23,11 +23,13 @@ from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 limit_tests = [
     pytest.param(1, None),
     pytest.param(10, None),
-    pytest.param(-1, InvalidExpression("limit '-1' must be at least 1")),
-    pytest.param("5", InvalidExpression("limit '5' must be an integer")),
-    pytest.param(1.5, InvalidExpression("limit '1.5' must be an integer")),
-    pytest.param(10.0, InvalidExpression("limit '10.0' must be an integer")),
-    pytest.param(1000000, InvalidExpression("limit '1000000' is capped at 10,000")),
+    pytest.param(-1, InvalidExpressionError("limit '-1' must be at least 1")),
+    pytest.param("5", InvalidExpressionError("limit '5' must be an integer")),
+    pytest.param(1.5, InvalidExpressionError("limit '1.5' must be an integer")),
+    pytest.param(10.0, InvalidExpressionError("limit '10.0' must be an integer")),
+    pytest.param(
+        1000000, InvalidExpressionError("limit '1000000' is capped at 10,000")
+    ),
 ]
 
 
@@ -43,10 +45,10 @@ def test_limit(value: Any, exception: Optional[Exception]) -> None:
 offset_tests = [
     pytest.param(0, None),
     pytest.param(10, None),
-    pytest.param(-1, InvalidExpression("offset '-1' must be at least 0")),
-    pytest.param("5", InvalidExpression("offset '5' must be an integer")),
-    pytest.param(1.5, InvalidExpression("offset '1.5' must be an integer")),
-    pytest.param(10.0, InvalidExpression("offset '10.0' must be an integer")),
+    pytest.param(-1, InvalidExpressionError("offset '-1' must be at least 0")),
+    pytest.param("5", InvalidExpressionError("offset '5' must be an integer")),
+    pytest.param(1.5, InvalidExpressionError("offset '1.5' must be an integer")),
+    pytest.param(10.0, InvalidExpressionError("offset '10.0' must be an integer")),
 ]
 
 
@@ -61,10 +63,10 @@ def test_offset(value: Any, exception: Optional[Exception]) -> None:
 
 granularity_tests = [
     pytest.param(10, None),
-    pytest.param(0, InvalidExpression("granularity '0' must be at least 1")),
-    pytest.param("5", InvalidExpression("granularity '5' must be an integer")),
-    pytest.param(1.5, InvalidExpression("granularity '1.5' must be an integer")),
-    pytest.param(10.0, InvalidExpression("granularity '10.0' must be an integer")),
+    pytest.param(0, InvalidExpressionError("granularity '0' must be at least 1")),
+    pytest.param("5", InvalidExpressionError("granularity '5' must be an integer")),
+    pytest.param(1.5, InvalidExpressionError("granularity '1.5' must be an integer")),
+    pytest.param(10.0, InvalidExpressionError("granularity '10.0' must be an integer")),
 ]
 
 
@@ -83,12 +85,14 @@ orderby_tests = [
     pytest.param(
         0,
         Direction.DESC,
-        InvalidExpression(
+        InvalidExpressionError(
             "OrderBy expression must be a Column, CurriedFunction or Function"
         ),
     ),
     pytest.param(
-        Column("foo"), "ASC", InvalidExpression("OrderBy direction must be a Direction")
+        Column("foo"),
+        "ASC",
+        InvalidExpressionError("OrderBy direction must be a Direction"),
     ),
 ]
 
@@ -104,21 +108,23 @@ def test_orderby(exp: Any, direction: Any, exception: Optional[Exception]) -> No
 
 limitby_tests = [
     pytest.param(Column("foo"), 1, None),
-    pytest.param("bar", 1, InvalidExpression("LimitBy can only be used on a Column")),
+    pytest.param(
+        "bar", 1, InvalidExpressionError("LimitBy can only be used on a Column")
+    ),
     pytest.param(
         Column("foo"),
         "1",
-        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+        InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),
     pytest.param(
         Column("foo"),
         -1,
-        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+        InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),
     pytest.param(
         Column("foo"),
         15000,
-        InvalidExpression("LimitBy count must be a positive integer (max 10,000)"),
+        InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),
 ]
 
@@ -146,13 +152,15 @@ boolean_tests = [
 def test_boolean_flags(name: str, flag: Any) -> None:
     assert flag(True) is not None
     assert flag(False) is not None
-    with pytest.raises(InvalidExpression, match=re.escape(f"{name} must be a boolean")):
+    with pytest.raises(
+        InvalidExpressionError, match=re.escape(f"{name} must be a boolean")
+    ):
         flag(0)
 
 
 def test_parent_api() -> None:
     assert ParentAPI("something") is not None
     with pytest.raises(
-        InvalidExpression, match=re.escape("0 must be non-empty string")
+        InvalidExpressionError, match=re.escape("0 must be non-empty string")
     ):
         ParentAPI(0)  # type: ignore

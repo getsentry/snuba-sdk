@@ -38,7 +38,7 @@ from snuba_sdk.snuba import is_aggregation_function
 from snuba_sdk.visitors import ExpressionFinder, Translation, entity_aliases
 
 
-class InvalidQuery(Exception):
+class InvalidQueryError(Exception):
     pass
 
 
@@ -457,7 +457,7 @@ class Validator(QueryVisitor[None]):
 
             for c in all_columns:
                 if isinstance(c, Column) and c.name not in inner_match:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"outer query is referencing column {c.name} that does not exist in subquery"
                     )
         # In a Join, all the columns must have a qualifying entity with a valid alias.
@@ -469,21 +469,21 @@ class Validator(QueryVisitor[None]):
             for c in column_exps:
                 assert isinstance(c, Column)
                 if c.entity is None:
-                    raise InvalidQuery(f"{c.name} must have a qualifying entity")
+                    raise InvalidQueryError(f"{c.name} must have a qualifying entity")
                 elif c.entity.alias not in entity_aliases:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"{c.name} has unknown entity alias {c.entity.alias}"
                     )
                 elif entity_aliases[c.entity.alias] != c.entity.name:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"{c.name} has incorrect alias for entity {c.entity.name}: {c.entity.alias}"
                     )
 
         if query.select is None or len(query.select) == 0:
-            raise InvalidQuery("query must have at least one expression in select")
+            raise InvalidQueryError("query must have at least one expression in select")
 
         if query.totals and not query.groupby:
-            raise InvalidQuery("totals is only valid with a groupby")
+            raise InvalidQueryError("totals is only valid with a groupby")
 
     def _visit_dataset(self, dataset: str) -> None:
         pass

@@ -13,13 +13,13 @@ help:
 	@false
 
 .venv:
-	virtualenv -ppython3.6 $(VENV_PATH)
+	virtualenv -ppython3.9 $(VENV_PATH)
 	. $(VENV_PATH)/bin/activate
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
 setup-git:
-	pip install 'pre-commit==2.9.3'
+	pip install 'pre-commit==2.15.0'
 	pre-commit install --install-hooks
 
 dist: .venv

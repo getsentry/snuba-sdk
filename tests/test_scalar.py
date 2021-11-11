@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import InvalidExpression, ScalarType
+from snuba_sdk.expressions import InvalidExpressionError, ScalarType
 from snuba_sdk.visitors import Translation
 
 tests = [
@@ -64,13 +64,13 @@ def test_scalars(scalar: ScalarType, expected: str) -> None:
 def test_invalid_scalars() -> None:
     translator = Translation()
     with pytest.raises(
-        InvalidExpression,
+        InvalidExpressionError,
         match=re.escape("tuple/array must contain only scalar values"),
     ):
         translator._stringify_scalar(({"a": 1}, {1, 2, 3}))  # type: ignore
 
     with pytest.raises(
-        InvalidExpression,
+        InvalidExpressionError,
         match=re.escape("tuple/array must contain only scalar values"),
     ):
         translator._stringify_scalar([{"a": 1}, {1, 2, 3}])  # type: ignore

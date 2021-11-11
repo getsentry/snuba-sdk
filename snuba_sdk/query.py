@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, fields, replace
 from typing import Any, List, Optional, Sequence, Union
 
@@ -19,7 +21,7 @@ from snuba_sdk.expressions import (
 )
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
-from snuba_sdk.query_visitors import InvalidQuery, Printer, Translator, Validator
+from snuba_sdk.query_visitors import InvalidQueryError, Printer, Translator, Validator
 from snuba_sdk.relationships import Join
 
 
@@ -56,7 +58,7 @@ class Query:
 
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
-    match: Union[Entity, Join, "Query"]
+    match: Union[Entity, Join, Query]
     select: Optional[List[SelectableExpression]] = None
     groupby: Optional[List[SelectableExpression]] = None
     array_join: Optional[Column] = None
@@ -85,18 +87,18 @@ class Query:
         """
         # TODO: Whitelist of Datasets and possible entities
         if not isinstance(self.dataset, str) or self.dataset == "":
-            raise InvalidQuery("queries must have a valid dataset")
+            raise InvalidQueryError("queries must have a valid dataset")
 
         if not isinstance(self.match, (Query, Join, Entity)):
-            raise InvalidQuery("queries must have a valid Entity, Join or Query")
+            raise InvalidQueryError("queries must have a valid Entity, Join or Query")
 
         if isinstance(self.match, Query):
             try:
                 self.match.validate()
             except Exception as e:
-                raise InvalidQuery(f"inner query is invalid: {e}")
+                raise InvalidQueryError(f"inner query is invalid: {e}") from e
 
-    def _replace(self, field: str, value: Any) -> "Query":
+    def _replace(self, field: str, value: Any) -> Query:
         new = replace(self, **{field: value})
         return new
 
@@ -104,90 +106,89 @@ class Query:
         self_fields = fields(self)  # Verified the order in the Python source
         return tuple(f.name for f in self_fields)
 
-    def set_match(self, match: Union[Entity, Join, "Query"]) -> "Query":
+    def set_match(self, match: Union[Entity, Join, Query]) -> Query:
         if not isinstance(match, (Entity, Join, Query)):
-            raise InvalidQuery(f"{match} must be a valid Entity, Join or Query")
+            raise InvalidQueryError(f"{match} must be a valid Entity, Join or Query")
         elif isinstance(match, Query):
             try:
                 match.validate()
             except Exception as e:
-                raise InvalidQuery(f"inner query is invalid: {e}")
+                raise InvalidQueryError(f"inner query is invalid: {e}") from e
 
         return self._replace("match", match)
 
-    def set_select(
-        self,
-        select: Sequence[SelectableExpression],
-    ) -> "Query":
+    def set_select(self, select: Sequence[SelectableExpression]) -> Query:
         if not list_type(select, SelectableExpressionType) or not select:
-            raise InvalidQuery(
+            raise InvalidQueryError(
                 "select clause must be a non-empty list of SelectableExpression"
             )
         return self._replace("select", select)
 
-    def set_groupby(self, groupby: Sequence[SelectableExpression]) -> "Query":
+    def set_groupby(self, groupby: Sequence[SelectableExpression]) -> Query:
         if not list_type(groupby, SelectableExpressionType):
-            raise InvalidQuery("groupby clause must be a list of SelectableExpression")
+            raise InvalidQueryError(
+                "groupby clause must be a list of SelectableExpression"
+            )
         return self._replace("groupby", groupby)
 
-    def set_array_join(self, array_join: Column) -> "Query":
+    def set_array_join(self, array_join: Column) -> Query:
         if not isinstance(array_join, Column):
-            raise InvalidQuery("array join must be a Column")
+            raise InvalidQueryError("array join must be a Column")
 
         return self._replace("array_join", array_join)
 
     def set_where(
         self, conditions: Sequence[Union[BooleanCondition, Condition]]
-    ) -> "Query":
+    ) -> Query:
         if not list_type(conditions, (BooleanCondition, Condition)):
-            raise InvalidQuery("where clause must be a list of conditions")
+            raise InvalidQueryError("where clause must be a list of conditions")
         return self._replace("where", conditions)
 
     def set_having(
         self, conditions: Sequence[Union[BooleanCondition, Condition]]
-    ) -> "Query":
+    ) -> Query:
         if not list_type(conditions, (BooleanCondition, Condition)):
-            raise InvalidQuery("having clause must be a list of conditions")
+            raise InvalidQueryError("having clause must be a list of conditions")
         return self._replace("having", conditions)
 
-    def set_orderby(self, orderby: Sequence[OrderBy]) -> "Query":
+    def set_orderby(self, orderby: Sequence[OrderBy]) -> Query:
         if not list_type(orderby, (OrderBy,)):
-            raise InvalidQuery("orderby clause must be a list of OrderBy")
+            raise InvalidQueryError("orderby clause must be a list of OrderBy")
         return self._replace("orderby", orderby)
 
-    def set_limitby(self, limitby: LimitBy) -> "Query":
+    def set_limitby(self, limitby: LimitBy) -> Query:
         if not isinstance(limitby, LimitBy):
-            raise InvalidQuery("limitby clause must be a LimitBy")
+            raise InvalidQueryError("limitby clause must be a LimitBy")
         return self._replace("limitby", limitby)
 
-    def set_limit(self, limit: int) -> "Query":
+    def set_limit(self, limit: int) -> Query:
         return self._replace("limit", Limit(limit))
 
-    def set_offset(self, offset: int) -> "Query":
+    def set_offset(self, offset: int) -> Query:
         return self._replace("offset", Offset(offset))
 
-    def set_granularity(self, granularity: int) -> "Query":
+    def set_granularity(self, granularity: int) -> Query:
         return self._replace("granularity", Granularity(granularity))
 
-    def set_totals(self, totals: bool) -> "Query":
+    def set_totals(self, totals: bool) -> Query:
         return self._replace("totals", Totals(totals))
 
-    def set_parent_api(self, parent_api: str) -> "Query":
+    def set_parent_api(self, parent_api: str) -> Query:
         return self._replace("parent_api", ParentAPI(parent_api))
 
-    def set_consistent(self, consistent: bool) -> "Query":
+    def set_consistent(self, consistent: bool) -> Query:
         return self._replace("consistent", Consistent(consistent))
 
-    def set_turbo(self, turbo: bool) -> "Query":
+    def set_turbo(self, turbo: bool) -> Query:
         return self._replace("turbo", Turbo(turbo))
 
-    def set_debug(self, debug: bool) -> "Query":
+    def set_debug(self, debug: bool) -> Query:
         return self._replace("debug", Debug(debug))
 
-    def set_dry_run(self, dry_run: bool) -> "Query":
+    def set_dry_run(self, dry_run: bool) -> Query:
         return self._replace("dry_run", DryRun(dry_run))
 
-    def set_legacy(self, legacy: bool) -> "Query":
+    def set_legacy(self, legacy: bool) -> Query:
         return self._replace("legacy", Legacy(legacy))
 
     def validate(self) -> None:

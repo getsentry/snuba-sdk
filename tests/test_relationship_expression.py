@@ -4,7 +4,7 @@ from typing import Any, Optional
 import pytest
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.expressions import InvalidExpressionError
 from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.visitors import Translation
 
@@ -23,14 +23,14 @@ relationship_tests = [
         "contains",
         Entity("transactions", "t"),
         None,
-        InvalidExpression("'' must be an Entity"),
+        InvalidExpressionError("'' must be an Entity"),
     ),
     pytest.param(
         Entity("events", None, 100.0),
         "contains",
         Entity("transactions", "t"),
         None,
-        InvalidExpression(
+        InvalidExpressionError(
             "Entity(name='events', alias=None, sample=100.0) must have a valid alias"
         ),
     ),
@@ -39,14 +39,14 @@ relationship_tests = [
         1,
         Entity("transactions", "t"),
         None,
-        InvalidExpression("'1' is not a valid relationship name"),
+        InvalidExpressionError("'1' is not a valid relationship name"),
     ),
     pytest.param(
         Entity("events", "e", 100.0),
         "",
         Entity("transactions", "t"),
         None,
-        InvalidExpression("'' is not a valid relationship name"),
+        InvalidExpressionError("'' is not a valid relationship name"),
     ),
 ]
 
@@ -87,10 +87,12 @@ join_tests = [
         None,
     ),
     pytest.param(
-        [], None, InvalidExpression("Join must have at least one Relationship")
+        [], None, InvalidExpressionError("Join must have at least one Relationship")
     ),
     pytest.param(
-        [1, 2], None, InvalidExpression("Join expects a list of Relationship objects")
+        [1, 2],
+        None,
+        InvalidExpressionError("Join expects a list of Relationship objects"),
     ),
     pytest.param(
         [
@@ -98,7 +100,7 @@ join_tests = [
             Relationship(Entity("events", "e"), "hasnt", Entity("sessions", "e", 10.0)),
         ],
         None,
-        InvalidExpression("alias 'e' is duplicated for entities events, sessions"),
+        InvalidExpressionError("alias 'e' is duplicated for entities events, sessions"),
     ),
 ]
 

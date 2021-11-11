@@ -5,32 +5,32 @@ import pytest
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, InvalidCondition, Op
+from snuba_sdk.conditions import Condition, InvalidConditionError, Op
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.expressions import InvalidExpressionError
 from snuba_sdk.function import Function
 from snuba_sdk.query import Query
-from snuba_sdk.query_visitors import InvalidQuery
+from snuba_sdk.query_visitors import InvalidQueryError
 
 
 def test_invalid_query() -> None:
     with pytest.raises(
-        InvalidQuery, match=re.escape("queries must have a valid dataset")
+        InvalidQueryError, match=re.escape("queries must have a valid dataset")
     ):
         Query(dataset=1, match=Entity("events"))  # type: ignore
 
     with pytest.raises(
-        InvalidQuery, match=re.escape("queries must have a valid dataset")
+        InvalidQueryError, match=re.escape("queries must have a valid dataset")
     ):
         Query(dataset="", match=Entity("events"))
 
     with pytest.raises(
-        InvalidQuery, match=re.escape("queries must have a valid Entity")
+        InvalidQueryError, match=re.escape("queries must have a valid Entity")
     ):
         Query(dataset="discover", match="events")  # type: ignore
 
     with pytest.raises(
-        InvalidCondition,
+        InvalidConditionError,
         match=re.escape(
             "invalid condition: LHS of a condition must be a Column, CurriedFunction or Function, not <class 'snuba_sdk.aliased_expression.AliasedExpression'>"
         ),
@@ -64,45 +64,47 @@ def test_invalid_query_set() -> None:
     }
 
     match, err = tests["match"]
-    with pytest.raises(InvalidQuery, match=re.escape(err)):
+    with pytest.raises(InvalidQueryError, match=re.escape(err)):
         query.set_match(match)
 
     for val in tests["select"][0]:
-        with pytest.raises(InvalidQuery, match=re.escape(tests["select"][1])):
+        with pytest.raises(InvalidQueryError, match=re.escape(tests["select"][1])):
             query.set_select(val)
 
     for val in tests["groupby"][0]:
-        with pytest.raises(InvalidQuery, match=re.escape(tests["groupby"][1])):
+        with pytest.raises(InvalidQueryError, match=re.escape(tests["groupby"][1])):
             query.set_groupby(val)
 
     for val in tests["where"][0]:
-        with pytest.raises(InvalidQuery, match=re.escape(tests["where"][1])):
+        with pytest.raises(InvalidQueryError, match=re.escape(tests["where"][1])):
             query.set_where(val)
 
     for val in tests["having"][0]:
-        with pytest.raises(InvalidQuery, match=re.escape(tests["having"][1])):
+        with pytest.raises(InvalidQueryError, match=re.escape(tests["having"][1])):
             query.set_having(val)
 
     for val in tests["orderby"][0]:
-        with pytest.raises(InvalidQuery, match=re.escape(tests["orderby"][1])):
+        with pytest.raises(InvalidQueryError, match=re.escape(tests["orderby"][1])):
             query.set_orderby(val)
 
-    with pytest.raises(InvalidQuery, match=re.escape(tests["limitby"][1])):
+    with pytest.raises(InvalidQueryError, match=re.escape(tests["limitby"][1])):
         query.set_limitby(tests["limitby"][0])
 
-    with pytest.raises(InvalidExpression, match=re.escape(tests["limit"][1])):
+    with pytest.raises(InvalidExpressionError, match=re.escape(tests["limit"][1])):
         query.set_limit(tests["limit"][0])
 
-    with pytest.raises(InvalidExpression, match=re.escape(tests["offset"][1])):
+    with pytest.raises(InvalidExpressionError, match=re.escape(tests["offset"][1])):
         query.set_offset(tests["offset"][0])
 
-    with pytest.raises(InvalidExpression, match=re.escape(tests["granularity"][1])):
+    with pytest.raises(
+        InvalidExpressionError, match=re.escape(tests["granularity"][1])
+    ):
         query.set_granularity(tests["granularity"][0])
 
 
 def test_invalid_subquery() -> None:
     with pytest.raises(
-        InvalidQuery,
+        InvalidQueryError,
         match=re.escape(
             "inner query is invalid: query must have at least one expression in select"
         ),
@@ -112,7 +114,7 @@ def test_invalid_subquery() -> None:
         )
 
     with pytest.raises(
-        InvalidQuery,
+        InvalidQueryError,
         match=re.escape(
             "inner query is invalid: query must have at least one expression in select"
         ),

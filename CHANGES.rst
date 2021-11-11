@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+
+0.1.0
+------
+
+- Move to Python 3.9 and drop support for Python 3.6. Sentry is now using 3.8 so this library can upgrade as well.
+- Update all dependencies to latest and fix subsequent linting errors
+
 0.0.26
 ------
 

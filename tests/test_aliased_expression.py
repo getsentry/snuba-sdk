@@ -5,7 +5,7 @@ import pytest
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import InvalidExpression
+from snuba_sdk.expressions import InvalidExpressionError
 from snuba_sdk.visitors import Translation
 
 tests = [
@@ -21,28 +21,32 @@ tests = [
         "stuff",
         "things[1.c-2:3]",
         None,
-        InvalidExpression("aliased expressions can only contain a Column"),
+        InvalidExpressionError("aliased expressions can only contain a Column"),
         id="exp must be a Column",
     ),
     pytest.param(
         Column("stuff"),
         "",
         None,
-        InvalidExpression("alias '' of expression must be None or a non-empty string"),
+        InvalidExpressionError(
+            "alias '' of expression must be None or a non-empty string"
+        ),
         id="alias can't be empty string",
     ),
     pytest.param(
         Column("stuff"),
         1,
         None,
-        InvalidExpression("alias '1' of expression must be None or a non-empty string"),
+        InvalidExpressionError(
+            "alias '1' of expression must be None or a non-empty string"
+        ),
         id="alias must be string",
     ),
     pytest.param(
         Column("stuff"),
         "what???||things!!",
         None,
-        InvalidExpression(
+        InvalidExpressionError(
             "alias 'what???||things!!' of expression contains invalid characters"
         ),
         id="alias has invalid characters",
