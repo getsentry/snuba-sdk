@@ -13,7 +13,7 @@ from snuba_sdk.expressions import (
     DryRun,
     Expression,
     Granularity,
-    InvalidExpression,
+    InvalidExpressionError,
     Legacy,
     Limit,
     Offset,
@@ -192,7 +192,7 @@ class Translation(ExpressionVisitor[str]):
             is_scalar(value)  # Throws on an invalid tuple
             return f"tuple({', '.join([self._stringify_scalar(v) for v in value])})"
 
-        raise InvalidExpression(f"'{value}' is not a valid scalar")
+        raise InvalidExpressionError(f"'{value}' is not a valid scalar")
 
     def _visit_aliased_expression(self, aliased: AliasedExpression) -> str:
         alias_clause = ""

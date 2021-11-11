@@ -10,7 +10,7 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.query import Query
-from snuba_sdk.query_visitors import InvalidQuery
+from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.relationships import Join, Relationship
 
 tests = [
@@ -170,7 +170,7 @@ invalid_tests = [
         .set_offset(1)
         .set_granularity(3600)
         .set_consistent(True),
-        InvalidQuery("group_id must have a qualifying entity"),
+        InvalidQueryError("group_id must have a qualifying entity"),
         id="all columns must be qualified",
     ),
     pytest.param(
@@ -194,7 +194,7 @@ invalid_tests = [
         .set_offset(1)
         .set_granularity(3600)
         .set_consistent(True),
-        InvalidQuery("group_id has unknown entity alias t"),
+        InvalidQueryError("group_id has unknown entity alias t"),
         id="column with different entity",
     ),
     pytest.param(
@@ -218,7 +218,7 @@ invalid_tests = [
         .set_offset(1)
         .set_granularity(3600)
         .set_consistent(True),
-        InvalidQuery("group_id has unknown entity alias t"),
+        InvalidQueryError("group_id has unknown entity alias t"),
         id="column with different entity alias",
     ),
     pytest.param(
@@ -242,7 +242,7 @@ invalid_tests = [
         .set_offset(1)
         .set_granularity(3600)
         .set_consistent(True),
-        InvalidQuery("group_id has incorrect alias for entity transactions: e"),
+        InvalidQueryError("group_id has incorrect alias for entity transactions: e"),
         id="duplicate entity alias",
     ),
 ]

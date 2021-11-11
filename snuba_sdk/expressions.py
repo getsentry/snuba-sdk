@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Any, List, Optional, Sequence, Set, Union
 
 
-class InvalidExpression(Exception):
+class InvalidExpressionError(Exception):
     pass
 
 
@@ -39,7 +39,7 @@ Scalar: Set[type] = {
 }
 
 
-class InvalidArray(Exception):
+class InvalidArrayError(Exception):
     def __init__(self, value: List[Any]) -> None:
         value_str = f"{value}"
         if len(value_str) > 10:
@@ -62,7 +62,7 @@ def is_scalar(value: Any) -> bool:
         return True
     elif isinstance(value, (tuple, list)):
         if not all(is_scalar(v) or isinstance(v, Expression) for v in value):
-            raise InvalidExpression("tuple/array must contain only scalar values")
+            raise InvalidExpressionError("tuple/array must contain only scalar values")
         return True
 
     return False
@@ -72,11 +72,11 @@ def _validate_int_literal(
     name: str, literal: int, minn: Optional[int], maxn: Optional[int]
 ) -> None:
     if not isinstance(literal, int):
-        raise InvalidExpression(f"{name} '{literal}' must be an integer")
+        raise InvalidExpressionError(f"{name} '{literal}' must be an integer")
     if minn is not None and literal < minn:
-        raise InvalidExpression(f"{name} '{literal}' must be at least {minn:,}")
+        raise InvalidExpressionError(f"{name} '{literal}' must be at least {minn:,}")
     elif maxn is not None and literal > maxn:
-        raise InvalidExpression(f"{name} '{literal}' is capped at {maxn:,}")
+        raise InvalidExpressionError(f"{name} '{literal}' is capped at {maxn:,}")
 
 
 @dataclass(frozen=True)
@@ -109,7 +109,7 @@ class ParentAPI(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.name, str) or self.name == "":
-            raise InvalidExpression(f"{self.name} must be non-empty string")
+            raise InvalidExpressionError(f"{self.name} must be non-empty string")
 
 
 @dataclass(frozen=True)
@@ -119,7 +119,7 @@ class BooleanFlag(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.value, bool):
-            raise InvalidExpression(f"{self.name} must be a boolean")
+            raise InvalidExpressionError(f"{self.name} must be a boolean")
 
     def __bool__(self) -> bool:
         return self.value

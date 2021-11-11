@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import pytest
 
-from snuba_sdk.entity import Entity, InvalidEntity
+from snuba_sdk.entity import Entity, InvalidEntityError
 from snuba_sdk.visitors import Translation
 
 TRANSLATOR = Translation(use_entity_aliases=True)
@@ -14,23 +14,31 @@ tests = [
     pytest.param("sessions", None, 10.0, "(sessions SAMPLE 10.0)", None),
     pytest.param("sessions", "s", None, "(s: sessions)", None),
     pytest.param("sessions", "s", 10.0, "(s: sessions SAMPLE 10.0)", None),
-    pytest.param("", "s", None, None, InvalidEntity("'' is not a valid entity name")),
-    pytest.param(1, None, None, None, InvalidEntity("'1' is not a valid entity name")),
-    pytest.param("sessions", "", None, None, InvalidEntity("'' is not a valid alias")),
-    pytest.param("sessions", 1, None, None, InvalidEntity("'1' is not a valid alias")),
+    pytest.param(
+        "", "s", None, None, InvalidEntityError("'' is not a valid entity name")
+    ),
+    pytest.param(
+        1, None, None, None, InvalidEntityError("'1' is not a valid entity name")
+    ),
+    pytest.param(
+        "sessions", "", None, None, InvalidEntityError("'' is not a valid alias")
+    ),
+    pytest.param(
+        "sessions", 1, None, None, InvalidEntityError("'1' is not a valid alias")
+    ),
     pytest.param(
         "sessions",
         None,
         "0.1",
         None,
-        InvalidEntity("sample must be a float"),
+        InvalidEntityError("sample must be a float"),
     ),
     pytest.param(
         "sessions",
         "s",
         -0.1,
         None,
-        InvalidEntity("samples must be greater than 0.0"),
+        InvalidEntityError("samples must be greater than 0.0"),
     ),
 ]
 

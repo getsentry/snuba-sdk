@@ -21,7 +21,7 @@ from snuba_sdk import (
     OrderBy,
     Query,
 )
-from snuba_sdk.query_visitors import InvalidQuery
+from snuba_sdk.query_visitors import InvalidQueryError
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 tests = [
@@ -274,7 +274,7 @@ invalid_tests = [
             offset=Offset(1),
             granularity=Granularity(3600),
         ),
-        InvalidQuery("query must have at least one expression in select"),
+        InvalidQueryError("query must have at least one expression in select"),
         id="missing select",
     ),
     pytest.param(
@@ -287,7 +287,7 @@ invalid_tests = [
             offset=Offset(1),
             granularity=Granularity(3600),
         ).set_totals(True),
-        InvalidQuery("totals is only valid with a groupby"),
+        InvalidQueryError("totals is only valid with a groupby"),
         id="Totals must have a groupby",
     ),
     pytest.param(
@@ -304,7 +304,7 @@ invalid_tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        InvalidQuery(
+        InvalidQueryError(
             "outer query is referencing column group_id that does not exist in subquery"
         ),
         id="invalid column reference in outer query",
@@ -330,7 +330,7 @@ invalid_tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        InvalidQuery(
+        InvalidQueryError(
             "outer query is referencing column event_id that does not exist in subquery"
         ),
         id="outer query is referencing column not alias",

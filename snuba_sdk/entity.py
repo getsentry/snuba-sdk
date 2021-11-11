@@ -4,11 +4,10 @@ from typing import Optional
 
 from snuba_sdk.expressions import Expression
 
-
 entity_name_re = re.compile(r"^[a-zA-Z_]+$")
 
 
-class InvalidEntity(Exception):
+class InvalidEntityError(Exception):
     pass
 
 
@@ -21,17 +20,17 @@ class Entity(Expression):
     def validate(self) -> None:
         # TODO: There should be a whitelist of entity names at some point
         if not isinstance(self.name, str) or not entity_name_re.match(self.name):
-            raise InvalidEntity(f"'{self.name}' is not a valid entity name")
+            raise InvalidEntityError(f"'{self.name}' is not a valid entity name")
 
         if self.sample is not None:
             if not isinstance(self.sample, float):
-                raise InvalidEntity("sample must be a float")
+                raise InvalidEntityError("sample must be a float")
             elif self.sample <= 0.0:
-                raise InvalidEntity("samples must be greater than 0.0")
+                raise InvalidEntityError("samples must be greater than 0.0")
 
         if self.alias is not None:
             if not isinstance(self.alias, str) or not self.alias:
-                raise InvalidEntity(f"'{self.alias}' is not a valid alias")
+                raise InvalidEntityError(f"'{self.alias}' is not a valid alias")
 
 
 # TODO: This should be handled by the users of the SDK, not the SDK itself.
