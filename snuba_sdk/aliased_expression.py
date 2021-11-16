@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import ALIAS_RE, Expression, InvalidExpression
+from snuba_sdk.expressions import ALIAS_RE, Expression, InvalidExpressionError
 
 
 @dataclass(frozen=True)
@@ -15,7 +15,7 @@ class AliasedExpression(Expression):
 
     :param Expression: The expression to alias.
     :type Expression: Column
-    :raises InvalidExpression: If the expression or alias is invalid.
+    :raises InvalidExpressionError: If the expression or alias is invalid.
     """
 
     # TODO: We should eventually allow Functions here as well, once we think through
@@ -25,14 +25,16 @@ class AliasedExpression(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.exp, Column):
-            raise InvalidExpression("aliased expressions can only contain a Column")
+            raise InvalidExpressionError(
+                "aliased expressions can only contain a Column"
+            )
 
         if self.alias is not None:
             if not isinstance(self.alias, str) or self.alias == "":
-                raise InvalidExpression(
+                raise InvalidExpressionError(
                     f"alias '{self.alias}' of expression must be None or a non-empty string"
                 )
             if not ALIAS_RE.match(self.alias):
-                raise InvalidExpression(
+                raise InvalidExpressionError(
                     f"alias '{self.alias}' of expression contains invalid characters"
                 )

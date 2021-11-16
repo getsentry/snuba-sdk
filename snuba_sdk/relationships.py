@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, MutableMapping, Sequence, Set, Tuple
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Expression, InvalidExpression
+from snuba_sdk.expressions import Expression, InvalidExpressionError
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ class Relationship(Expression):
     :param rhs: The Entity connected to the LHS using the relationship.
     :type name: Entity
 
-    :raises InvalidExpression: If the incorrect types are used or if either
+    :raises InvalidExpressionError: If the incorrect types are used or if either
         of the Entities does not have an alias.
 
     """
@@ -32,15 +32,17 @@ class Relationship(Expression):
     def validate(self) -> None:
         def valid_entity(e: Any) -> None:
             if not isinstance(e, Entity):
-                raise InvalidExpression(f"'{e}' must be an Entity")
+                raise InvalidExpressionError(f"'{e}' must be an Entity")
             elif e.alias is None:
-                raise InvalidExpression(f"{e} must have a valid alias")
+                raise InvalidExpressionError(f"{e} must have a valid alias")
 
         valid_entity(self.lhs)
         valid_entity(self.rhs)
 
         if not isinstance(self.name, str) or not self.name:
-            raise InvalidExpression(f"'{self.name}' is not a valid relationship name")
+            raise InvalidExpressionError(
+                f"'{self.name}' is not a valid relationship name"
+            )
 
 
 @dataclass(frozen=True)
@@ -53,7 +55,7 @@ class Join(Expression):
     :param relationships: The relationships in the join.
     :type name: Sequence[Relationship]
 
-    :raises InvalidExpression: If two different Entities are using
+    :raises InvalidExpressionError: If two different Entities are using
         the same alias, this will be raised.
 
     """
@@ -72,15 +74,15 @@ class Join(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.relationships, (list, tuple)) or not self.relationships:
-            raise InvalidExpression("Join must have at least one Relationship")
+            raise InvalidExpressionError("Join must have at least one Relationship")
         elif not all(isinstance(x, Relationship) for x in self.relationships):
-            raise InvalidExpression("Join expects a list of Relationship objects")
+            raise InvalidExpressionError("Join expects a list of Relationship objects")
 
         seen: MutableMapping[str, str] = {}
         for alias, entity in self.get_alias_mappings():
             if alias in seen and seen[alias] != entity:
                 entities = sorted([entity, seen[alias]])
-                raise InvalidExpression(
+                raise InvalidExpressionError(
                     f"alias '{alias}' is duplicated for entities {', '.join(entities)}"
                 )
             seen[alias] = entity

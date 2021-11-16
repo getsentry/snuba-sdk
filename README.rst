@@ -85,8 +85,8 @@ This outputs:
     OFFSET 0
     GRANULARITY 3600
 
-If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpression`` exception will be thrown.
-If there is a problem with a query, it will throw an ``InvalidQuery`` exception when ``.validate()`` or ``.translate()`` is called.
+If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpressionError`` exception will be thrown.
+If there is a problem with a query, it will throw an ``InvalidQueryError`` exception when ``.validate()`` or ``.translate()`` is called.
 
 =========
 TODO List

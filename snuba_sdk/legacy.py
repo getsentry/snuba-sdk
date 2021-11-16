@@ -220,7 +220,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     :param entity: The name of the entity being queried.
     :type entity: str
 
-    :raises InvalidExpression, InvalidQuery: If the legacy body is invalid, the SDK will
+    :raises InvalidExpressionError, InvalidQueryError: If the legacy body is invalid, the SDK will
         raise an exception.
 
     """

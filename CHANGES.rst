@@ -1,6 +1,16 @@
 Changelog and versioning
 ==========================
 
+
+0.1.0
+------
+
+- Move to Python 3.8 and drop support for Python 3.6. Sentry is now using 3.8 so this library can upgrade as well.
+    - Use __future__.annotations where necessary
+- Update all dependencies to latest and fix subsequent linting errors
+    - Correctly chain exceptions
+    - Follow PEP naming conventions for Exceptions: https://www.python.org/dev/peps/pep-0008/#exception-names
+
 0.0.26
 ------
 

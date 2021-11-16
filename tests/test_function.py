@@ -3,9 +3,9 @@ from typing import Any, Callable, Optional
 
 import pytest
 
-from snuba_sdk.column import Column, InvalidColumn
+from snuba_sdk.column import Column, InvalidColumnError
 from snuba_sdk.conditions import Op
-from snuba_sdk.function import CurriedFunction, Function, InvalidFunction
+from snuba_sdk.function import CurriedFunction, Function, InvalidFunctionError
 from snuba_sdk.visitors import Translation
 from tests import col, cur_func, func
 
@@ -60,28 +60,28 @@ tests = [
         func(1, ["foo"], "invalid"),
         None,
         "",
-        InvalidFunction("function '1' must be a string"),
+        InvalidFunctionError("function '1' must be a string"),
         id="invalid function",
     ),
     pytest.param(
         func("", ["foo"], "invalid"),
         None,
         "",
-        InvalidFunction("function cannot be empty"),
+        InvalidFunctionError("function cannot be empty"),
         id="empty function",
     ),
     pytest.param(
         func("¡amigo!", ["foo"], "invalid"),
         None,
         "",
-        InvalidFunction("function '¡amigo!' contains invalid characters"),
+        InvalidFunctionError("function '¡amigo!' contains invalid characters"),
         id="empty function",
     ),
     pytest.param(
         func("foo", ["foo"], 10),
         None,
         "",
-        InvalidFunction(
+        InvalidFunctionError(
             "alias '10' of function foo must be None or a non-empty string"
         ),
         id="invalid alias type",
@@ -90,28 +90,34 @@ tests = [
         func("foo", ["foo"], ""),
         None,
         "",
-        InvalidFunction("alias '' of function foo must be None or a non-empty string"),
+        InvalidFunctionError(
+            "alias '' of function foo must be None or a non-empty string"
+        ),
         id="empty alias",
     ),
     pytest.param(
         func("foo", ["foo"], "'amigo!"),
         None,
         "",
-        InvalidFunction("alias ''amigo!' of function foo contains invalid characters"),
+        InvalidFunctionError(
+            "alias ''amigo!' of function foo contains invalid characters"
+        ),
         id="invalid alias",
     ),
     pytest.param(
         func("toString", ["foo", Op.EQ, Column("foo")], "invalid"),
         None,
         "",
-        InvalidFunction("parameter 'Op.EQ' of function toString is an invalid type"),
+        InvalidFunctionError(
+            "parameter 'Op.EQ' of function toString is an invalid type"
+        ),
         id="invalid function parameter type",
     ),
     pytest.param(
         func("toString", ["foo", col("¡amigo!")], "invalid"),
         None,
         "",
-        InvalidColumn("'¡amigo!' is empty or contains invalid characters"),
+        InvalidColumnError("'¡amigo!' is empty or contains invalid characters"),
         id="invalid function parameter",
     ),
 ]
@@ -199,7 +205,7 @@ curried_tests = [
         cur_func("foo", [[1, 2, 3]], ["foo"], "invalid"),
         None,
         "",
-        InvalidFunction("initializers to function foo must be a scalar or column"),
+        InvalidFunctionError("initializers to function foo must be a scalar or column"),
         id="invalid initializers",
     ),
 ]

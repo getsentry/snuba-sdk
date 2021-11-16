@@ -3,7 +3,7 @@ from typing import Any, Optional, Tuple
 
 import pytest
 
-from snuba_sdk.column import Column, InvalidColumn
+from snuba_sdk.column import Column, InvalidColumnError
 from snuba_sdk.entity import Entity
 from snuba_sdk.visitors import Translation
 
@@ -46,7 +46,7 @@ tests = [
         "a1[a:b][aasdc]",
         None,
         None,
-        InvalidColumn(
+        InvalidColumnError(
             "column 'a1[a:b][aasdc]' is empty or contains invalid characters"
         ),
         id="only one subscriptable",
@@ -55,28 +55,28 @@ tests = [
         ":_valid",
         None,
         None,
-        InvalidColumn("column ':_valid' is empty or contains invalid characters"),
+        InvalidColumnError("column ':_valid' is empty or contains invalid characters"),
         id="underscore column test",
     ),
     pytest.param(
         "..valid",
         None,
         None,
-        InvalidColumn("column '..valid' is empty or contains invalid characters"),
+        InvalidColumnError("column '..valid' is empty or contains invalid characters"),
         id="invalid column",
     ),
     pytest.param(
         10,
         None,
         None,
-        InvalidColumn("column '10' must be a string"),
+        InvalidColumnError("column '10' must be a string"),
         id="invalid column type",
     ),
     pytest.param(
         "",
         None,
         None,
-        InvalidColumn("column '' is empty or contains invalid characters"),
+        InvalidColumnError("column '' is empty or contains invalid characters"),
         id="empty column",
     ),
 ]
@@ -109,14 +109,14 @@ entity_tests = [
         "foo",
         Entity("events"),
         None,
-        InvalidColumn("column foo expects an Entity with an alias"),
+        InvalidColumnError("column foo expects an Entity with an alias"),
         id="column with entity but no alias",
     ),
     pytest.param(
         "foo",
         "events",
         None,
-        InvalidColumn("column foo expects an Entity"),
+        InvalidColumnError("column foo expects an Entity"),
         id="column with non-entity",
     ),
 ]

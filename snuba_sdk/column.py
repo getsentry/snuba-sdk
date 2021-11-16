@@ -3,10 +3,10 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Expression, InvalidExpression
+from snuba_sdk.expressions import Expression, InvalidExpressionError
 
 
-class InvalidColumn(InvalidExpression):
+class InvalidColumnError(InvalidExpressionError):
     pass
 
 
@@ -27,7 +27,7 @@ class Column(Expression):
     :param entity: The entity for that column
     :type name: Optional[Entity]
 
-    :raises InvalidColumn: If the column name is not a string or has an
+    :raises InvalidColumnError: If the column name is not a string or has an
         invalid format.
 
     """
@@ -39,18 +39,18 @@ class Column(Expression):
 
     def validate(self) -> None:
         if not isinstance(self.name, str):
-            raise InvalidColumn(f"column '{self.name}' must be a string")
+            raise InvalidColumnError(f"column '{self.name}' must be a string")
             self.name = str(self.name)
         if not column_name_re.match(self.name):
-            raise InvalidColumn(
+            raise InvalidColumnError(
                 f"column '{self.name}' is empty or contains invalid characters"
             )
 
         if self.entity is not None:
             if not isinstance(self.entity, Entity):
-                raise InvalidColumn(f"column {self.name} expects an Entity")
+                raise InvalidColumnError(f"column {self.name} expects an Entity")
             if not self.entity.alias:
-                raise InvalidColumn(
+                raise InvalidColumnError(
                     f"column {self.name} expects an Entity with an alias"
                 )
 

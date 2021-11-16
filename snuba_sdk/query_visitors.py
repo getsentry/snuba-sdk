@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
 from typing import (
@@ -38,7 +40,7 @@ from snuba_sdk.snuba import is_aggregation_function
 from snuba_sdk.visitors import ExpressionFinder, Translation, entity_aliases
 
 
-class InvalidQuery(Exception):
+class InvalidQueryError(Exception):
     pass
 
 
@@ -84,7 +86,7 @@ def find_column_in_function(
 
 
 class QueryVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: "main.Query") -> QVisited:
+    def visit(self, query: main.Query) -> QVisited:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -93,9 +95,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         return self._combine(query, returns)
 
     @abstractmethod
-    def _combine(
-        self, query: "main.Query", returns: Mapping[str, QVisited]
-    ) -> QVisited:
+    def _combine(self, query: main.Query, returns: Mapping[str, QVisited]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -103,18 +103,18 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> QVisited:
+    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_select(
-        self, select: Optional[Sequence["main.SelectableExpression"]]
+        self, select: Optional[Sequence[main.SelectableExpression]]
     ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_groupby(
-        self, groupby: Optional[Sequence["main.SelectableExpression"]]
+        self, groupby: Optional[Sequence[main.SelectableExpression]]
     ) -> QVisited:
         raise NotImplementedError
 
@@ -189,14 +189,14 @@ class Printer(QueryVisitor[str]):
         self.pretty = pretty
         self.is_inner = is_inner
 
-    def visit(self, query: "main.Query") -> str:
+    def visit(self, query: main.Query) -> str:
         if isinstance(query.match, Join):
             with entity_aliases(self.translator):
                 return super().visit(query)
 
         return super().visit(query)
 
-    def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: main.Query, returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
         # These fields are encoded outside of the SQL
         to_skip = (
@@ -226,7 +226,7 @@ class Printer(QueryVisitor[str]):
     def _visit_dataset(self, dataset: str) -> str:
         return dataset
 
-    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> str:
+    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> str:
         if isinstance(match, (Entity, Join)):
             return f"MATCH {self.translator.visit(match)}"
 
@@ -237,14 +237,14 @@ class Printer(QueryVisitor[str]):
         return "MATCH { %s }" % subquery
 
     def _visit_select(
-        self, select: Optional[Sequence["main.SelectableExpression"]]
+        self, select: Optional[Sequence[main.SelectableExpression]]
     ) -> str:
         if select:
             return f"SELECT {', '.join(self.translator.visit(s) for s in select)}"
         return ""
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence["main.SelectableExpression"]]
+        self, groupby: Optional[Sequence[main.SelectableExpression]]
     ) -> str:
         if groupby:
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
@@ -322,7 +322,7 @@ class Translator(Printer):
     def __init__(self) -> None:
         super().__init__(False)
 
-    def _combine(self, query: "main.Query", returns: Mapping[str, str]) -> str:
+    def _combine(self, query: main.Query, returns: Mapping[str, str]) -> str:
         formatted_query = super()._combine(query, returns)
         if self.is_inner:
             return formatted_query
@@ -352,7 +352,7 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
         self.expression_finder = ExpressionFinder(exp_type)
 
     def _combine(
-        self, query: "main.Query", returns: Mapping[str, Set[Expression]]
+        self, query: main.Query, returns: Mapping[str, Set[Expression]]
     ) -> Set[Expression]:
         found = set()
         for ret in returns.values():
@@ -362,7 +362,7 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     def _visit_dataset(self, dataset: str) -> Set[Expression]:
         return set()
 
-    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> Set[Expression]:
+    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> Set[Expression]:
         if isinstance(match, (Entity, Join)):
             return self.expression_finder.visit(match)
         return set()
@@ -375,12 +375,12 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
         return found
 
     def _visit_select(
-        self, select: Optional[Sequence["main.SelectableExpression"]]
+        self, select: Optional[Sequence[main.SelectableExpression]]
     ) -> Set[Expression]:
         return self.__aggregate(select)
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence["main.SelectableExpression"]]
+        self, groupby: Optional[Sequence[main.SelectableExpression]]
     ) -> Set[Expression]:
         return self.__aggregate(groupby)
 
@@ -439,7 +439,7 @@ class Validator(QueryVisitor[None]):
         super().__init__()
         self.column_finder = ExpressionSearcher(Column)
 
-    def _combine(self, query: "main.Query", returns: Mapping[str, None]) -> None:
+    def _combine(self, query: main.Query, returns: Mapping[str, None]) -> None:
         # TODO: Contextual validations:
         # - Must have certain conditions (project, timestamp, organization etc.)
 
@@ -457,7 +457,7 @@ class Validator(QueryVisitor[None]):
 
             for c in all_columns:
                 if isinstance(c, Column) and c.name not in inner_match:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"outer query is referencing column {c.name} that does not exist in subquery"
                     )
         # In a Join, all the columns must have a qualifying entity with a valid alias.
@@ -469,26 +469,26 @@ class Validator(QueryVisitor[None]):
             for c in column_exps:
                 assert isinstance(c, Column)
                 if c.entity is None:
-                    raise InvalidQuery(f"{c.name} must have a qualifying entity")
+                    raise InvalidQueryError(f"{c.name} must have a qualifying entity")
                 elif c.entity.alias not in entity_aliases:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"{c.name} has unknown entity alias {c.entity.alias}"
                     )
                 elif entity_aliases[c.entity.alias] != c.entity.name:
-                    raise InvalidQuery(
+                    raise InvalidQueryError(
                         f"{c.name} has incorrect alias for entity {c.entity.name}: {c.entity.alias}"
                     )
 
         if query.select is None or len(query.select) == 0:
-            raise InvalidQuery("query must have at least one expression in select")
+            raise InvalidQueryError("query must have at least one expression in select")
 
         if query.totals and not query.groupby:
-            raise InvalidQuery("totals is only valid with a groupby")
+            raise InvalidQueryError("totals is only valid with a groupby")
 
     def _visit_dataset(self, dataset: str) -> None:
         pass
 
-    def _visit_match(self, match: Union[Entity, Join, "main.Query"]) -> None:
+    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> None:
         match.validate()
 
     def __list_validate(self, values: Optional[Sequence[Expression]]) -> None:
@@ -497,12 +497,12 @@ class Validator(QueryVisitor[None]):
                 v.validate()
 
     def _visit_select(
-        self, select: Optional[Sequence["main.SelectableExpression"]]
+        self, select: Optional[Sequence[main.SelectableExpression]]
     ) -> None:
         self.__list_validate(select)
 
     def _visit_groupby(
-        self, groupby: Optional[Sequence["main.SelectableExpression"]]
+        self, groupby: Optional[Sequence[main.SelectableExpression]]
     ) -> None:
         self.__list_validate(groupby)
 

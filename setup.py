@@ -9,7 +9,8 @@ Snuba-SDK - SnQL SDK for Snuba
 """
 
 import os
-from setuptools import setup, find_packages  # type: ignore
+
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,7 +37,7 @@ setup(
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
     license="MIT",
-    install_requires=["dataclasses;python_version<='3.6'"],
+    install_requires=[],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
@@ -45,7 +46,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
