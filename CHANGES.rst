@@ -10,6 +10,7 @@ Changelog and versioning
 - Update all dependencies to latest and fix subsequent linting errors
     - Correctly chain exceptions
     - Follow PEP naming conventions for Exceptions: https://www.python.org/dev/peps/pep-0008/#exception-names
+- Add Data Model concept to Entities for extra validation
 
 0.0.26
 ------

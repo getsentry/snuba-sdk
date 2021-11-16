@@ -59,12 +59,12 @@ class Query:
     # These must be listed in the order that they must appear in the SnQL query.
     dataset: str
     match: Union[Entity, Join, Query]
-    select: Optional[List[SelectableExpression]] = None
-    groupby: Optional[List[SelectableExpression]] = None
+    select: Optional[Sequence[SelectableExpression]] = None
+    groupby: Optional[Sequence[SelectableExpression]] = None
     array_join: Optional[Column] = None
-    where: Optional[List[Union[BooleanCondition, Condition]]] = None
-    having: Optional[List[Union[BooleanCondition, Condition]]] = None
-    orderby: Optional[List[OrderBy]] = None
+    where: Optional[Sequence[Union[BooleanCondition, Condition]]] = None
+    having: Optional[Sequence[Union[BooleanCondition, Condition]]] = None
+    orderby: Optional[Sequence[OrderBy]] = None
     limitby: Optional[LimitBy] = None
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None

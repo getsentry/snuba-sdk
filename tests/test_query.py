@@ -21,6 +21,7 @@ from snuba_sdk import (
     OrderBy,
     Query,
 )
+from snuba_sdk.query_validation import InvalidMatchError
 from snuba_sdk.query_visitors import InvalidQueryError
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
@@ -304,8 +305,8 @@ invalid_tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        InvalidQueryError(
-            "outer query is referencing column group_id that does not exist in subquery"
+        InvalidMatchError(
+            "outer query is referencing column 'group_id' that does not exist in subquery"
         ),
         id="invalid column reference in outer query",
     ),
@@ -330,8 +331,8 @@ invalid_tests = [
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600),
-        InvalidQueryError(
-            "outer query is referencing column event_id that does not exist in subquery"
+        InvalidMatchError(
+            "outer query is referencing column 'event_id' that does not exist in subquery"
         ),
         id="outer query is referencing column not alias",
     ),

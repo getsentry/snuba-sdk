@@ -109,14 +109,14 @@ entity_tests = [
         "foo",
         Entity("events"),
         None,
-        InvalidColumnError("column foo expects an Entity with an alias"),
+        InvalidColumnError("column 'foo' expects an Entity with an alias"),
         id="column with entity but no alias",
     ),
     pytest.param(
         "foo",
         "events",
         None,
-        InvalidColumnError("column foo expects an Entity"),
+        InvalidColumnError("column 'foo' expects an Entity"),
         id="column with non-entity",
     ),
 ]

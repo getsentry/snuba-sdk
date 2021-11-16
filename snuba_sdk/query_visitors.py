@@ -35,6 +35,7 @@ from snuba_sdk.expressions import (
 )
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
+from snuba_sdk.query_validation import validate_match
 from snuba_sdk.relationships import Join
 from snuba_sdk.snuba import is_aggregation_function
 from snuba_sdk.visitors import ExpressionFinder, Translation, entity_aliases
@@ -440,44 +441,7 @@ class Validator(QueryVisitor[None]):
         self.column_finder = ExpressionSearcher(Column)
 
     def _combine(self, query: main.Query, returns: Mapping[str, None]) -> None:
-        # TODO: Contextual validations:
-        # - Must have certain conditions (project, timestamp, organization etc.)
-
-        # If the match is a subquery, then the outer query can only reference columns
-        # from the subquery.
-        all_columns = self.column_finder.visit(query)
-        if isinstance(query.match, main.Query):
-            inner_match = set()
-            assert query.match.select is not None
-            for s in query.match.select:
-                if isinstance(s, CurriedFunction):
-                    inner_match.add(s.alias)
-                elif isinstance(s, Column):
-                    inner_match.add(s.name)
-
-            for c in all_columns:
-                if isinstance(c, Column) and c.name not in inner_match:
-                    raise InvalidQueryError(
-                        f"outer query is referencing column {c.name} that does not exist in subquery"
-                    )
-        # In a Join, all the columns must have a qualifying entity with a valid alias.
-        elif isinstance(query.match, Join):
-            entity_aliases = {
-                alias: entity for alias, entity in query.match.get_alias_mappings()
-            }
-            column_exps = self.column_finder.visit(query)
-            for c in column_exps:
-                assert isinstance(c, Column)
-                if c.entity is None:
-                    raise InvalidQueryError(f"{c.name} must have a qualifying entity")
-                elif c.entity.alias not in entity_aliases:
-                    raise InvalidQueryError(
-                        f"{c.name} has unknown entity alias {c.entity.alias}"
-                    )
-                elif entity_aliases[c.entity.alias] != c.entity.name:
-                    raise InvalidQueryError(
-                        f"{c.name} has incorrect alias for entity {c.entity.name}: {c.entity.alias}"
-                    )
+        validate_match(query, self.column_finder)
 
         if query.select is None or len(query.select) == 0:
             raise InvalidQueryError("query must have at least one expression in select")

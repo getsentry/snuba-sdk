@@ -72,6 +72,13 @@ class Join(Expression):
 
         return aliases
 
+    def get_entities(self) -> Set[Entity]:
+        entities = set()
+        for rel in self.relationships:
+            entities.add(rel.lhs)
+            entities.add(rel.rhs)
+        return entities
+
     def validate(self) -> None:
         if not isinstance(self.relationships, (list, tuple)) or not self.relationships:
             raise InvalidExpressionError("Join must have at least one Relationship")
