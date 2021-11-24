@@ -6,7 +6,6 @@
     conditions
     entity
     schema
-    schema_examples
     expressions
     joins
     legacy
