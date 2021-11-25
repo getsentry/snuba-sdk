@@ -11,6 +11,7 @@ Changelog and versioning
     - Correctly chain exceptions
     - Follow PEP naming conventions for Exceptions: https://www.python.org/dev/peps/pep-0008/#exception-names
 - Add Data Model concept to Entities for extra validation
+- Create a type alias for sequences of conditions
 
 0.0.26
 ------

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Set, Tuple, Union
+from typing import List, Optional, Set, Tuple
 
 # Import the modules due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -8,8 +8,8 @@ from snuba_sdk import query as main
 from snuba_sdk import query_visitors as qvisitors
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
-    BooleanCondition,
     Condition,
+    ConditionSet,
     Op,
     get_first_level_and_conditions,
 )
@@ -121,7 +121,7 @@ class RequiredColumnError(Exception):
 
 
 def _check_entity_required_columns_in_conditions(
-    entity: Entity, conditions: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    entity: Entity, conditions: Optional[ConditionSet]
 ) -> None:
     """
     For a given entity, flatten the AND conditions to find just the top level ones and
@@ -185,7 +185,7 @@ def _check_entity_required_columns_in_conditions(
 def _matching_condition_exists(
     ops: Set[Op],
     col_to_match: ColumnModel,
-    top_level_conditions: Sequence[BooleanCondition | Condition],
+    top_level_conditions: ConditionSet,
     entity_alias: Optional[str],
 ) -> bool:
     for cond in top_level_conditions:
