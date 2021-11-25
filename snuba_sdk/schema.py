@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Iterator, Sequence, Set
+from typing import Iterator, Sequence
 
 
 @dataclass(frozen=True)
@@ -10,8 +12,8 @@ class Column:
 
 @dataclass(frozen=True, init=False)
 class ColumnSet:
-    column_names: Set[str]
-    columns: Set[Column] = field(init=False, default_factory=set)
+    column_names: set[str]
+    columns: set[Column] = field(init=False, default_factory=set)
 
     def __init__(self, columns: Sequence[Column]) -> None:
         super().__setattr__("column_names", set(c.name for c in columns))
@@ -32,7 +34,7 @@ class ColumnSet:
 class EntityModel:
     column_set: ColumnSet
     required_time_column: Column
-    required_columns: Set[Column] = field(init=False, default_factory=set)
+    required_columns: set[Column] = field(init=False, default_factory=set)
 
     def __init__(
         self,

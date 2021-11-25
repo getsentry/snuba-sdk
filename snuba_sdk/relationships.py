@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, MutableMapping, Sequence, Set, Tuple
+from typing import Any, MutableMapping, Sequence, Tuple
 
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import Expression, InvalidExpressionError
@@ -62,7 +64,7 @@ class Join(Expression):
 
     relationships: Sequence[Relationship]
 
-    def get_alias_mappings(self) -> Set[Tuple[str, str]]:
+    def get_alias_mappings(self) -> set[Tuple[str, str]]:
         aliases = set()
         for rel in self.relationships:
             if rel.lhs.alias is not None:
@@ -72,7 +74,7 @@ class Join(Expression):
 
         return aliases
 
-    def get_entities(self) -> Set[Entity]:
+    def get_entities(self) -> set[Entity]:
         entities = set()
         for rel in self.relationships:
             entities.add(rel.lhs)

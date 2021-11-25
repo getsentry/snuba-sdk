@@ -88,13 +88,6 @@ This outputs:
 If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpressionError`` exception will be thrown.
 If there is a problem with a query, it will throw an ``InvalidQueryError`` exception when ``.validate()`` or ``.translate()`` is called.
 
-=========
-TODO List
-=========
-
-- Have the Entity object take a set of columns
-- Syntactic sugar
-
 ===========================
 Contributing to the SDK
 ===========================

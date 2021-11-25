@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, MutableMapping, Optional, Sequence, Tuple
+from typing import Any, MutableMapping, Optional, Sequence
 
 import pytest
 
@@ -120,7 +122,7 @@ tests = [
 
 @pytest.mark.parametrize("query, clauses, extras", tests)
 def test_print_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
 ) -> None:
     expected = " ".join(clauses)
     assert str(query) == expected
@@ -128,7 +130,7 @@ def test_print_join_query(
 
 @pytest.mark.parametrize("query, clauses, extras", tests)
 def test_pretty_print_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
 ) -> None:
     joined = "\n".join(clauses)
     prefix = "-- DATASET: discover\n"
@@ -142,7 +144,7 @@ def test_pretty_print_join_query(
 
 @pytest.mark.parametrize("query, clauses, extras", tests)
 def test_translate_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[Tuple[str, bool]]]
+    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
 ) -> None:
     joined = " ".join(clauses)
     body: MutableMapping[str, Any] = {"dataset": "discover", "query": joined}

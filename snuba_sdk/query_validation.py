@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Set, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 # Import the modules due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -49,14 +49,14 @@ def validate_match(
     validate_required_columns(query)
 
 
-def validate_subquery(match: main.Query, all_columns: Set[Expression]) -> None:
+def validate_subquery(match: main.Query, all_columns: set[Expression]) -> None:
     """
     Validate that the outer query is only referencing columns in the inner query.
 
     :param match: The inner query of the query being validated.
     :type match: main.Query
     :param all_columns: All the columns referenced in the outer query.
-    :type all_columns: Set[Expression]
+    :type all_columns: set[Expression]
     :raises InvalidQueryError
     """
     inner_match = set()
@@ -74,7 +74,7 @@ def validate_subquery(match: main.Query, all_columns: Set[Expression]) -> None:
             )
 
 
-def validate_join(match: Join, all_columns: Set[Expression]) -> None:
+def validate_join(match: Join, all_columns: set[Expression]) -> None:
     """
     Validate that all the columns in the query are referencing an entity
     in the match, and that there is no alias shadowing.
@@ -82,7 +82,7 @@ def validate_join(match: Join, all_columns: Set[Expression]) -> None:
     :param match: The Join for this query
     :type match: Join
     :param all_columns: The set of all columns referenced in the query
-    :type all_columns: Set[Expression]
+    :type all_columns: set[Expression]
     :raises InvalidMatchError
     """
     entity_aliases = {alias: entity for alias, entity in match.get_alias_mappings()}
@@ -100,7 +100,7 @@ def validate_join(match: Join, all_columns: Set[Expression]) -> None:
             )
 
 
-def validate_entity(match: Entity, all_columns: Set[Expression]) -> None:
+def validate_entity(match: Entity, all_columns: set[Expression]) -> None:
     """
     Perform the checks to validate the match entity:
 
@@ -109,7 +109,7 @@ def validate_entity(match: Entity, all_columns: Set[Expression]) -> None:
     :param match: The Entity of the query.
     :type match: Entity
     :param all_columns: All the columns referenced in the query.
-    :type all_columns: Set[Expression]
+    :type all_columns: set[Expression]
     """
     for column in all_columns:
         assert isinstance(column, Column)
@@ -143,7 +143,7 @@ def _check_entity_required_columns_in_conditions(
     schema = entity.data_model
     top_level = get_first_level_and_conditions(conditions)
 
-    required_conditions: List[Tuple[Set[Op], ColumnModel]] = [
+    required_conditions: list[Tuple[set[Op], ColumnModel]] = [
         *[({Op.EQ, Op.IN}, req_column) for req_column in schema.required_columns],
     ]
     not_matched = set(range(len(required_conditions)))
@@ -183,7 +183,7 @@ def _check_entity_required_columns_in_conditions(
 
 
 def _matching_condition_exists(
-    ops: Set[Op],
+    ops: set[Op],
     col_to_match: ColumnModel,
     top_level_conditions: Sequence[BooleanCondition | Condition],
     entity_alias: Optional[str],

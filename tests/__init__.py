@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import types
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
@@ -42,7 +44,7 @@ def col(name: Any) -> Callable[[], Any]:
     return to_column
 
 
-def func(function: Any, parameters: List[Any], alias: Any = None) -> Callable[[], Any]:
+def func(function: Any, parameters: list[Any], alias: Any = None) -> Callable[[], Any]:
     def to_func() -> Function:
         params = []
         for param in parameters:
@@ -58,8 +60,8 @@ def func(function: Any, parameters: List[Any], alias: Any = None) -> Callable[[]
 
 def cur_func(
     function: Any,
-    initializers: Optional[List[Any]],
-    parameters: List[Any],
+    initializers: Optional[list[Any]],
+    parameters: list[Any],
     alias: Any = None,
 ) -> Callable[[], Any]:
     def to_func() -> CurriedFunction:

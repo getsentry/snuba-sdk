@@ -50,7 +50,7 @@ QVisited = TypeVar("QVisited")
 
 def is_aggregate(
     function: Union[Function, CurriedFunction],
-    aggregate_aliases: Optional[Set[str]] = None,
+    aggregate_aliases: Optional[set[str]] = None,
 ) -> bool:
     if is_aggregation_function(function.function, aggregate_aliases):
         return True
@@ -353,22 +353,22 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
         self.expression_finder = ExpressionFinder(exp_type)
 
     def _combine(
-        self, query: main.Query, returns: Mapping[str, Set[Expression]]
-    ) -> Set[Expression]:
+        self, query: main.Query, returns: Mapping[str, set[Expression]]
+    ) -> set[Expression]:
         found = set()
         for ret in returns.values():
             found |= ret
         return found
 
-    def _visit_dataset(self, dataset: str) -> Set[Expression]:
+    def _visit_dataset(self, dataset: str) -> set[Expression]:
         return set()
 
-    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> Set[Expression]:
+    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> set[Expression]:
         if isinstance(match, (Entity, Join)):
             return self.expression_finder.visit(match)
         return set()
 
-    def __aggregate(self, terms: Optional[Sequence[Expression]]) -> Set[Expression]:
+    def __aggregate(self, terms: Optional[Sequence[Expression]]) -> set[Expression]:
         found = set()
         if terms:
             for t in terms:
@@ -377,61 +377,61 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
 
     def _visit_select(
         self, select: Optional[Sequence[main.SelectableExpression]]
-    ) -> Set[Expression]:
+    ) -> set[Expression]:
         return self.__aggregate(select)
 
     def _visit_groupby(
         self, groupby: Optional[Sequence[main.SelectableExpression]]
-    ) -> Set[Expression]:
+    ) -> set[Expression]:
         return self.__aggregate(groupby)
 
-    def _visit_array_join(self, array_join: Optional[Column]) -> Set[Expression]:
+    def _visit_array_join(self, array_join: Optional[Column]) -> set[Expression]:
         return self.expression_finder.visit(array_join) if array_join else set()
 
     def _visit_where(
         self, where: Optional[Sequence[Union[BooleanCondition, Condition]]]
-    ) -> Set[Expression]:
+    ) -> set[Expression]:
         return self.__aggregate(where)
 
     def _visit_having(
         self, having: Optional[Sequence[Union[BooleanCondition, Condition]]]
-    ) -> Set[Expression]:
+    ) -> set[Expression]:
         return self.__aggregate(having)
 
-    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> Set[Expression]:
+    def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> set[Expression]:
         return self.__aggregate(orderby)
 
-    def _visit_limitby(self, limitby: Optional[LimitBy]) -> Set[Expression]:
+    def _visit_limitby(self, limitby: Optional[LimitBy]) -> set[Expression]:
         return self.expression_finder.visit(limitby) if limitby else set()
 
-    def _visit_limit(self, limit: Optional[Limit]) -> Set[Expression]:
+    def _visit_limit(self, limit: Optional[Limit]) -> set[Expression]:
         return self.expression_finder.visit(limit) if limit else set()
 
-    def _visit_offset(self, offset: Optional[Offset]) -> Set[Expression]:
+    def _visit_offset(self, offset: Optional[Offset]) -> set[Expression]:
         return self.expression_finder.visit(offset) if offset else set()
 
-    def _visit_granularity(self, granularity: Optional[Granularity]) -> Set[Expression]:
+    def _visit_granularity(self, granularity: Optional[Granularity]) -> set[Expression]:
         return self.expression_finder.visit(granularity) if granularity else set()
 
-    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> Set[Expression]:
+    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> set[Expression]:
         return self.expression_finder.visit(parent_api) if parent_api else set()
 
-    def _visit_totals(self, totals: Totals) -> Set[Expression]:
+    def _visit_totals(self, totals: Totals) -> set[Expression]:
         return self.expression_finder.visit(totals) if totals else set()
 
-    def _visit_consistent(self, consistent: Consistent) -> Set[Expression]:
+    def _visit_consistent(self, consistent: Consistent) -> set[Expression]:
         return self.expression_finder.visit(consistent) if consistent else set()
 
-    def _visit_turbo(self, turbo: Turbo) -> Set[Expression]:
+    def _visit_turbo(self, turbo: Turbo) -> set[Expression]:
         return self.expression_finder.visit(turbo) if turbo else set()
 
-    def _visit_debug(self, debug: Debug) -> Set[Expression]:
+    def _visit_debug(self, debug: Debug) -> set[Expression]:
         return self.expression_finder.visit(debug) if debug else set()
 
-    def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
+    def _visit_dry_run(self, dry_run: DryRun) -> set[Expression]:
         return self.expression_finder.visit(dry_run) if dry_run else set()
 
-    def _visit_legacy(self, legacy: Legacy) -> Set[Expression]:
+    def _visit_legacy(self, legacy: Legacy) -> set[Expression]:
         return self.expression_finder.visit(legacy) if legacy else set()
 
 
