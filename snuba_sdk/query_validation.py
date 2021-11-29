@@ -30,7 +30,6 @@ def validate_match(
     all_columns = column_finder.visit(query)
     if isinstance(query.match, main.Query):
         _validate_subquery(query.match, all_columns)
-        validate_match(query.match, column_finder)
     elif isinstance(query.match, Join):
         _validate_join(query.match, all_columns)
     else:
