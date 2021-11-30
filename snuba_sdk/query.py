@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Sequence, Union
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition
+from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
@@ -62,8 +62,8 @@ class Query:
     select: Optional[Sequence[SelectableExpression]] = None
     groupby: Optional[Sequence[SelectableExpression]] = None
     array_join: Optional[Column] = None
-    where: Optional[Sequence[Union[BooleanCondition, Condition]]] = None
-    having: Optional[Sequence[Union[BooleanCondition, Condition]]] = None
+    where: Optional[ConditionGroup] = None
+    having: Optional[ConditionGroup] = None
     orderby: Optional[Sequence[OrderBy]] = None
     limitby: Optional[LimitBy] = None
     limit: Optional[Limit] = None
@@ -137,16 +137,12 @@ class Query:
 
         return self._replace("array_join", array_join)
 
-    def set_where(
-        self, conditions: Sequence[Union[BooleanCondition, Condition]]
-    ) -> Query:
+    def set_where(self, conditions: ConditionGroup) -> Query:
         if not list_type(conditions, (BooleanCondition, Condition)):
             raise InvalidQueryError("where clause must be a list of conditions")
         return self._replace("where", conditions)
 
-    def set_having(
-        self, conditions: Sequence[Union[BooleanCondition, Condition]]
-    ) -> Query:
+    def set_having(self, conditions: ConditionGroup) -> Query:
         if not list_type(conditions, (BooleanCondition, Condition)):
             raise InvalidQueryError("having clause must be a list of conditions")
         return self._replace("having", conditions)
