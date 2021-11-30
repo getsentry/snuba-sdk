@@ -79,6 +79,7 @@ class Query:
 
     def __post_init__(self) -> None:
         """
+        somethingsomething
         This has a different validation flow from normal expressions, since a query
         is not necessarily always correct. For example, you can create a Query with
         no select columns, which will fail in the validate. However it shouldn't fail
