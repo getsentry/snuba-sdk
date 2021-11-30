@@ -15,7 +15,16 @@ from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.schema import Column as ColumnModel
 from snuba_sdk.schema import EntityModel
 
-SCHEMA = EntityModel([ColumnModel("test1"), ColumnModel("test2"), ColumnModel("time")])
+SCHEMA = EntityModel(
+    [
+        ColumnModel("test1"),
+        ColumnModel("test2"),
+        ColumnModel("required1", required=True),
+        ColumnModel("required2", required=True),
+        ColumnModel("time"),
+    ],
+    required_time_column=ColumnModel("time"),
+)
 ENTITY = Entity("test", None, None, SCHEMA)
 BEFORE = datetime(2021, 1, 2, 3, 4, 5, 5, timezone.utc)
 AFTER = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
@@ -26,7 +35,7 @@ entity_match_tests = [
         Query(
             dataset="test",
             match=ENTITY,
-            select=[Column("test1"), Column("test2")],
+            select=[Column("test1"), Column("required1")],
         ),
         None,
         id="all columns in data model",
@@ -47,6 +56,8 @@ entity_match_tests = [
 def test_entity_validate_match(query: Query, exception: Optional[Exception]) -> None:
     query = query.set_where(
         [
+            Condition(Column("required1"), Op.IN, [1, 2, 3]),
+            Condition(Column("required2"), Op.EQ, 1),
             Condition(Column("time"), Op.GTE, BEFORE),
             Condition(Column("time"), Op.LT, AFTER),
         ],
@@ -68,6 +79,8 @@ subquery_match_tests = [
                 match=ENTITY,
                 select=[Column("test1"), Column("test2")],
                 where=[
+                    Condition(Column("required1"), Op.IN, [1, 2, 3]),
+                    Condition(Column("required2"), Op.EQ, 1),
                     Condition(Column("time"), Op.GTE, BEFORE),
                     Condition(Column("time"), Op.LT, AFTER),
                 ],
@@ -88,6 +101,8 @@ subquery_match_tests = [
                 match=ENTITY,
                 select=[Column("test1"), Column("test2")],
                 where=[
+                    Condition(Column("required1"), Op.IN, [1, 2, 3]),
+                    Condition(Column("required2"), Op.EQ, 1),
                     Condition(Column("time"), Op.GTE, BEFORE),
                     Condition(Column("time"), Op.LT, AFTER),
                 ],
@@ -112,6 +127,8 @@ subquery_match_tests = [
                     match=ENTITY,
                     select=[Column("test1"), Column("test2")],
                     where=[
+                        Condition(Column("required1"), Op.IN, [1, 2, 3]),
+                        Condition(Column("required2"), Op.EQ, 1),
                         Condition(Column("time"), Op.GTE, BEFORE),
                         Condition(Column("time"), Op.LT, AFTER),
                     ],
