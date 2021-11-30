@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional
 
 # Import the modules due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -8,8 +8,8 @@ from snuba_sdk import query as main
 from snuba_sdk import query_visitors as qvisitors
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
-    BooleanCondition,
     Condition,
+    ConditionGroup,
     Op,
     get_first_level_and_conditions,
 )
@@ -29,60 +29,52 @@ def validate_match(
 ) -> None:
     """
     Perform validation related to the match clause of the query. Currently that takes two forms:
-    validate that the columns referenced in the query are valid columns based on the match clause,
-    and ensure that the query has the appropriate conditions based on the entities required columns.
+    validate that the columns referenced in the query are valid columns based on the match clause.
 
     :param query: The query to be validated.
-    :type query: main.Query
     :param column_finder: An ExpressionSearcher used to find all the columns in the query.
-    :type column_finder: ExpressionSearcher
     """
     all_columns = column_finder.visit(query)
     if isinstance(query.match, main.Query):
-        validate_subquery(query.match, all_columns)
-        validate_match(query.match, column_finder)
+        _validate_subquery(query.match, all_columns)
     elif isinstance(query.match, Join):
-        validate_join(query.match, all_columns)
+        _validate_join(query.match, all_columns)
     else:
-        validate_entity(query.match, all_columns)
-
-    validate_required_columns(query)
+        _validate_entity(query.match, all_columns)
 
 
-def validate_subquery(match: main.Query, all_columns: set[Expression]) -> None:
+def _validate_subquery(match: main.Query, all_columns: set[Expression]) -> None:
     """
     Validate that the outer query is only referencing columns in the inner query.
 
     :param match: The inner query of the query being validated.
-    :type match: main.Query
     :param all_columns: All the columns referenced in the outer query.
-    :type all_columns: set[Expression]
     :raises InvalidQueryError
     """
-    inner_match = set()
+    inner_column_names = set()
     assert match.select is not None
     for s in match.select:
+        # If the inner query has a function in its SELECT, then it is possible for the
+        # outer query to reference that function using the alias.
         if isinstance(s, CurriedFunction):
-            inner_match.add(s.alias)
+            inner_column_names.add(s.alias)
         elif isinstance(s, Column):
-            inner_match.add(s.name)
+            inner_column_names.add(s.name)
 
     for c in all_columns:
-        if isinstance(c, Column) and c.name not in inner_match:
+        if isinstance(c, Column) and c.name not in inner_column_names:
             raise InvalidMatchError(
                 f"outer query is referencing column '{c.name}' that does not exist in subquery"
             )
 
 
-def validate_join(match: Join, all_columns: set[Expression]) -> None:
+def _validate_join(match: Join, all_columns: set[Expression]) -> None:
     """
     Validate that all the columns in the query are referencing an entity
     in the match, and that there is no alias shadowing.
 
     :param match: The Join for this query
-    :type match: Join
     :param all_columns: The set of all columns referenced in the query
-    :type all_columns: set[Expression]
     :raises InvalidMatchError
     """
     entity_aliases = {alias: entity for alias, entity in match.get_alias_mappings()}
@@ -100,16 +92,14 @@ def validate_join(match: Join, all_columns: set[Expression]) -> None:
             )
 
 
-def validate_entity(match: Entity, all_columns: set[Expression]) -> None:
+def _validate_entity(match: Entity, all_columns: set[Expression]) -> None:
     """
     Perform the checks to validate the match entity:
 
     Ensure that all the columns referenced in the query are in the data model for that entity.
 
     :param match: The Entity of the query.
-    :type match: Entity
     :param all_columns: All the columns referenced in the query.
-    :type all_columns: set[Expression]
     """
     for column in all_columns:
         assert isinstance(column, Column)
@@ -121,7 +111,7 @@ class RequiredColumnError(Exception):
 
 
 def _check_entity_required_columns_in_conditions(
-    entity: Entity, conditions: Optional[Sequence[Union[BooleanCondition, Condition]]]
+    entity: Entity, conditions: Optional[ConditionGroup]
 ) -> None:
     """
     For a given entity, flatten the AND conditions to find just the top level ones and
@@ -143,7 +133,7 @@ def _check_entity_required_columns_in_conditions(
     schema = entity.data_model
     top_level = get_first_level_and_conditions(conditions)
 
-    required_conditions: list[Tuple[set[Op], ColumnModel]] = [
+    required_conditions: list[tuple[set[Op], ColumnModel]] = [
         *[({Op.EQ, Op.IN}, req_column) for req_column in schema.required_columns],
     ]
     not_matched = set(range(len(required_conditions)))
@@ -185,7 +175,7 @@ def _check_entity_required_columns_in_conditions(
 def _matching_condition_exists(
     ops: set[Op],
     col_to_match: ColumnModel,
-    top_level_conditions: Sequence[BooleanCondition | Condition],
+    top_level_conditions: ConditionGroup,
     entity_alias: Optional[str],
 ) -> bool:
     for cond in top_level_conditions:

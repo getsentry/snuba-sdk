@@ -106,7 +106,7 @@ class BooleanOp(Enum):
 @dataclass(frozen=True)
 class BooleanCondition(Expression):
     op: BooleanOp
-    conditions: Sequence[Union[BooleanCondition, Condition]]
+    conditions: ConditionGroup
 
     def validate(self) -> None:
         if not isinstance(self.op, BooleanOp):
@@ -133,23 +133,20 @@ class BooleanCondition(Expression):
 @dataclass(frozen=True)
 class And(BooleanCondition):
     op: BooleanOp = field(init=False, default=BooleanOp.AND)
-    conditions: Sequence[Union[BooleanCondition, Condition]] = field(
-        default_factory=list
-    )
+    conditions: ConditionGroup = field(default_factory=list)
 
 
 @dataclass(frozen=True)
 class Or(BooleanCondition):
     op: BooleanOp = field(init=False, default=BooleanOp.OR)
-    conditions: Sequence[Union[BooleanCondition, Condition]] = field(
-        default_factory=list
-    )
+    conditions: ConditionGroup = field(default_factory=list)
 
 
-def get_first_level_and_conditions(
-    conditions: Sequence[Union[BooleanCondition, Condition]]
-) -> Sequence[Union[BooleanCondition, Condition]]:
-    flattened: list[Union[BooleanCondition, Condition]] = []
+ConditionGroup = Sequence[Union[BooleanCondition, Condition]]
+
+
+def get_first_level_and_conditions(conditions: ConditionGroup) -> ConditionGroup:
+    flattened: ConditionGroup = []
     for cond in conditions:
         if isinstance(cond, And):
             top_level = get_first_level_and_conditions(cond.conditions)

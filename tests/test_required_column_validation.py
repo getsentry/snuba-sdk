@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import Optional
 
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import And, BooleanCondition, Condition, Op, Or
+from snuba_sdk.conditions import And, Condition, ConditionGroup, Op, Or
 from snuba_sdk.entity import Entity
 from snuba_sdk.query import Query
 from snuba_sdk.query_validation import RequiredColumnError, validate_required_columns
-from snuba_sdk.query_visitors import ExpressionSearcher, InvalidQueryError
+from snuba_sdk.query_visitors import ExpressionSearcher
 from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.schema import Column as ColumnModel
 from snuba_sdk.schema import EntityModel
@@ -142,7 +142,7 @@ entity_match_tests = [
 
 @pytest.mark.parametrize("conditions, entity, exception", entity_match_tests)
 def test_entity_validate_match(
-    conditions: Sequence[BooleanCondition | Condition],
+    conditions: ConditionGroup,
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:
@@ -155,29 +155,6 @@ def test_entity_validate_match(
         with pytest.raises(type(exception), match=re.escape(str(exception))):
             validate_required_columns(query)
     else:
-        validate_required_columns(query)
-
-
-@pytest.mark.parametrize("conditions, entity, exception", entity_match_tests)
-def test_subquery_validate_match(
-    conditions: Sequence[BooleanCondition | Condition],
-    entity: Entity,
-    exception: Optional[Exception],
-) -> None:
-    inner_query = Query(
-        dataset="test",
-        match=entity,
-        select=[Column("test1"), Column("required1")],
-        where=conditions,
-    )
-
-    if exception is not None:
-        wrapped_exc = InvalidQueryError(f"inner query is invalid: {exception}")
-        with pytest.raises(type(wrapped_exc), match=re.escape(str(wrapped_exc))):
-            query = Query(dataset="test", match=inner_query, select=[Column("test1")])
-            validate_required_columns(query)
-    else:
-        query = Query(dataset="test", match=inner_query, select=[Column("test1")])
         validate_required_columns(query)
 
 
@@ -314,7 +291,7 @@ join_match_tests = [
 
 @pytest.mark.parametrize("conditions, entity, exception", join_match_tests)
 def test_join_validate_match(
-    conditions: Sequence[BooleanCondition | Condition],
+    conditions: ConditionGroup,
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:
