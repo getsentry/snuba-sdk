@@ -18,7 +18,7 @@ from typing import (
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 from snuba_sdk import query as main
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import ConditionSet
+from snuba_sdk.conditions import ConditionGroup
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Consistent,
@@ -124,11 +124,11 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_where(self, where: Optional[ConditionSet]) -> QVisited:
+    def _visit_where(self, where: Optional[ConditionGroup]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_having(self, having: Optional[ConditionSet]) -> QVisited:
+    def _visit_having(self, having: Optional[ConditionGroup]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -252,12 +252,12 @@ class Printer(QueryVisitor[str]):
             return f"ARRAY JOIN {self.translator.visit(array_join)}"
         return ""
 
-    def _visit_where(self, where: Optional[ConditionSet]) -> str:
+    def _visit_where(self, where: Optional[ConditionGroup]) -> str:
         if where:
             return f"WHERE {' AND '.join(self.translator.visit(w) for w in where)}"
         return ""
 
-    def _visit_having(self, having: Optional[ConditionSet]) -> str:
+    def _visit_having(self, having: Optional[ConditionGroup]) -> str:
         if having:
             return f"HAVING {' AND '.join(self.translator.visit(h) for h in having)}"
         return ""
@@ -380,10 +380,10 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     def _visit_array_join(self, array_join: Optional[Column]) -> Set[Expression]:
         return self.expression_finder.visit(array_join) if array_join else set()
 
-    def _visit_where(self, where: Optional[ConditionSet]) -> Set[Expression]:
+    def _visit_where(self, where: Optional[ConditionGroup]) -> Set[Expression]:
         return self.__aggregate(where)
 
-    def _visit_having(self, having: Optional[ConditionSet]) -> Set[Expression]:
+    def _visit_having(self, having: Optional[ConditionGroup]) -> Set[Expression]:
         return self.__aggregate(having)
 
     def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> Set[Expression]:
@@ -461,10 +461,10 @@ class Validator(QueryVisitor[None]):
     def _visit_array_join(self, array_join: Optional[Column]) -> None:
         array_join.validate() if array_join is not None else None
 
-    def _visit_where(self, where: Optional[ConditionSet]) -> None:
+    def _visit_where(self, where: Optional[ConditionGroup]) -> None:
         self.__list_validate(where)
 
-    def _visit_having(self, having: Optional[ConditionSet]) -> None:
+    def _visit_having(self, having: Optional[ConditionGroup]) -> None:
         self.__list_validate(having)
 
     def _visit_orderby(self, orderby: Optional[Sequence[OrderBy]]) -> None:

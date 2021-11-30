@@ -7,7 +7,7 @@ from typing import Optional
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import And, Condition, ConditionSet, Op, Or
+from snuba_sdk.conditions import And, Condition, ConditionGroup, Op, Or
 from snuba_sdk.entity import Entity
 from snuba_sdk.query import Query
 from snuba_sdk.query_validation import RequiredColumnError, validate_required_columns
@@ -142,7 +142,7 @@ entity_match_tests = [
 
 @pytest.mark.parametrize("conditions, entity, exception", entity_match_tests)
 def test_entity_validate_match(
-    conditions: ConditionSet,
+    conditions: ConditionGroup,
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:
@@ -160,7 +160,7 @@ def test_entity_validate_match(
 
 @pytest.mark.parametrize("conditions, entity, exception", entity_match_tests)
 def test_subquery_validate_match(
-    conditions: ConditionSet,
+    conditions: ConditionGroup,
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:
@@ -314,7 +314,7 @@ join_match_tests = [
 
 @pytest.mark.parametrize("conditions, entity, exception", join_match_tests)
 def test_join_validate_match(
-    conditions: ConditionSet,
+    conditions: ConditionGroup,
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:

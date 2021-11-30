@@ -9,7 +9,7 @@ from snuba_sdk import query_visitors as qvisitors
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
     Condition,
-    ConditionSet,
+    ConditionGroup,
     Op,
     get_first_level_and_conditions,
 )
@@ -121,7 +121,7 @@ class RequiredColumnError(Exception):
 
 
 def _check_entity_required_columns_in_conditions(
-    entity: Entity, conditions: Optional[ConditionSet]
+    entity: Entity, conditions: Optional[ConditionGroup]
 ) -> None:
     """
     For a given entity, flatten the AND conditions to find just the top level ones and
@@ -185,7 +185,7 @@ def _check_entity_required_columns_in_conditions(
 def _matching_condition_exists(
     ops: Set[Op],
     col_to_match: ColumnModel,
-    top_level_conditions: ConditionSet,
+    top_level_conditions: ConditionGroup,
     entity_alias: Optional[str],
 ) -> bool:
     for cond in top_level_conditions:
