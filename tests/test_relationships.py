@@ -1,5 +1,4 @@
 import json
-import re
 from typing import Any, MutableMapping, Optional, Sequence, Tuple
 
 import pytest
@@ -10,7 +9,6 @@ from snuba_sdk.entity import Entity
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.query import Query
-from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.relationships import Join, Relationship
 
 tests = [
@@ -151,104 +149,3 @@ def test_translate_join_query(
     if extras:
         body.update({k: v for k, v in extras})
     assert query.snuba() == json.dumps(body)
-
-
-invalid_tests = [
-    pytest.param(
-        Query(
-            "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
-        )
-        .set_select([Column("group_id"), Column("span_id", Entity("sessions", "s"))])
-        .set_where(
-            [Condition(Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL)]
-        )
-        .set_orderby(
-            [OrderBy(Column("timestamp", Entity("events", "e")), Direction.DESC)]
-        )
-        .set_limit(10)
-        .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
-        InvalidQueryError("group_id must have a qualifying entity"),
-        id="all columns must be qualified",
-    ),
-    pytest.param(
-        Query(
-            "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
-        )
-        .set_select(
-            [
-                Column("group_id", Entity("transactions", "t")),
-                Column("span_id", Entity("sessions", "s")),
-            ]
-        )
-        .set_where(
-            [Condition(Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL)]
-        )
-        .set_orderby(
-            [OrderBy(Column("timestamp", Entity("events", "e")), Direction.DESC)]
-        )
-        .set_limit(10)
-        .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
-        InvalidQueryError("group_id has unknown entity alias t"),
-        id="column with different entity",
-    ),
-    pytest.param(
-        Query(
-            "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
-        )
-        .set_select(
-            [
-                Column("group_id", Entity("events", "t")),
-                Column("span_id", Entity("sessions", "s")),
-            ]
-        )
-        .set_where(
-            [Condition(Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL)]
-        )
-        .set_orderby(
-            [OrderBy(Column("timestamp", Entity("events", "e")), Direction.DESC)]
-        )
-        .set_limit(10)
-        .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
-        InvalidQueryError("group_id has unknown entity alias t"),
-        id="column with different entity alias",
-    ),
-    pytest.param(
-        Query(
-            "discover",
-            Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
-        )
-        .set_select(
-            [
-                Column("group_id", Entity("transactions", "e")),
-                Column("span_id", Entity("sessions", "s")),
-            ]
-        )
-        .set_where(
-            [Condition(Column("timestamp", Entity("events", "e")), Op.IS_NOT_NULL)]
-        )
-        .set_orderby(
-            [OrderBy(Column("timestamp", Entity("events", "e")), Direction.DESC)]
-        )
-        .set_limit(10)
-        .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
-        InvalidQueryError("group_id has incorrect alias for entity transactions: e"),
-        id="duplicate entity alias",
-    ),
-]
-
-
-@pytest.mark.parametrize("query, exception", invalid_tests)
-def test_invalid_join(query: Query, exception: Exception) -> None:
-    with pytest.raises(type(exception), match=re.escape(str(exception))):
-        query.validate()

@@ -5,6 +5,7 @@
     query
     conditions
     entity
+    schema
     expressions
     joins
     legacy

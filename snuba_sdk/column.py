@@ -40,7 +40,6 @@ class Column(Expression):
     def validate(self) -> None:
         if not isinstance(self.name, str):
             raise InvalidColumnError(f"column '{self.name}' must be a string")
-            self.name = str(self.name)
         if not column_name_re.match(self.name):
             raise InvalidColumnError(
                 f"column '{self.name}' is empty or contains invalid characters"
@@ -48,11 +47,13 @@ class Column(Expression):
 
         if self.entity is not None:
             if not isinstance(self.entity, Entity):
-                raise InvalidColumnError(f"column {self.name} expects an Entity")
+                raise InvalidColumnError(f"column '{self.name}' expects an Entity")
             if not self.entity.alias:
                 raise InvalidColumnError(
-                    f"column {self.name} expects an Entity with an alias"
+                    f"column '{self.name}' expects an Entity with an alias"
                 )
+
+            self.validate_data_model(self.entity)
 
         # If this is a subscriptable set these values to help with debugging etc.
         # Because this is frozen we can't set the value directly.
@@ -61,3 +62,13 @@ class Column(Expression):
             key = key.strip("]")
             super().__setattr__("subscriptable", subscriptable)
             super().__setattr__("key", key)
+
+    def validate_data_model(self, entity: Entity) -> None:
+        if entity.data_model is None:
+            return
+
+        to_check = self.subscriptable if self.subscriptable else self.name
+        if not entity.data_model.contains(to_check):
+            raise InvalidColumnError(
+                f"entity '{entity.name}' does not support the column '{self.name}'"
+            )

@@ -31,7 +31,7 @@ relationship_tests = [
         Entity("transactions", "t"),
         None,
         InvalidExpressionError(
-            "Entity(name='events', alias=None, sample=100.0) must have a valid alias"
+            "Entity('events', sample=100.0) must have a valid alias"
         ),
     ),
     pytest.param(
