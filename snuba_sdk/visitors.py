@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -312,18 +314,18 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def __init__(self, exp_type: Any) -> None:
         self.exp_type = exp_type
 
-    def _visit_aliased_expression(self, aliased: AliasedExpression) -> Set[Expression]:
+    def _visit_aliased_expression(self, aliased: AliasedExpression) -> set[Expression]:
         if isinstance(aliased, self.exp_type):
             return set([aliased])
 
         return self.visit(aliased.exp)
 
-    def _visit_column(self, column: Column) -> Set[Expression]:
+    def _visit_column(self, column: Column) -> set[Expression]:
         if isinstance(column, self.exp_type):
             return set([column])
         return set()
 
-    def _visit_curried_function(self, func: CurriedFunction) -> Set[Expression]:
+    def _visit_curried_function(self, func: CurriedFunction) -> set[Expression]:
         if isinstance(func, self.exp_type):
             return set([func])
 
@@ -340,15 +342,15 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
         return found
 
-    def _visit_int_literal(self, literal: int) -> Set[Expression]:
+    def _visit_int_literal(self, literal: int) -> set[Expression]:
         return set()
 
-    def _visit_entity(self, entity: Entity) -> Set[Expression]:
+    def _visit_entity(self, entity: Entity) -> set[Expression]:
         if isinstance(entity, self.exp_type):
             return set([entity])
         return set()
 
-    def _visit_relationship(self, relationship: Relationship) -> Set[Expression]:
+    def _visit_relationship(self, relationship: Relationship) -> set[Expression]:
         if isinstance(relationship, self.exp_type):
             return set([relationship])
         elif isinstance(relationship.lhs, self.exp_type):
@@ -356,7 +358,7 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
         return set()
 
-    def _visit_join(self, join: Join) -> Set[Expression]:
+    def _visit_join(self, join: Join) -> set[Expression]:
         if isinstance(join, self.exp_type):
             return set([join])
         elif isinstance(join.relationships[0], self.exp_type):
@@ -364,61 +366,61 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
         return set()
 
-    def _visit_condition(self, cond: Condition) -> Set[Expression]:
+    def _visit_condition(self, cond: Condition) -> set[Expression]:
         found = self.visit(cond.lhs)
         if not is_unary(cond.op):
             if isinstance(cond.rhs, Expression):
                 found |= self.visit(cond.rhs)
         return found
 
-    def _visit_boolean_condition(self, cond: BooleanCondition) -> Set[Expression]:
+    def _visit_boolean_condition(self, cond: BooleanCondition) -> set[Expression]:
         found = set()
         for c in cond.conditions:
             found |= self.visit(c)
         return found
 
-    def _visit_orderby(self, orderby: OrderBy) -> Set[Expression]:
+    def _visit_orderby(self, orderby: OrderBy) -> set[Expression]:
         if isinstance(orderby, self.exp_type):
             return set([orderby])
 
         return self.visit(orderby.exp)
 
-    def _visit_limitby(self, limitby: LimitBy) -> Set[Expression]:
+    def _visit_limitby(self, limitby: LimitBy) -> set[Expression]:
         if isinstance(limitby, self.exp_type):
             return set([limitby])
         return self.visit(limitby.column)
 
-    def _visit_totals(self, totals: Totals) -> Set[Expression]:
+    def _visit_totals(self, totals: Totals) -> set[Expression]:
         if isinstance(totals, self.exp_type):
             return set([totals])
         return set()
 
-    def _visit_consistent(self, consistent: Consistent) -> Set[Expression]:
+    def _visit_consistent(self, consistent: Consistent) -> set[Expression]:
         if isinstance(consistent, self.exp_type):
             return set([consistent])
         return set()
 
-    def _visit_parent_api(self, parent_api: ParentAPI) -> Set[Expression]:
+    def _visit_parent_api(self, parent_api: ParentAPI) -> set[Expression]:
         if isinstance(parent_api, self.exp_type):
             return set([parent_api])
         return set()
 
-    def _visit_turbo(self, turbo: Turbo) -> Set[Expression]:
+    def _visit_turbo(self, turbo: Turbo) -> set[Expression]:
         if isinstance(turbo, self.exp_type):
             return set([turbo])
         return set()
 
-    def _visit_debug(self, debug: Debug) -> Set[Expression]:
+    def _visit_debug(self, debug: Debug) -> set[Expression]:
         if isinstance(debug, self.exp_type):
             return set([debug])
         return set()
 
-    def _visit_dry_run(self, dry_run: DryRun) -> Set[Expression]:
+    def _visit_dry_run(self, dry_run: DryRun) -> set[Expression]:
         if isinstance(dry_run, self.exp_type):
             return set([dry_run])
         return set()
 
-    def _visit_legacy(self, legacy: Legacy) -> Set[Expression]:
+    def _visit_legacy(self, legacy: Legacy) -> set[Expression]:
         if isinstance(legacy, self.exp_type):
             return set([legacy])
         return set()

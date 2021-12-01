@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, List, Optional, Sequence, Set, Union
+from typing import Any, Optional, Sequence, Union
 
 
 class InvalidExpressionError(Exception):
@@ -27,7 +29,7 @@ ScalarSequenceType = Sequence[Union[Expression, ScalarLiteralType]]
 ScalarType = Union[ScalarLiteralType, ScalarSequenceType]
 
 # For type checking
-Scalar: Set[type] = {
+Scalar: set[type] = {
     type(None),
     bool,
     str,
@@ -40,7 +42,7 @@ Scalar: Set[type] = {
 
 
 class InvalidArrayError(Exception):
-    def __init__(self, value: List[Any]) -> None:
+    def __init__(self, value: list[Any]) -> None:
         value_str = f"{value}"
         if len(value_str) > 10:
             value_str = f"{value_str[:10]}...]"

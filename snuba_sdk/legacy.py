@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime
 from functools import partial
-from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Mapping, Optional, Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import OPERATOR_TO_FUNCTION, Condition, Op, Or
@@ -160,7 +162,7 @@ def parse_extension_condition(
     return None
 
 
-def _parse_condition_parts(cond: Sequence[Any]) -> Tuple[Any, Op, Any]:
+def _parse_condition_parts(cond: Sequence[Any]) -> tuple[Any, Op, Any]:
     """
     Parse the parts of a legacy condition and return them.
 
@@ -261,7 +263,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         parsed_groupby.append(parse_exp(g))
     query = query.set_groupby(parsed_groupby)
 
-    conditions: List[Union[Or, Condition]] = []
+    conditions: list[Union[Or, Condition]] = []
     if body.get("organization"):
         org_cond = parse_extension_condition("org_id", body["organization"])
         if org_cond:
@@ -298,7 +300,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     query = query.set_where(conditions)
 
-    having: List[Union[Or, Condition]] = []
+    having: list[Union[Or, Condition]] = []
     for cond in body.get("having", []):
         if not is_condition(cond):
             or_conditions = []

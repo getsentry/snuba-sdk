@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
@@ -38,7 +38,7 @@ TRANSLATOR = Translator()
 
 
 SelectableExpression = Union[AliasedExpression, Column, CurriedFunction, Function]
-SelectableExpressionType: List[type] = [
+SelectableExpressionType: list[type] = [
     AliasedExpression,
     Column,
     CurriedFunction,

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import re
-from typing import Optional, Set
+from typing import Optional
 
 # This is supposed to enumerate the functions snuba supports (with their
 # validator) so we can keep control of the functions snuba
@@ -108,7 +110,7 @@ AGGREGATION_FUNCTIONS = {
 FUNCTION_NAME = re.compile(r"([a-zA-Z_]+)\(")
 
 
-def is_aggregation_function(func_name: str, aliases: Optional[Set[str]] = None) -> bool:
+def is_aggregation_function(func_name: str, aliases: Optional[set[str]] = None) -> bool:
     # Special case for legacy functions
     if "(" in func_name:
         matches = FUNCTION_NAME.findall(func_name)

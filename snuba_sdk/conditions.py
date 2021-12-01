@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Mapping, Optional, Sequence, Union
+from typing import Mapping, Optional, Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
@@ -145,10 +145,8 @@ class Or(BooleanCondition):
 ConditionGroup = Sequence[Union[BooleanCondition, Condition]]
 
 
-def get_first_level_and_conditions(
-    conditions: Sequence[Union[BooleanCondition, Condition]]
-) -> Sequence[Union[BooleanCondition, Condition]]:
-    flattened: List[Union[BooleanCondition, Condition]] = []
+def get_first_level_and_conditions(conditions: ConditionGroup) -> ConditionGroup:
+    flattened = []
     for cond in conditions:
         if isinstance(cond, And):
             top_level = get_first_level_and_conditions(cond.conditions)

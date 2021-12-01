@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Set, Tuple
+from typing import Optional
 
 # Import the modules due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -43,7 +43,7 @@ def validate_match(
         _validate_entity(query.match, all_columns)
 
 
-def _validate_subquery(match: main.Query, all_columns: Set[Expression]) -> None:
+def _validate_subquery(match: main.Query, all_columns: set[Expression]) -> None:
     """
     Validate that the outer query is only referencing columns in the inner query.
 
@@ -68,7 +68,7 @@ def _validate_subquery(match: main.Query, all_columns: Set[Expression]) -> None:
             )
 
 
-def _validate_join(match: Join, all_columns: Set[Expression]) -> None:
+def _validate_join(match: Join, all_columns: set[Expression]) -> None:
     """
     Validate that all the columns in the query are referencing an entity
     in the match, and that there is no alias shadowing.
@@ -92,7 +92,7 @@ def _validate_join(match: Join, all_columns: Set[Expression]) -> None:
             )
 
 
-def _validate_entity(match: Entity, all_columns: Set[Expression]) -> None:
+def _validate_entity(match: Entity, all_columns: set[Expression]) -> None:
     """
     Perform the checks to validate the match entity:
 
@@ -133,7 +133,7 @@ def _check_entity_required_columns_in_conditions(
     schema = entity.data_model
     top_level = get_first_level_and_conditions(conditions)
 
-    required_conditions: List[Tuple[Set[Op], ColumnModel]] = [
+    required_conditions: list[tuple[set[Op], ColumnModel]] = [
         *[({Op.EQ, Op.IN}, req_column) for req_column in schema.required_columns],
     ]
     not_matched = set(range(len(required_conditions)))
@@ -173,7 +173,7 @@ def _check_entity_required_columns_in_conditions(
 
 
 def _matching_condition_exists(
-    ops: Set[Op],
+    ops: set[Op],
     col_to_match: ColumnModel,
     top_level_conditions: ConditionGroup,
     entity_alias: Optional[str],
