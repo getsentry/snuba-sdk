@@ -146,7 +146,7 @@ ConditionGroup = Sequence[Union[BooleanCondition, Condition]]
 
 
 def get_first_level_and_conditions(conditions: ConditionGroup) -> ConditionGroup:
-    flattened: ConditionGroup = []
+    flattened = []
     for cond in conditions:
         if isinstance(cond, And):
             top_level = get_first_level_and_conditions(cond.conditions)
