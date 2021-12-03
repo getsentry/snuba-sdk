@@ -107,22 +107,22 @@ def test_orderby(exp: Any, direction: Any, exception: Optional[Exception]) -> No
 
 
 limitby_tests = [
-    pytest.param(Column("foo"), 1, None),
+    pytest.param([Column("foo")], 1, None),
     pytest.param(
         "bar", 1, InvalidExpressionError("LimitBy can only be used on a Column")
     ),
     pytest.param(
-        Column("foo"),
+        [Column("foo")],
         "1",
         InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),
     pytest.param(
-        Column("foo"),
+        [Column("foo")],
         -1,
         InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),
     pytest.param(
-        Column("foo"),
+        [Column("foo")],
         15000,
         InvalidExpressionError("LimitBy count must be a positive integer (max 10,000)"),
     ),

@@ -56,7 +56,7 @@ tests = [
             ],
             having=[Condition(Function("uniq", [Column("event_id")]), Op.GT, 1)],
             orderby=[OrderBy(Column("title"), Direction.ASC)],
-            limitby=LimitBy(Column("title"), 5),
+            limitby=LimitBy([Column("title")], 5),
             limit=Limit(10),
             offset=Offset(1),
             granularity=Granularity(3600),
@@ -114,7 +114,7 @@ tests = [
             ],
         )
         .set_orderby([OrderBy(Column("title"), Direction.ASC)])
-        .set_limitby(LimitBy(Column("title"), 5))
+        .set_limitby(LimitBy([Column("title")], 5))
         .set_limit(10)
         .set_offset(1)
         .set_granularity(3600)

@@ -72,7 +72,7 @@ tests = [
                 ),
             ],
             orderby=[OrderBy(Column("title"), Direction.ASC)],
-            limitby=LimitBy(Column("title"), 5),
+            limitby=LimitBy([Column("title")], 5),
             limit=Limit(10),
             offset=Offset(1),
             granularity=Granularity(3600),

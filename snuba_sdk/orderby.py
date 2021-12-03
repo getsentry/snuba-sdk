@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union
+from typing import Sequence, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import Expression, InvalidExpressionError
@@ -28,12 +28,18 @@ class OrderBy(Expression):
 
 @dataclass(frozen=True)
 class LimitBy(Expression):
-    column: Column
+    columns: Sequence[Column]
     count: int
 
     def validate(self) -> None:
-        if not isinstance(self.column, Column):
-            raise InvalidExpressionError("LimitBy can only be used on a Column")
+        if (
+            not isinstance(self.columns, Sequence)
+            or len(self.columns) < 1
+            or not isinstance(self.columns[0], Column)
+        ):
+            raise InvalidExpressionError(
+                "LimitBy can only be used on a Column or multiple Columns"
+            )
         if not isinstance(self.count, int) or self.count <= 0 or self.count > 10000:
             raise InvalidExpressionError(
                 "LimitBy count must be a positive integer (max 10,000)"

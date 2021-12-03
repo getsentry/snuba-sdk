@@ -341,7 +341,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     limitby = body.get("limitby")
     if limitby:
         limit, name = limitby
-        query = query.set_limitby(LimitBy(Column(name), int(limit)))
+        query = query.set_limitby(LimitBy([Column(name)], int(limit)))
 
     extras = (
         "limit",
