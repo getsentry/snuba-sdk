@@ -61,7 +61,7 @@ class Query:
     match: Union[Entity, Join, Query]
     select: Optional[Sequence[SelectableExpression]] = None
     groupby: Optional[Sequence[SelectableExpression]] = None
-    array_join: Optional[Column] = None
+    array_join: Optional[Sequence[Column]] = None
     where: Optional[ConditionGroup] = None
     having: Optional[ConditionGroup] = None
     orderby: Optional[Sequence[OrderBy]] = None
@@ -131,9 +131,13 @@ class Query:
             )
         return self._replace("groupby", groupby)
 
-    def set_array_join(self, array_join: Column) -> Query:
-        if not isinstance(array_join, Column):
-            raise InvalidQueryError("array join must be a Column")
+    def set_array_join(self, array_join: Sequence[Column]) -> Query:
+        if (
+            not isinstance(array_join, Sequence)
+            or len(array_join) < 1
+            or not isinstance(array_join[0], Column)
+        ):
+            raise InvalidQueryError("array join must be on at least one Column")
 
         return self._replace("array_join", array_join)
 

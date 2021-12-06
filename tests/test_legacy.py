@@ -176,7 +176,7 @@ tests = [
             "having": [["min_users", ">", 10]],
             "aggregations": [],
             "consistent": False,
-            "arrayjoin": "array_stuff",
+            "arrayjoin": ["array_stuff"],
         },
         (
             "-- DATASET: sessions",

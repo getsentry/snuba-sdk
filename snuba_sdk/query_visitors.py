@@ -120,7 +120,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_array_join(self, array_join: Optional[Column]) -> QVisited:
+    def _visit_array_join(self, array_join: Optional[Sequence[Column]]) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -247,9 +247,9 @@ class Printer(QueryVisitor[str]):
             return f"BY {', '.join(self.translator.visit(g) for g in groupby)}"
         return ""
 
-    def _visit_array_join(self, array_join: Optional[Column]) -> str:
+    def _visit_array_join(self, array_join: Optional[Sequence[Column]]) -> str:
         if array_join:
-            return f"ARRAY JOIN {self.translator.visit(array_join)}"
+            return f"ARRAY JOIN {', '.join(self.translator.visit(col) for col in array_join)}"
         return ""
 
     def _visit_where(self, where: Optional[ConditionGroup]) -> str:
@@ -377,8 +377,10 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     ) -> set[Expression]:
         return self.__aggregate(groupby)
 
-    def _visit_array_join(self, array_join: Optional[Column]) -> set[Expression]:
-        return self.expression_finder.visit(array_join) if array_join else set()
+    def _visit_array_join(
+        self, array_join: Optional[Sequence[Column]]
+    ) -> set[Expression]:
+        return set(array_join) if array_join else set()
 
     def _visit_where(self, where: Optional[ConditionGroup]) -> set[Expression]:
         return self.__aggregate(where)
@@ -458,8 +460,8 @@ class Validator(QueryVisitor[None]):
     ) -> None:
         self.__list_validate(groupby)
 
-    def _visit_array_join(self, array_join: Optional[Column]) -> None:
-        array_join.validate() if array_join is not None else None
+    def _visit_array_join(self, array_join: Optional[Sequence[Column]]) -> None:
+        self.__list_validate(array_join)
 
     def _visit_where(self, where: Optional[ConditionGroup]) -> None:
         self.__list_validate(where)

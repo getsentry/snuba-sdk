@@ -248,7 +248,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     arrayjoin = body.get("arrayjoin")
     if arrayjoin:
-        query = query.set_array_join(Column(arrayjoin))
+        query = query.set_array_join([Column(name) for name in arrayjoin])
 
     query = query.set_select(selected_columns)
 
