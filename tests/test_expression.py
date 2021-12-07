@@ -109,7 +109,11 @@ def test_orderby(exp: Any, direction: Any, exception: Optional[Exception]) -> No
 limitby_tests = [
     pytest.param([Column("foo")], 1, None),
     pytest.param(
-        "bar", 1, InvalidExpressionError("LimitBy can only be used on a Column")
+        ["bar"],
+        1,
+        InvalidExpressionError(
+            "LimitBy columns: Invalid element 'bar' which must be a list composed entirely of <class 'snuba_sdk.column.Column'>"
+        ),
     ),
     pytest.param(
         [Column("foo")],
