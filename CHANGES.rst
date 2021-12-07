@@ -12,6 +12,7 @@ Changelog and versioning
     - Follow PEP naming conventions for Exceptions: https://www.python.org/dev/peps/pep-0008/#exception-names
 - Add Data Model concept to Entities for extra validation
 - Create a type alias for sequences of conditions
+- Use sequences for LIMIT BY and ARRAY JOIN since Snuba now supports those operations over multiple columns
 
 0.0.26
 ------
