@@ -133,7 +133,7 @@ class Query:
 
     def set_array_join(self, array_join: Sequence[Column]) -> Query:
         if not list_type(array_join, [Column]) or len(array_join) < 1:
-            raise InvalidQueryError("array join must be a Column")
+            raise InvalidQueryError("array join must be a non-empty list of Column")
 
         return self._replace("array_join", array_join)
 
