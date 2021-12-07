@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -29,8 +30,6 @@ from snuba_sdk.expressions import (
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
-
-import functools
 
 TVisited = TypeVar("TVisited")
 

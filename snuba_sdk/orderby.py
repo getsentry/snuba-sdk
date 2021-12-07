@@ -27,13 +27,13 @@ class OrderBy(Expression):
 
 
 def validate_sequence_of_type(
-    name: str, val: Any, type: type, minimumLength: Optional[int]
+    name: str, val: Any, type: type, minimum_length: Optional[int]
 ) -> None:
     if not isinstance(val, Sequence):
         raise InvalidExpressionError(f"{name}: '{val}' must be a sequence of {type}")
-    if minimumLength is not None and len(val) < minimumLength:
+    if minimum_length is not None and len(val) < minimum_length:
         raise InvalidExpressionError(
-            f"{name}: '{val}' must be contain at least {minimumLength} elements"
+            f"{name}: '{val}' must be contain at least {minimum_length} elements"
         )
     for el in val:
         if not isinstance(el, type):
