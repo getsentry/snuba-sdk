@@ -380,7 +380,7 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     def _visit_array_join(
         self, array_join: Optional[Sequence[Column]]
     ) -> set[Expression]:
-        return set(array_join) if array_join else set()
+        return self.__aggregate(array_join)
 
     def _visit_where(self, where: Optional[ConditionGroup]) -> set[Expression]:
         return self.__aggregate(where)

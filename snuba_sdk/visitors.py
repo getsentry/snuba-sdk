@@ -30,6 +30,8 @@ from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
 
+import functools
+
 TVisited = TypeVar("TVisited")
 
 
@@ -388,7 +390,10 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_limitby(self, limitby: LimitBy) -> set[Expression]:
         if isinstance(limitby, self.exp_type):
             return set([limitby])
-        return set(limitby.columns)
+        return functools.reduce(
+            lambda acc, new: set.union(acc, new),
+            [self.visit(column) for column in limitby.columns],
+        )
 
     def _visit_totals(self, totals: Totals) -> set[Expression]:
         if isinstance(totals, self.exp_type):
