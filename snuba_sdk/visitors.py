@@ -389,7 +389,7 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
         if isinstance(limitby, self.exp_type):
             return set([limitby])
 
-        return set(*[self.visit(column) for column in limitby.columns])
+        return set.union(*[self.visit(column) for column in limitby.columns])
 
     def _visit_totals(self, totals: Totals) -> set[Expression]:
         if isinstance(totals, self.exp_type):
