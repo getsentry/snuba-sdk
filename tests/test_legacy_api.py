@@ -661,7 +661,7 @@ discover_tests = [
             "selected_columns": [],
             "orderby": "-last_seen",
             "limit": 1000,
-            "arrayjoin": ["exception_frames"],
+            "arrayjoin": "exception_frames",
             "project": [2],
             "dataset": "events",
             "from_date": "2021-04-01T20:05:27",

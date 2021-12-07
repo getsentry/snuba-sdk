@@ -248,7 +248,7 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     arrayjoin = body.get("arrayjoin")
     if arrayjoin:
-        query = query.set_array_join([Column(name) for name in arrayjoin])
+        query = query.set_array_join([Column(arrayjoin)])
 
     query = query.set_select(selected_columns)
 
@@ -340,8 +340,8 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
 
     limitby = body.get("limitby")
     if limitby:
-        limit, names = limitby
-        query = query.set_limitby(LimitBy([Column(name) for name in names], int(limit)))
+        limit, name = limitby
+        query = query.set_limitby(LimitBy([Column(name)], int(limit)))
 
     extras = (
         "limit",
