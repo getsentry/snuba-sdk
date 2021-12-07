@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -389,10 +388,8 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_limitby(self, limitby: LimitBy) -> set[Expression]:
         if isinstance(limitby, self.exp_type):
             return set([limitby])
-        return functools.reduce(
-            set.union,
-            [self.visit(column) for column in limitby.columns],
-        )
+
+        return set(*[self.visit(column) for column in limitby.columns])
 
     def _visit_totals(self, totals: Totals) -> set[Expression]:
         if isinstance(totals, self.exp_type):
