@@ -391,7 +391,7 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
         if isinstance(limitby, self.exp_type):
             return set([limitby])
         return functools.reduce(
-            lambda acc, new: set.union(acc, new),
+            set.union,
             [self.visit(column) for column in limitby.columns],
         )
 
