@@ -72,7 +72,7 @@ tests = [
                 ),
             ],
             orderby=[OrderBy(Column("title"), Direction.ASC)],
-            limitby=LimitBy(Column("title"), 5),
+            limitby=LimitBy([Column("title")], 5),
             limit=Limit(10),
             offset=Offset(1),
             granularity=Granularity(3600),
@@ -159,7 +159,7 @@ tests = [
     pytest.param(
         Query("discover", Entity("events"))
         .set_select([Column("event_id"), Column("title")])
-        .set_array_join(Column("exception_stacks[stuff]"))
+        .set_array_join([Column("exception_stacks[stuff]")])
         .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
         .set_limit(10)
         .set_offset(1)

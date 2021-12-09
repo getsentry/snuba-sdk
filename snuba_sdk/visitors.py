@@ -279,7 +279,7 @@ class Translation(ExpressionVisitor[str]):
         return f"{self.visit(orderby.exp)} {orderby.direction.value}"
 
     def _visit_limitby(self, limitby: LimitBy) -> str:
-        return f"{limitby.count} BY {self.visit(limitby.column)}"
+        return f"{limitby.count} BY {','.join(self.visit(column) for column in limitby.columns)}"
 
     def _visit_totals(self, totals: Totals) -> str:
         return str(totals)
@@ -388,7 +388,8 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_limitby(self, limitby: LimitBy) -> set[Expression]:
         if isinstance(limitby, self.exp_type):
             return set([limitby])
-        return self.visit(limitby.column)
+
+        return set.union(*[self.visit(column) for column in limitby.columns])
 
     def _visit_totals(self, totals: Totals) -> set[Expression]:
         if isinstance(totals, self.exp_type):
