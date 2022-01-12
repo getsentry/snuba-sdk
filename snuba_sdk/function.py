@@ -33,7 +33,9 @@ class CurriedFunction(Expression):
     function: str
     initializers: Optional[Sequence[Union[ScalarLiteralType, Column]]] = None
     parameters: Optional[
-        Sequence[Union[ScalarType, Column, CurriedFunction, Function]]
+        Sequence[
+            Union[ScalarType, Column, CurriedFunction, Function, Identifier, Lambda]
+        ]
     ] = None
     alias: Optional[str] = None
 
@@ -79,7 +81,7 @@ class CurriedFunction(Expression):
                 )
             for param in self.parameters:
                 if not isinstance(
-                    param, (Column, CurriedFunction, Function)
+                    param, (Column, CurriedFunction, Function, Identifier, Lambda)
                 ) and not is_scalar(param):
                     assert not isinstance(param, bytes)  # mypy
                     raise InvalidFunctionError(
@@ -103,3 +105,34 @@ class Function(CurriedFunction):
     initializers: Optional[Sequence[Union[ScalarLiteralType, Column]]] = field(
         init=False, default=None
     )
+
+
+identifier_re = re.compile("^[a-zA-Z_][a-zA-Z0-9_]*$")
+
+
+class InvalidLambdaError(InvalidExpressionError):
+    pass
+
+
+@dataclass(frozen=True)
+class Identifier(Expression):
+    name: str
+
+    def validate(self) -> None:
+        if not isinstance(self.name, str) or not identifier_re.match(self.name):
+            raise InvalidLambdaError(f"`{self.name}` is not a valid identifier")
+
+
+@dataclass(frozen=True)
+class Lambda(Expression):
+    identifiers: Sequence[str]
+    transformation: CurriedFunction
+
+    def validate(self) -> None:
+        if not isinstance(self.identifiers, (tuple, list)):
+            raise InvalidLambdaError("identifiers must be a sequence")
+        for i in self.identifiers:
+            if not isinstance(i, str) or not identifier_re.match(i):
+                raise InvalidLambdaError(f"{i} is not a valid identifier")
+        if not isinstance(self.transformation, CurriedFunction):
+            raise InvalidLambdaError("transformation must be a function")

@@ -1,6 +1,9 @@
 Changelog and versioning
 ==========================
 
+0.1.1
+------
+- Add support for lambdas and identifiers, which in turn enable higher order functions like `arrayMap`.
 
 0.1.0
 ------

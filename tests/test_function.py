@@ -5,7 +5,13 @@ import pytest
 
 from snuba_sdk.column import Column, InvalidColumnError
 from snuba_sdk.conditions import Op
-from snuba_sdk.function import CurriedFunction, Function, InvalidFunctionError
+from snuba_sdk.function import (
+    CurriedFunction,
+    Function,
+    Identifier,
+    InvalidFunctionError,
+    Lambda,
+)
 from snuba_sdk.visitors import Translation
 from tests import col, cur_func, func
 
@@ -48,6 +54,21 @@ tests = [
         "someFunc(event_id, NULL, 'stuff', toString(event_id) AS event_id_str) AS someFunc",
         None,
         id="all possible parameter types",
+    ),
+    pytest.param(
+        func(
+            "arrayMap",
+            [Lambda(["x"], Function("identity", [Identifier("x")])), Column("foo")],
+            "equation[0]",
+        ),
+        Function(
+            "arrayMap",
+            [Lambda(["x"], Function("identity", [Identifier("x")])), Column("foo")],
+            "equation[0]",
+        ),
+        "arrayMap((`x`) -> identity(`x`), foo) AS equation[0]",
+        None,
+        id="higher order function",
     ),
     pytest.param(
         func("foo", [Column("foo")], "equation[0]"),
