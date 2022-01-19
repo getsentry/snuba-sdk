@@ -26,7 +26,7 @@ from snuba_sdk.expressions import (
     Turbo,
     is_scalar,
 )
-from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
 
@@ -41,6 +41,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_column(node)
         elif isinstance(node, (CurriedFunction, Function)):
             return self._visit_curried_function(node)
+        elif isinstance(node, Identifier):
+            return self._visit_identifier(node)
+        elif isinstance(node, Lambda):
+            return self._visit_lambda(node)
         elif isinstance(node, Entity):
             return self._visit_entity(node)
         elif isinstance(node, Relationship):
@@ -88,6 +92,14 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_curried_function(self, func: CurriedFunction) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_identifier(self, ident: Identifier) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_lambda(self, lambda_fn: Lambda) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -227,7 +239,9 @@ class Translation(ExpressionVisitor[str]):
         if func.parameters is not None:
             params = []
             for param in func.parameters:
-                if isinstance(param, (Column, CurriedFunction, Function)):
+                if isinstance(
+                    param, (Column, CurriedFunction, Function, Identifier, Lambda)
+                ):
                     params.append(self.visit(param))
                 elif is_scalar(param):
                     params.append(self._stringify_scalar(param))
@@ -235,6 +249,13 @@ class Translation(ExpressionVisitor[str]):
             param_clause = f"({', '.join(params)})"
 
         return f"{func.function}{initialize_clause}{param_clause}{alias}"
+
+    def _visit_identifier(self, ident: Identifier) -> str:
+        return f"`{ident.name}`"
+
+    def _visit_lambda(self, lambda_fn: Lambda) -> str:
+        identifiers = ", ".join(f"`{i}`" for i in lambda_fn.identifiers)
+        return f"({identifiers}) -> {self.visit(lambda_fn.transformation)}"
 
     def _visit_int_literal(self, literal: int) -> str:
         return f"{literal:d}"
@@ -341,6 +362,21 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
                     found |= self.visit(param)
 
         return found
+
+    def _visit_identifier(self, ident: Identifier) -> set[Expression]:
+        if isinstance(ident, self.exp_type):
+            return set([ident])
+
+        return set()
+
+    def _visit_lambda(self, lambda_fn: Lambda) -> set[Expression]:
+        if isinstance(lambda_fn, self.exp_type):
+            return set([lambda_fn])
+
+        if self.exp_type == Identifier:
+            return set([Identifier(i) for i in lambda_fn.identifiers])
+
+        return self.visit(lambda_fn.transformation)
 
     def _visit_int_literal(self, literal: int) -> set[Expression]:
         return set()

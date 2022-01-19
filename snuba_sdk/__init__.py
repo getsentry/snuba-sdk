@@ -11,7 +11,7 @@ from snuba_sdk.expressions import (
     Totals,
     Turbo,
 )
-from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 from snuba_sdk.relationships import Join, Relationship
@@ -30,7 +30,9 @@ __all__ = [
     "Entity",
     "Function",
     "Granularity",
+    "Identifier",
     "Join",
+    "Lambda",
     "Limit",
     "LimitBy",
     "Offset",

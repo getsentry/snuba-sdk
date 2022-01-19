@@ -19,7 +19,7 @@ help:
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
 setup-git:
-	pip install 'pre-commit==2.15.0'
+	pip install 'pre-commit==2.16.0'
 	pre-commit install --install-hooks
 
 dist: .venv
