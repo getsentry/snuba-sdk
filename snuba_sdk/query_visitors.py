@@ -20,16 +20,15 @@ from snuba_sdk import query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import (
+from snuba_sdk.expressions import Expression, Granularity, Limit, Offset
+from snuba_sdk.flags import (
     Consistent,
     Debug,
     DryRun,
-    Expression,
-    Granularity,
+    Feature,
     Legacy,
-    Limit,
-    Offset,
     ParentAPI,
+    Team,
     Totals,
     Turbo,
 )
@@ -156,6 +155,14 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
+    def _visit_team(self, team: Team) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_feature(self, feature: Feature) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
     def _visit_totals(self, totals: Totals) -> QVisited:
         raise NotImplementedError
 
@@ -204,6 +211,8 @@ class Printer(QueryVisitor[str]):
             "dry_run",
             "legacy",
             "parent_api",
+            "team",
+            "feature",
         )
 
         separator = "\n" if (self.pretty and not self.is_inner) else " "
@@ -287,13 +296,19 @@ class Printer(QueryVisitor[str]):
             return f"GRANULARITY {self.translator.visit(granularity)}"
         return ""
 
-    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> str:
-        return parent_api.name if parent_api is not None else ""
-
     def _visit_totals(self, totals: Totals) -> str:
         if totals:
             return f"TOTALS {self.translator.visit(totals)}"
         return ""
+
+    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> str:
+        return parent_api.value if parent_api is not None else ""
+
+    def _visit_team(self, team: Optional[Team]) -> str:
+        return team.value if team is not None else ""
+
+    def _visit_feature(self, feature: Optional[Feature]) -> str:
+        return feature.value if feature is not None else ""
 
     def _visit_consistent(self, consistent: Consistent) -> str:
         return str(consistent) if consistent else ""
@@ -335,7 +350,11 @@ class Translator(Printer):
         if query.legacy:
             body["legacy"] = query.legacy.value
         if query.parent_api:
-            body["parent_api"] = query.parent_api.name
+            body["parent_api"] = query.parent_api.value
+        if query.team:
+            body["team"] = query.team.value
+        if query.feature:
+            body["feature"] = query.feature.value
 
         return json.dumps(body)
 
@@ -405,6 +424,12 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
 
     def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> set[Expression]:
         return self.expression_finder.visit(parent_api) if parent_api else set()
+
+    def _visit_team(self, team: Optional[Team]) -> set[Expression]:
+        return self.expression_finder.visit(team) if team else set()
+
+    def _visit_feature(self, feature: Optional[Feature]) -> set[Expression]:
+        return self.expression_finder.visit(feature) if feature else set()
 
     def _visit_totals(self, totals: Totals) -> set[Expression]:
         return self.expression_finder.visit(totals) if totals else set()
@@ -486,6 +511,12 @@ class Validator(QueryVisitor[None]):
 
     def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> None:
         parent_api.validate() if parent_api is not None else None
+
+    def _visit_team(self, team: Optional[Team]) -> None:
+        team.validate() if team is not None else None
+
+    def _visit_feature(self, feature: Optional[Feature]) -> None:
+        feature.validate() if feature is not None else None
 
     def _visit_totals(self, totals: Totals) -> None:
         totals.validate()
