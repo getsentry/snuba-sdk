@@ -10,7 +10,8 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
+from snuba_sdk.expressions import Granularity, Limit, Offset
+from snuba_sdk.flags import Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
@@ -111,6 +112,25 @@ tests = [
         )
         .set_limit(10)
         .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH (events SAMPLE 0.200000)",
+            "SELECT event_id, title",
+            "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
+            "ORDER BY event_id ASC, title DESC",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        None,
+        id="multiple ORDER BY",
+    ),
+    pytest.param(
+        Query("discover", Entity("events", None, 0.2))
+        .set_select([Column("event_id"), Column("title")])
+        .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
+        .set_limit(10)
+        .set_offset(1)
         .set_granularity(3600)
         .set_totals(False)
         .set_consistent(True)
@@ -118,12 +138,13 @@ tests = [
         .set_dry_run(True)
         .set_legacy(True)
         .set_debug(True)
-        .set_parent_api("testing"),
+        .set_parent_api("testing")
+        .set_team("search")
+        .set_feature("sdk-testing"),
         (
             "MATCH (events SAMPLE 0.200000)",
             "SELECT event_id, title",
             "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
-            "ORDER BY event_id ASC, title DESC",
             "LIMIT 10",
             "OFFSET 1",
             "GRANULARITY 3600",
@@ -135,8 +156,10 @@ tests = [
             ("dry_run", True),
             ("legacy", True),
             ("parent_api", "testing"),
+            ("team", "search"),
+            ("feature", "sdk-testing"),
         ],
-        id="multiple ORDER BY",
+        id="test flags",
     ),
     pytest.param(
         Query("discover", Entity("events"))

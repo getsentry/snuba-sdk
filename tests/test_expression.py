@@ -4,19 +4,7 @@ from typing import Any, Optional
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import (
-    Consistent,
-    Debug,
-    DryRun,
-    Granularity,
-    InvalidExpressionError,
-    Legacy,
-    Limit,
-    Offset,
-    ParentAPI,
-    Totals,
-    Turbo,
-)
+from snuba_sdk.expressions import Granularity, InvalidExpressionError, Limit, Offset
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 
@@ -140,31 +128,3 @@ def test_limitby(column: Any, count: Any, exception: Optional[Exception]) -> Non
             LimitBy(column, count)
     else:
         assert LimitBy(column, count).count == count
-
-
-boolean_tests = [
-    pytest.param("totals", Totals),
-    pytest.param("consistent", Consistent),
-    pytest.param("turbo", Turbo),
-    pytest.param("debug", Debug),
-    pytest.param("dry_run", DryRun),
-    pytest.param("legacy", Legacy),
-]
-
-
-@pytest.mark.parametrize("name, flag", boolean_tests)
-def test_boolean_flags(name: str, flag: Any) -> None:
-    assert flag(True) is not None
-    assert flag(False) is not None
-    with pytest.raises(
-        InvalidExpressionError, match=re.escape(f"{name} must be a boolean")
-    ):
-        flag(0)
-
-
-def test_parent_api() -> None:
-    assert ParentAPI("something") is not None
-    with pytest.raises(
-        InvalidExpressionError, match=re.escape("0 must be non-empty string")
-    ):
-        ParentAPI(0)  # type: ignore

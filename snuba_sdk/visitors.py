@@ -10,22 +10,16 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, is_unary
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
-    Consistent,
-    Debug,
-    DryRun,
     Expression,
     Granularity,
     InvalidExpressionError,
-    Legacy,
     Limit,
     Offset,
-    ParentAPI,
     Scalar,
     ScalarType,
-    Totals,
-    Turbo,
     is_scalar,
 )
+from snuba_sdk.flags import BooleanFlag, StringFlag
 from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
@@ -65,20 +59,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_limitby(node)
         elif isinstance(node, Granularity):
             return self._visit_int_literal(node.granularity)
-        elif isinstance(node, Totals):
-            return self._visit_totals(node)
-        elif isinstance(node, ParentAPI):
-            return self._visit_parent_api(node)
-        elif isinstance(node, Consistent):
-            return self._visit_consistent(node)
-        elif isinstance(node, Turbo):
-            return self._visit_turbo(node)
-        elif isinstance(node, Debug):
-            return self._visit_debug(node)
-        elif isinstance(node, DryRun):
-            return self._visit_dry_run(node)
-        elif isinstance(node, Legacy):
-            return self._visit_legacy(node)
+        elif isinstance(node, BooleanFlag):
+            return self._visit_boolean_flag(node)
+        elif isinstance(node, StringFlag):
+            return self._visit_string_flag(node)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -135,31 +119,11 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_totals(self, totals: Totals) -> TVisited:
+    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_parent_api(self, parent_api: ParentAPI) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_consistent(self, consistent: Consistent) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_turbo(self, turbo: Turbo) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_debug(self, debug: Debug) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_dry_run(self, dry_run: DryRun) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_legacy(self, legacy: Legacy) -> TVisited:
+    def _visit_string_flag(self, string_flag: StringFlag) -> TVisited:
         raise NotImplementedError
 
 
@@ -302,26 +266,11 @@ class Translation(ExpressionVisitor[str]):
     def _visit_limitby(self, limitby: LimitBy) -> str:
         return f"{limitby.count} BY {','.join(self.visit(column) for column in limitby.columns)}"
 
-    def _visit_totals(self, totals: Totals) -> str:
-        return str(totals)
+    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> str:
+        return str(boolean_flag)
 
-    def _visit_parent_api(self, parent_api: ParentAPI) -> str:
-        return parent_api.name
-
-    def _visit_consistent(self, consistent: Consistent) -> str:
-        return str(consistent)
-
-    def _visit_turbo(self, turbo: Turbo) -> str:
-        return str(turbo)
-
-    def _visit_debug(self, debug: Debug) -> str:
-        return str(debug)
-
-    def _visit_dry_run(self, dry_run: DryRun) -> str:
-        return str(dry_run)
-
-    def _visit_legacy(self, legacy: Legacy) -> str:
-        return str(legacy)
+    def _visit_string_flag(self, string_flag: StringFlag) -> str:
+        return string_flag.value
 
 
 @contextmanager
@@ -427,37 +376,12 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
         return set.union(*[self.visit(column) for column in limitby.columns])
 
-    def _visit_totals(self, totals: Totals) -> set[Expression]:
-        if isinstance(totals, self.exp_type):
-            return set([totals])
+    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> set[Expression]:
+        if isinstance(boolean_flag, self.exp_type):
+            return set([boolean_flag])
         return set()
 
-    def _visit_consistent(self, consistent: Consistent) -> set[Expression]:
-        if isinstance(consistent, self.exp_type):
-            return set([consistent])
-        return set()
-
-    def _visit_parent_api(self, parent_api: ParentAPI) -> set[Expression]:
-        if isinstance(parent_api, self.exp_type):
-            return set([parent_api])
-        return set()
-
-    def _visit_turbo(self, turbo: Turbo) -> set[Expression]:
-        if isinstance(turbo, self.exp_type):
-            return set([turbo])
-        return set()
-
-    def _visit_debug(self, debug: Debug) -> set[Expression]:
-        if isinstance(debug, self.exp_type):
-            return set([debug])
-        return set()
-
-    def _visit_dry_run(self, dry_run: DryRun) -> set[Expression]:
-        if isinstance(dry_run, self.exp_type):
-            return set([dry_run])
-        return set()
-
-    def _visit_legacy(self, legacy: Legacy) -> set[Expression]:
-        if isinstance(legacy, self.exp_type):
-            return set([legacy])
+    def _visit_string_flag(self, string_flag: StringFlag) -> set[Expression]:
+        if isinstance(string_flag, self.exp_type):
+            return set([string_flag])
         return set()

@@ -1,6 +1,10 @@
 Changelog and versioning
 ==========================
 
+0.1.2
+------
+- Add support for ``team`` and ``feature`` tags for attribution in Snuba
+
 0.1.1
 ------
 - Add support for lambdas and identifiers, which in turn enable higher order functions like `arrayMap`.

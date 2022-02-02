@@ -7,15 +7,15 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import (
+from snuba_sdk.expressions import Granularity, Limit, Offset
+from snuba_sdk.flags import (
     Consistent,
     Debug,
     DryRun,
-    Granularity,
+    Feature,
     Legacy,
-    Limit,
-    Offset,
     ParentAPI,
+    Team,
     Totals,
     Turbo,
 )
@@ -69,13 +69,15 @@ class Query:
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
-    parent_api: Optional[ParentAPI] = None
     totals: Totals = Totals(False)
     consistent: Consistent = Consistent(False)
     turbo: Turbo = Turbo(False)
     debug: Debug = Debug(False)
     dry_run: DryRun = DryRun(False)
     legacy: Legacy = Legacy(False)
+    parent_api: Optional[ParentAPI] = None
+    team: Optional[Team] = None
+    feature: Optional[Feature] = None
 
     def __post_init__(self) -> None:
         """
@@ -169,9 +171,6 @@ class Query:
     def set_totals(self, totals: bool) -> Query:
         return self._replace("totals", Totals(totals))
 
-    def set_parent_api(self, parent_api: str) -> Query:
-        return self._replace("parent_api", ParentAPI(parent_api))
-
     def set_consistent(self, consistent: bool) -> Query:
         return self._replace("consistent", Consistent(consistent))
 
@@ -186,6 +185,15 @@ class Query:
 
     def set_legacy(self, legacy: bool) -> Query:
         return self._replace("legacy", Legacy(legacy))
+
+    def set_parent_api(self, parent_api: str) -> Query:
+        return self._replace("parent_api", ParentAPI(parent_api))
+
+    def set_team(self, team: str) -> Query:
+        return self._replace("team", Team(team))
+
+    def set_feature(self, feature: str) -> Query:
+        return self._replace("feature", Feature(feature))
 
     def validate(self) -> None:
         VALIDATOR.visit(self)
