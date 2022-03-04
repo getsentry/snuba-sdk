@@ -20,7 +20,7 @@ class Expression(ABC):
         raise NotImplementedError
 
 
-ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
+ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]\(\)]*$")
 
 
 # For type hinting

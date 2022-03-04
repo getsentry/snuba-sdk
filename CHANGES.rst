@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+0.1.3
+------
+- Modify ALIAS_RE to allow round brackets
+- Surround alias in `AliasedExpression` and `CurriedFunction` with backticks on query visitor
+when translating a Query Object to a SNQL Query
+
+
 0.1.2
 ------
 - Add support for ``team`` and ``feature`` tags for attribution in Snuba

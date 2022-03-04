@@ -81,7 +81,7 @@ tests = [
         ),
         (
             "MATCH (events SAMPLE 1000.0)",
-            "SELECT title, uniq(event_id) AS uniq_events, quantile(0.5)(duration) AS p50",
+            "SELECT title, uniq(event_id) AS `uniq_events`, quantile(0.5)(duration) AS `p50`",
             "BY title",
             (
                 "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006') "
@@ -301,8 +301,8 @@ tests = [
         .set_offset(1)
         .set_granularity(3600),
         (
-            "MATCH { MATCH (events) SELECT toString(event_id) AS new_event, title, timestamp }",
-            "SELECT uniq(new_event) AS uniq_event, title",
+            "MATCH { MATCH (events) SELECT toString(event_id) AS `new_event`, title, timestamp }",
+            "SELECT uniq(new_event) AS `uniq_event`, title",
             "BY title",
             "WHERE timestamp IS NOT NULL",
             "LIMIT 10",
@@ -335,8 +335,8 @@ tests = [
         .set_granularity(3600)
         .set_consistent(True),
         (
-            "MATCH { MATCH { MATCH (events) SELECT event_id, title, timestamp } SELECT toString(event_id) AS new_event, timestamp }",
-            "SELECT avg(new_event) AS avg_event",
+            "MATCH { MATCH { MATCH (events) SELECT event_id, title, timestamp } SELECT toString(event_id) AS `new_event`, timestamp }",
+            "SELECT avg(new_event) AS `avg_event`",
             "WHERE timestamp IS NOT NULL",
             "LIMIT 10",
             "OFFSET 1",
@@ -395,8 +395,8 @@ tests = [
         .set_where([Condition(Column("project_id"), Op.IN, (1,))]),
         (
             "MATCH (events)",
-            "SELECT transaction AS tn, count() AS equation[0]",
-            "BY project_id AS pi, transaction AS tn",
+            "SELECT transaction AS `tn`, count() AS `equation[0]`",
+            "BY project_id AS `pi`, transaction AS `tn`",
             "WHERE project_id IN tuple(1)",
         ),
         None,

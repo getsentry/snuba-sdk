@@ -175,7 +175,7 @@ class Translation(ExpressionVisitor[str]):
     def _visit_aliased_expression(self, aliased: AliasedExpression) -> str:
         alias_clause = ""
         if aliased.alias is not None:
-            alias_clause = f" AS {aliased.alias}"
+            alias_clause = f" AS `{aliased.alias}`"
 
         return f"{self.visit(aliased.exp)}{alias_clause}"
 
@@ -187,7 +187,7 @@ class Translation(ExpressionVisitor[str]):
         return f"{entity_alias_clause}{column.name}"
 
     def _visit_curried_function(self, func: CurriedFunction) -> str:
-        alias = "" if func.alias is None else f" AS {func.alias}"
+        alias = "" if func.alias is None else f" AS `{func.alias}`"
         initialize_clause = ""
         if func.initializers is not None:
             initializers = []

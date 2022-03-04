@@ -40,7 +40,7 @@ discover_tests = [
             "-- DATASET: discover",
             "-- DEBUG: True",
             "MATCH (discover_events)",
-            "SELECT count() AS count, arrayJoin(exception_stacks.type) AS exception_stacks.type",
+            "SELECT count() AS `count`, arrayJoin(exception_stacks.type) AS `exception_stacks.type`",
             "BY exception_stacks.type",
             (
                 "WHERE timestamp >= toDateTime('2021-03-03T11:22:00') "
@@ -127,7 +127,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (discover_transactions)",
-            "SELECT count() AS count, arrayJoin(measurements.key) AS array_join_measurements_key, plus(multiply(floor(divide(minus(multiply(arrayJoin(measurements.value), 100.0), 0.0), 1.0)), 1.0), 0.0) AS measurements_histogram_1_0_100",
+            "SELECT count() AS `count`, arrayJoin(measurements.key) AS `array_join_measurements_key`, plus(multiply(floor(divide(minus(multiply(arrayJoin(measurements.value), 100.0), 0.0), 1.0)), 1.0), 0.0) AS `measurements_histogram_1_0_100`",
             "BY array_join_measurements_key, measurements_histogram_1_0_100",
             (
                 "WHERE finish_ts >= toDateTime('2021-03-03T11:22:00') "
@@ -162,7 +162,7 @@ discover_tests = [
         (
             "-- DATASET: events",
             "MATCH (events)",
-            "SELECT count(platform) AS platforms, uniq(platform) AS uniq_platforms, topK(1)(platform) AS top_platforms",
+            "SELECT count(platform) AS `platforms`, uniq(platform) AS `uniq_platforms`, topK(1)(platform) AS `top_platforms`",
             "BY project_id",
             (
                 "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -258,7 +258,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (discover)",
-            "SELECT count() AS count",
+            "SELECT count() AS `count`",
             "BY tags_key",
             (
                 "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -294,7 +294,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (discover_transactions)",
-            "SELECT divide(count(), divide(86400, 60)) AS tpm, transaction",
+            "SELECT divide(count(), divide(86400, 60)) AS `tpm`, transaction",
             "BY transaction",
             (
                 "WHERE finish_ts >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -382,7 +382,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (discover_transactions)",
-            "SELECT count() AS count, arrayJoin(measurements.key) AS array_join_measurements_key, plus(multiply(floor(divide(minus(multiply(arrayJoin(measurements.value), 100.0), 0.0), 1.0)), 1.0), 0.0) AS measurements_histogram_1_0_100",
+            "SELECT count() AS `count`, arrayJoin(measurements.key) AS `array_join_measurements_key`, plus(multiply(floor(divide(minus(multiply(arrayJoin(measurements.value), 100.0), 0.0), 1.0)), 1.0), 0.0) AS `measurements_histogram_1_0_100`",
             "BY array_join_measurements_key, measurements_histogram_1_0_100",
             (
                 "WHERE finish_ts >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -416,7 +416,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (discover_transactions)",
-            "SELECT apdex(duration, 300) AS apdex_duration_300",
+            "SELECT apdex(duration, 300) AS `apdex_duration_300`",
             "BY project_id, tags[foo]",
             (
                 "WHERE finish_ts >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -466,7 +466,7 @@ discover_tests = [
             "-- DATASET: discover",
             "-- DEBUG: True",
             "MATCH (discover_events)",
-            "SELECT count() AS count, arrayJoin(exception_stacks.type) AS exception_stacks.type",
+            "SELECT count() AS `count`, arrayJoin(exception_stacks.type) AS `exception_stacks.type`",
             "BY exception_stacks.type",
             (
                 "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
@@ -562,7 +562,7 @@ discover_tests = [
         (
             "-- DATASET: sessions",
             "MATCH (sessions)",
-            "SELECT min(started) AS first_session_started, max(started) AS last_session_started, first_session_started, last_session_started",
+            "SELECT min(started) AS `first_session_started`, max(started) AS `last_session_started`, first_session_started, last_session_started",
             (
                 "WHERE org_id = 1 "
                 "AND started >= toDateTime('2021-01-12T20:04:37.175368') "
@@ -600,7 +600,7 @@ discover_tests = [
         (
             "-- DATASET: sessions",
             "MATCH (sessions)",
-            "SELECT min(started) AS first_session_started, max(started) AS last_session_started, first_session_started, last_session_started",
+            "SELECT min(started) AS `first_session_started`, max(started) AS `last_session_started`, first_session_started, last_session_started",
             (
                 "WHERE org_id = 1 "
                 "AND started >= toDateTime('2021-01-14T17:07:48.124240') "
@@ -640,7 +640,7 @@ discover_tests = [
         (
             "-- DATASET: events",
             "MATCH (events)",
-            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "SELECT count() AS `times_seen`, min(timestamp) AS `first_seen`, max(timestamp) AS `last_seen`",
             "BY tags[_userEmail]",
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:08:40') "
@@ -681,7 +681,7 @@ discover_tests = [
         (
             "-- DATASET: events",
             "MATCH (events)",
-            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "SELECT count() AS `times_seen`, min(timestamp) AS `first_seen`, max(timestamp) AS `last_seen`",
             "BY exception_frames.filename",
             "ARRAY JOIN exception_frames",
             (
@@ -849,19 +849,19 @@ discover_tests = [
             "-- DATASET: discover",
             "MATCH (discover_transactions)",
             (
-                "SELECT varSampIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS variance_range_1, "
-                "varSampIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS variance_range_2, "
-                "avgIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS avg_range_1, "
-                "avgIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS avg_range_2, "
-                "divide(minus(avg_range_1,avg_range_2),sqrt(plus(divide(variance_range_1,count_range_1),divide(variance_range_2,count_range_2)))) AS t_test, "
-                "quantileIf(0.50)(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS aggregate_range_1, "
-                "quantileIf(0.50)(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS aggregate_range_2, "
-                "if(greater(aggregate_range_1,0),divide(aggregate_range_2,aggregate_range_1),null) AS trend_percentage, "
-                "minus(aggregate_range_2, aggregate_range_1) AS trend_difference, "
-                "countIf(greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS count_range_1, "
-                "countIf(lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS count_range_2, "
-                "if(greater(count_range_1,0),divide(count_range_2,count_range_1),null) AS count_percentage, divide(count(), divide(86400, 60)) AS tpm, "
-                "transaction, project_id, transform(toString(project_id), array('2'), array('project_mc_projectpants'), '') AS project"
+                "SELECT varSampIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `variance_range_1`, "
+                "varSampIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `variance_range_2`, "
+                "avgIf(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `avg_range_1`, "
+                "avgIf(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `avg_range_2`, "
+                "divide(minus(avg_range_1,avg_range_2),sqrt(plus(divide(variance_range_1,count_range_1),divide(variance_range_2,count_range_2)))) AS `t_test`, "
+                "quantileIf(0.50)(duration, greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `aggregate_range_1`, "
+                "quantileIf(0.50)(duration, lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `aggregate_range_2`, "
+                "if(greater(aggregate_range_1,0),divide(aggregate_range_2,aggregate_range_1),null) AS `trend_percentage`, "
+                "minus(aggregate_range_2, aggregate_range_1) AS `trend_difference`, "
+                "countIf(greater(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `count_range_1`, "
+                "countIf(lessOrEquals(toDateTime('2021-04-23T07:37:49'), timestamp)) AS `count_range_2`, "
+                "if(greater(count_range_1,0),divide(count_range_2,count_range_1),null) AS `count_percentage`, divide(count(), divide(86400, 60)) AS `tpm`, "
+                "transaction, project_id, transform(toString(project_id), array('2'), array('project_mc_projectpants'), '') AS `project`"
             ),
             "BY transaction, project_id",
             (
@@ -912,7 +912,7 @@ discover_tests = [
         (
             "-- DATASET: events",
             "MATCH (events)",
-            "SELECT count() AS times_seen, min(timestamp) AS first_seen, max(timestamp) AS last_seen",
+            "SELECT count() AS `times_seen`, min(timestamp) AS `first_seen`, max(timestamp) AS `last_seen`",
             "BY project_id, tags[sentry:release]",
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
@@ -950,7 +950,7 @@ discover_tests = [
         (
             "-- DATASET: outcomes_raw",
             "MATCH (outcomes_raw)",
-            "SELECT sum(quantity) AS quantity, time, outcome, category, quantity, toString(tuple('category'))",
+            "SELECT sum(quantity) AS `quantity`, time, outcome, category, quantity, toString(tuple('category'))",
             "BY time, outcome, category, toString(tuple('category'))",
             (
                 "WHERE org_id = 1 "
@@ -1004,9 +1004,9 @@ discover_tests = [
             "-- DATASET: events",
             "MATCH (events)",
             (
-                "SELECT coalesce(email, username, ip_address) AS user.display, "
-                "release, toStartOfHour(timestamp) AS timestamp.to_hour, event_id, "
-                "project_id, transform(toString(project_id), array('1'), array('stuff'), '') AS project.name"
+                "SELECT coalesce(email, username, ip_address) AS `user.display`, "
+                "release, toStartOfHour(timestamp) AS `timestamp.to_hour`, event_id, "
+                "project_id, transform(toString(project_id), array('1'), array('stuff'), '') AS `project.name`"
             ),
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
@@ -1089,18 +1089,18 @@ discover_tests = [
             "-- DATASET: discover",
             "MATCH (transactions)",
             (
-                "SELECT apdex(duration, 300) AS apdex_300, "
-                "uniqIf(user, greater(duration, 1200.0)) AS count_miserable_user_300, "
-                "quantile(0.95)(duration) AS p95, count() AS count, "
-                "uniq(user) AS count_unique_user, "
-                "failure_rate() AS failure_rate, "
-                "divide(count(), divide(1.2096e+06, 60)) AS tpm, "
-                "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0) AS user_misery_300, "
-                "quantile(0.75)(measurements[fp]) AS percentile_measurements_fp_0_75, "
-                "quantile(0.75)(measurements[fcp]) AS percentile_measurements_fcp_0_75, "
-                "quantile(0.75)(measurements[lcp]) AS percentile_measurements_lcp_0_75, "
-                "quantile(0.75)(measurements[fid]) AS percentile_measurements_fid_0_75, "
-                "quantile(0.75)(measurements[cls]) AS percentile_measurements_cls_0_75"
+                "SELECT apdex(duration, 300) AS `apdex_300`, "
+                "uniqIf(user, greater(duration, 1200.0)) AS `count_miserable_user_300`, "
+                "quantile(0.95)(duration) AS `p95`, count() AS `count`, "
+                "uniq(user) AS `count_unique_user`, "
+                "failure_rate() AS `failure_rate`, "
+                "divide(count(), divide(1.2096e+06, 60)) AS `tpm`, "
+                "ifNull(divide(plus(uniqIf(user, greater(duration, 1200)), 5.8875), plus(uniq(user), 117.75)), 0) AS `user_misery_300`, "
+                "quantile(0.75)(measurements[fp]) AS `percentile_measurements_fp_0_75`, "
+                "quantile(0.75)(measurements[fcp]) AS `percentile_measurements_fcp_0_75`, "
+                "quantile(0.75)(measurements[lcp]) AS `percentile_measurements_lcp_0_75`, "
+                "quantile(0.75)(measurements[fid]) AS `percentile_measurements_fid_0_75`, "
+                "quantile(0.75)(measurements[cls]) AS `percentile_measurements_cls_0_75`"
             ),
             (
                 "WHERE finish_ts >= toDateTime('2021-04-01T20:05:27') "
@@ -1147,7 +1147,7 @@ discover_tests = [
         (
             "-- DATASET: events",
             "MATCH (events SAMPLE 1.0)",
-            "SELECT multiply(toUInt64(max(timestamp)), 1000) AS last_seen, uniq(group_id) AS total",
+            "SELECT multiply(toUInt64(max(timestamp)), 1000) AS `last_seen`, uniq(group_id) AS `total`",
             "BY group_id",
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
@@ -1200,7 +1200,7 @@ discover_tests = [
         (
             "-- DATASET: discover",
             "MATCH (events)",
-            "SELECT timestamp, message, title, event_id, project_id, transform(toString(project_id), array('1'), array('proj'), '') AS project.name",
+            "SELECT timestamp, message, title, event_id, project_id, transform(toString(project_id), array('1'), array('proj'), '') AS `project.name`",
             (
                 "WHERE timestamp >= toDateTime('2021-04-01T20:05:27') "
                 "AND timestamp < toDateTime('2021-04-15T20:05:27') "
@@ -1240,10 +1240,10 @@ discover_tests = [
             "-- DATASET: events",
             "MATCH (events)",
             (
-                "SELECT count() AS times_seen, "
-                "min(timestamp) AS first_seen, "
-                "max(timestamp) AS last_seen, "
-                "uniq(tags[sentry:user]) AS count"
+                "SELECT count() AS `times_seen`, "
+                "min(timestamp) AS `first_seen`, "
+                "max(timestamp) AS `last_seen`, "
+                "uniq(tags[sentry:user]) AS `count`"
             ),
             "BY group_id",
             (
@@ -1334,11 +1334,11 @@ discover_tests = [
             "-- DATASET: discover",
             "MATCH (discover)",
             (
-                "SELECT quantile(0.75)(duration) AS p75_transaction_duration, "
-                "divide(count(), divide(86400, 60)) AS tpm, "
-                "failure_rate() AS failure_rate, "
-                "apdex(multiIf(equals(tupleElement(project_threshold_config,1),'lcp'),if(has(measurements.key,'lcp'),arrayElement(measurements.value,indexOf(measurements.key,'lcp')),NULL),duration),tupleElement(project_threshold_config,2)) AS apdex, "
-                "tuple('duration', 300) AS project_threshold_config"
+                "SELECT quantile(0.75)(duration) AS `p75_transaction_duration`, "
+                "divide(count(), divide(86400, 60)) AS `tpm`, "
+                "failure_rate() AS `failure_rate`, "
+                "apdex(multiIf(equals(tupleElement(project_threshold_config,1),'lcp'),if(has(measurements.key,'lcp'),arrayElement(measurements.value,indexOf(measurements.key,'lcp')),NULL),duration),tupleElement(project_threshold_config,2)) AS `apdex`, "
+                "tuple('duration', 300) AS `project_threshold_config`"
             ),
             "BY project_threshold_config",
             (
@@ -1428,10 +1428,10 @@ discover_tests = [
             "-- DATASET: events",
             "MATCH (events SAMPLE 1.0)",
             (
-                "SELECT uniq(group_id) AS total, "
+                "SELECT uniq(group_id) AS `total`, "
                 "if(greater(countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp)), 0), "
                 "divide(countIf(lessOrEquals(toDateTime('2021-07-23T06:23:14'), timestamp)), "
-                "countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp))), 0) AS trend"
+                "countIf(greater(toDateTime('2021-07-23T06:23:14'), timestamp))), 0) AS `trend`"
             ),
             "BY group_id",
             (
