@@ -9,11 +9,11 @@ from snuba_sdk.expressions import InvalidExpressionError
 from snuba_sdk.visitors import Translation
 
 tests = [
-    pytest.param(Column("stuff"), "things", "stuff AS things", None, id="simple"),
+    pytest.param(Column("stuff"), "things", "stuff AS `things`", None, id="simple"),
     pytest.param(
         Column("stuff"),
         "things[1.c-2:3_]",
-        "stuff AS things[1.c-2:3_]",
+        "stuff AS `things[1.c-2:3_]`",
         None,
         id="complex alias",
     ),
@@ -50,6 +50,13 @@ tests = [
             "alias 'what???||things!!' of expression contains invalid characters"
         ),
         id="alias has invalid characters",
+    ),
+    pytest.param(
+        Column("stuff"),
+        "sum(things)",
+        "stuff AS `sum(things)`",
+        None,
+        id="alias with parenthesis",
     ),
 ]
 

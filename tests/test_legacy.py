@@ -37,7 +37,7 @@ tests = [
             "-- CONSISTENT: True",
             "-- DEBUG: True",
             "MATCH (sessions SAMPLE 0.100000)",
-            "SELECT min(max(users) AS max_users) AS min_users, project_id, release",
+            "SELECT min(max(users) AS `max_users`) AS `min_users`, project_id, release",
             "BY release, project_id",
             (
                 "WHERE org_id IN tuple(2) "
@@ -87,7 +87,7 @@ tests = [
             "-- DATASET: sessions",
             "-- CONSISTENT: True",
             "MATCH (sessions SAMPLE 1000.0)",
-            "SELECT min(max(users) AS max_users) AS min_users, project_id, release",
+            "SELECT min(max(users) AS `max_users`) AS `min_users`, project_id, release",
             "BY release, project_id",
             (
                 "WHERE org_id IN tuple(2) "
@@ -135,7 +135,7 @@ tests = [
             "-- DATASET: sessions",
             "-- TURBO: True",
             "MATCH (sessions)",
-            "SELECT min(max(users) AS max_users) AS min_users, project_id, release",
+            "SELECT min(max(users) AS `max_users`) AS `min_users`, project_id, release",
             "BY release, project_id",
             (
                 "WHERE org_id IN tuple(2) "
@@ -231,7 +231,7 @@ tests = [
         (
             "-- DATASET: sessions",
             "MATCH (sessions)",
-            "SELECT apdex(duration, 300) AS apdex, uniqIf(user, greater(duration, 1200)) AS misery, quantile(0.75)(duration) AS p75, divide(count(), divide(120, 60)) AS epm",
+            "SELECT apdex(duration, 300) AS `apdex`, uniqIf(user, greater(duration, 1200)) AS `misery`, quantile(0.75)(duration) AS `p75`, divide(count(), divide(120, 60)) AS `epm`",
             "BY project_id, release",
             (
                 "WHERE org_id IN tuple(2) "
@@ -466,7 +466,7 @@ sentry_tests = [
         (
             "-- DATASET: sessions",
             "MATCH (sessions)",
-            "SELECT min(started) AS oldest, project_id, release",
+            "SELECT min(started) AS `oldest`, project_id, release",
             "BY release, project_id",
             (
                 "WHERE org_id = 2 "

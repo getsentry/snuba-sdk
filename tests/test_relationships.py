@@ -106,7 +106,7 @@ tests = [
         .set_consistent(True),
         (
             "MATCH (e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (t: transactions SAMPLE 10.0), (e: events) -[musnt]-> (s: sessions)",
-            "SELECT e.group_id, s.span_id, t.trace_id, count() AS count",
+            "SELECT e.group_id, s.span_id, t.trace_id, count() AS `count`",
             "BY e.group_id, s.span_id, t.trace_id",
             "WHERE (e.timestamp IS NOT NULL OR s.timestamp IS NOT NULL OR t.timestamp IS NOT NULL)",
             "ORDER BY e.timestamp DESC",
