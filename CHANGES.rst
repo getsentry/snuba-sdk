@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+0.1.4
+------
+
+- Fix for a bug in 0.1.2 where parent_api was incorrectly validated
+
 0.1.3
 ------
 - Modify ALIAS_RE to allow round brackets

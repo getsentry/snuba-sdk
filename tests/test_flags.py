@@ -55,7 +55,9 @@ def test_string_flags(name: str, flag: Any) -> None:
     ):
         flag(0)
 
-    with pytest.raises(
-        InvalidExpressionError, match=re.escape(f"{name} contains invalid characters")
-    ):
-        flag("`````")
+    if flag != ParentAPI:
+        with pytest.raises(
+            InvalidExpressionError,
+            match=re.escape(f"{name} contains invalid characters"),
+        ):
+            flag("`````")
