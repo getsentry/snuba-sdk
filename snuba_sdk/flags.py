@@ -74,6 +74,10 @@ class StringFlag(Expression):
 class ParentAPI(StringFlag):
     name: str = "parent_api"
 
+    def validate(self) -> None:
+        if not isinstance(self.value, str) or self.value == "":
+            raise InvalidExpressionError(f"{self.name} must be a non-empty string")
+
 
 @dataclass(frozen=True)
 class Team(StringFlag):
