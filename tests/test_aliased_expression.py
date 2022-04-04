@@ -58,6 +58,13 @@ tests = [
         None,
         id="alias with parenthesis",
     ),
+    pytest.param(
+        Column("stuff"),
+        "sum(c:sessions/session@none)",
+        "stuff AS `sum(c:sessions/session@none)`",
+        None,
+        id="alias with mri",
+    ),
 ]
 
 
