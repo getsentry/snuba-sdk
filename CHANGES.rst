@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+0.1.5
+------
+
+- Modify ALIAS_RE to allow for @ char
+
+
 0.1.4
 ------
 
