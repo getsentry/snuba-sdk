@@ -103,3 +103,12 @@ class Granularity(Expression):
 
     def validate(self) -> None:
         _validate_int_literal("granularity", self.granularity, 1, None)
+
+
+@dataclass
+class Totals(Expression):
+    totals: bool
+
+    def validate(self) -> None:
+        if not isinstance(self.totals, bool):
+            raise InvalidExpressionError("totals must be a boolean")

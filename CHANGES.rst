@@ -1,6 +1,17 @@
 Changelog and versioning
 ==========================
 
+
+1.0.0
+------
+
+- Add a Request class that is the main entry point for Snuba.
+    - The Request class contains the dataset being queried, the Query being sent, and any flags on the request
+    - Flags have been removed from the Query entirely and are now set on the Request
+- Add an "app_id" flag to send the AppID to Snuba
+- Renamed `snuba` function to `serialize`
+
+
 0.1.5
 ------
 

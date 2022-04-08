@@ -298,9 +298,39 @@ tests = [
 
 @pytest.mark.parametrize("json_body, clauses", tests)
 def test_json_to_snuba(json_body: Mapping[str, Any], clauses: Sequence[str]) -> None:
-    expected = "\n".join(clauses)
-    query = json_to_snql(json_body, "sessions")
-    assert query.print() == expected
+    request = json_to_snql(json_body, "sessions")
+    request.validate()
+    assert request.app_id == "legacy"
+    assert request.flags is not None
+    assert request.flags.legacy is True
+
+    query_clauses = [c for c in clauses if not c.startswith("--")]
+    query_expected = "\n".join(query_clauses)
+    assert request.query.print() == query_expected
+
+    # Rather than rewrite all these tests to have the new format, transform the
+    # old format to the new one. This captures all the flags that were using
+    # the -- print format, and asserts they are in the request flags
+    flag_clauses = [c for c in clauses if c.startswith("--")]
+    flags_expected = {}
+    for fc in flag_clauses:
+        flag, val = fc.replace("-- ", "").split(": ", 1)
+        if flag == "DATASET":
+            assert (
+                request.dataset == val
+            ), f"expected dataset {val} not {request.dataset}"
+            continue
+
+        flags_expected[flag.lower()] = val
+
+    for eflag, evalue in flags_expected.items():
+        assert str(getattr(request.flags, eflag)) == evalue
+
+    for flag, value in request.flags.to_dict().items():
+        if flag == "legacy":
+            continue  # this is tested separately
+        assert flag in flags_expected
+        assert str(value) == flags_expected[flag]
 
 
 # These are all taken verbatim from the sentry sessions tests
@@ -688,6 +718,36 @@ sentry_tests = [
 def test_json_to_snuba_for_sessions(
     json_body: Mapping[str, Any], clauses: Sequence[str]
 ) -> None:
-    expected = "\n".join(clauses)
-    query = json_to_snql(json_body, "sessions")
-    assert query.print() == expected
+    request = json_to_snql(json_body, "sessions")
+    request.validate()
+    assert request.app_id == "legacy"
+    assert request.flags is not None
+    assert request.flags.legacy is True
+
+    query_clauses = [c for c in clauses if not c.startswith("--")]
+    query_expected = "\n".join(query_clauses)
+    assert request.query.print() == query_expected
+
+    # Rather than rewrite all these tests to have the new format, transform the
+    # old format to the new one. This captures all the flags that were using
+    # the -- print format, and asserts they are in the request flags
+    flag_clauses = [c for c in clauses if c.startswith("--")]
+    flags_expected = {}
+    for fc in flag_clauses:
+        flag, val = fc.replace("-- ", "").split(": ", 1)
+        if flag == "DATASET":
+            assert (
+                request.dataset == val
+            ), f"expected dataset {val} not {request.dataset}"
+            continue
+
+        flags_expected[flag.lower()] = val
+
+    for eflag, evalue in flags_expected.items():
+        assert str(getattr(request.flags, eflag)) == evalue
+
+    for flag, value in request.flags.to_dict().items():
+        if flag == "legacy":
+            continue  # this is tested separately
+        assert flag in flags_expected
+        assert str(value) == flags_expected[flag]

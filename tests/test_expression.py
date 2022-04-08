@@ -4,7 +4,13 @@ from typing import Any, Optional
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.expressions import Granularity, InvalidExpressionError, Limit, Offset
+from snuba_sdk.expressions import (
+    Granularity,
+    InvalidExpressionError,
+    Limit,
+    Offset,
+    Totals,
+)
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 
@@ -65,6 +71,21 @@ def test_granularity(value: Any, exception: Optional[Exception]) -> None:
             Granularity(value)
     else:
         assert Granularity(value).granularity == value
+
+
+totals_tests = [
+    pytest.param(True, None),
+    pytest.param(0, InvalidExpressionError("totals must be a boolean")),
+]
+
+
+@pytest.mark.parametrize("value, exception", totals_tests)
+def test_totals(value: Any, exception: Optional[Exception]) -> None:
+    if exception is not None:
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
+            Totals(value)
+    else:
+        assert Totals(value).totals == value
 
 
 orderby_tests = [

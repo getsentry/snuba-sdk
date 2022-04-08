@@ -304,6 +304,7 @@ discover_tests = [
                 "AND type = 'transaction'"
             ),
             "GRANULARITY 3600",
+            "TOTALS False",
         ),
         "discover_transactions",
         id="invalid_event_id_condition",
@@ -507,37 +508,6 @@ discover_tests = [
         ),
         "discover_events",
         id="dry_run_flag",
-    ),
-    pytest.param(
-        {
-            "dataset": "discover",
-            "project": 2,
-            "selected_columns": ["type", "tags[custom_tag]", "release"],
-            "conditions": [["type", "!=", "transaction"]],
-            "orderby": "timestamp",
-            "limit": 1000,
-            "from_date": "2020-10-17T20:51:46.110774",
-            "to_date": "2021-01-15T20:51:47.110825",
-            "dry_run": True,
-            "parent_api": "testing",
-        },
-        (
-            "-- DATASET: discover",
-            "-- DRY_RUN: True",
-            "-- PARENT_API: testing",
-            "MATCH (discover_events)",
-            "SELECT type, tags[custom_tag], release",
-            (
-                "WHERE timestamp >= toDateTime('2020-10-17T20:51:46.110774') "
-                "AND timestamp < toDateTime('2021-01-15T20:51:47.110825') "
-                "AND project_id IN tuple(2) "
-                "AND type != 'transaction'"
-            ),
-            "ORDER BY timestamp ASC",
-            "LIMIT 1000",
-        ),
-        "discover_events",
-        id="parent_api_flag",
     ),
     pytest.param(
         {
@@ -1020,6 +990,7 @@ discover_tests = [
             "LIMIT 51",
             "OFFSET 0",
             "GRANULARITY 3600",
+            "TOTALS False",
         ),
         "events",
         id="transform_is_not_an_aggregate",
@@ -1519,7 +1490,36 @@ discover_tests = [
 def test_discover_json_to_snuba(
     json_body: Mapping[str, Any], clauses: Sequence[str], entity: str
 ) -> None:
-    expected = "\n".join(clauses)
-    query = json_to_snql(json_body, entity)
-    query.validate()
-    assert query.print() == expected
+    request = json_to_snql(json_body, entity)
+    request.validate()
+    assert request.app_id == "legacy"
+    assert request.flags is not None
+    assert request.flags.legacy is True
+
+    query_clauses = [c for c in clauses if not c.startswith("--")]
+    query_expected = "\n".join(query_clauses)
+    assert request.query.print() == query_expected
+
+    # Rather than rewrite all these tests to have the new format, transform the
+    # old format to the new one. This captures all the flags that were using
+    # the -- print format, and asserts they are in the request flags
+    flag_clauses = [c for c in clauses if c.startswith("--")]
+    flags_expected = {}
+    for fc in flag_clauses:
+        flag, val = fc.replace("-- ", "").split(": ", 1)
+        if flag == "DATASET":
+            assert (
+                request.dataset == val
+            ), f"expected dataset {val} not {request.dataset}"
+            continue
+
+        flags_expected[flag.lower()] = val
+
+    for eflag, evalue in flags_expected.items():
+        assert str(getattr(request.flags, eflag)) == evalue
+
+    for flag, value in request.flags.to_dict().items():
+        if flag == "legacy":
+            continue  # this is tested separately
+        assert flag in flags_expected
+        assert str(value) == flags_expected[flag]

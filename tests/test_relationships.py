@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import Any, MutableMapping, Optional, Sequence
+from typing import Sequence
 
 import pytest
 
@@ -16,7 +15,6 @@ from snuba_sdk.relationships import Join, Relationship
 tests = [
     pytest.param(
         Query(
-            "discover",
             Join([Relationship(Entity("events", "e"), "has", Entity("sessions", "s"))]),
         )
         .set_select(
@@ -33,8 +31,7 @@ tests = [
         )
         .set_limit(10)
         .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
+        .set_granularity(3600),
         (
             "MATCH (e: events) -[has]-> (s: sessions)",
             "SELECT e.group_id, s.span_id",
@@ -44,12 +41,10 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
-        [("consistent", True)],
         id="simple join",
     ),
     pytest.param(
         Query(
-            "discover",
             Join(
                 [
                     Relationship(Entity("events", "e"), "has", Entity("sessions", "s")),
@@ -102,8 +97,7 @@ tests = [
         )
         .set_limit(10)
         .set_offset(1)
-        .set_granularity(3600)
-        .set_consistent(True),
+        .set_granularity(3600),
         (
             "MATCH (e: events) -[has]-> (s: sessions), (e: events) -[hasnt]-> (t: transactions SAMPLE 10.0), (e: events) -[musnt]-> (s: sessions)",
             "SELECT e.group_id, s.span_id, t.trace_id, count() AS `count`",
@@ -114,40 +108,24 @@ tests = [
             "OFFSET 1",
             "GRANULARITY 3600",
         ),
-        [("consistent", True)],
         id="complex join",
     ),
 ]
 
 
-@pytest.mark.parametrize("query, clauses, extras", tests)
-def test_print_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
-) -> None:
+@pytest.mark.parametrize("query, clauses", tests)
+def test_print_query(query: Query, clauses: Sequence[str]) -> None:
     expected = " ".join(clauses)
     assert str(query) == expected
 
 
-@pytest.mark.parametrize("query, clauses, extras", tests)
-def test_pretty_print_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
-) -> None:
-    joined = "\n".join(clauses)
-    prefix = "-- DATASET: discover\n"
-    if extras:
-        for key, value in extras:
-            prefix += f"-- {key.upper()}: {value}\n"
-
-    expected = f"{prefix}{joined}"
+@pytest.mark.parametrize("query, clauses", tests)
+def test_pretty_print_query(query: Query, clauses: Sequence[str]) -> None:
+    expected = "\n".join(clauses)
     assert query.print() == expected
 
 
-@pytest.mark.parametrize("query, clauses, extras", tests)
-def test_translate_join_query(
-    query: Query, clauses: Sequence[str], extras: Optional[Sequence[tuple[str, bool]]]
-) -> None:
-    joined = " ".join(clauses)
-    body: MutableMapping[str, Any] = {"dataset": "discover", "query": joined}
-    if extras:
-        body.update({k: v for k, v in extras})
-    assert query.snuba() == json.dumps(body)
+@pytest.mark.parametrize("query, clauses", tests)
+def test_translate_query(query: Query, clauses: Sequence[str]) -> None:
+    expected = " ".join(clauses)
+    assert query.serialize() == expected

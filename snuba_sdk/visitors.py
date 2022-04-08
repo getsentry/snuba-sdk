@@ -17,9 +17,9 @@ from snuba_sdk.expressions import (
     Offset,
     Scalar,
     ScalarType,
+    Totals,
     is_scalar,
 )
-from snuba_sdk.flags import BooleanFlag, StringFlag
 from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.relationships import Join, Relationship
@@ -59,10 +59,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_limitby(node)
         elif isinstance(node, Granularity):
             return self._visit_int_literal(node.granularity)
-        elif isinstance(node, BooleanFlag):
-            return self._visit_boolean_flag(node)
-        elif isinstance(node, StringFlag):
-            return self._visit_string_flag(node)
+        elif isinstance(node, Totals):
+            return self._visit_totals(node.totals)
 
         assert False, f"Unhandled Expression: {node}"
 
@@ -119,11 +117,7 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> TVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_string_flag(self, string_flag: StringFlag) -> TVisited:
+    def _visit_totals(self, totals: bool) -> TVisited:
         raise NotImplementedError
 
 
@@ -266,11 +260,8 @@ class Translation(ExpressionVisitor[str]):
     def _visit_limitby(self, limitby: LimitBy) -> str:
         return f"{limitby.count} BY {','.join(self.visit(column) for column in limitby.columns)}"
 
-    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> str:
-        return str(boolean_flag)
-
-    def _visit_string_flag(self, string_flag: StringFlag) -> str:
-        return string_flag.value
+    def _visit_totals(self, totals: bool) -> str:
+        return f"{totals}"
 
 
 @contextmanager
@@ -376,12 +367,5 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
 
         return set.union(*[self.visit(column) for column in limitby.columns])
 
-    def _visit_boolean_flag(self, boolean_flag: BooleanFlag) -> set[Expression]:
-        if isinstance(boolean_flag, self.exp_type):
-            return set([boolean_flag])
-        return set()
-
-    def _visit_string_flag(self, string_flag: StringFlag) -> set[Expression]:
-        if isinstance(string_flag, self.exp_type):
-            return set([string_flag])
+    def _visit_totals(self, totals: bool) -> set[Expression]:
         return set()

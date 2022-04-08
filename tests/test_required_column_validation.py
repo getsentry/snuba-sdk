@@ -146,9 +146,7 @@ def test_entity_validate_match(
     entity: Entity,
     exception: Optional[Exception],
 ) -> None:
-    query = Query(
-        dataset="test", match=entity, select=[Column("test1"), Column("required1")]
-    )
+    query = Query(match=entity, select=[Column("test1"), Column("required1")])
     query = query.set_where(conditions)
 
     if exception is not None:
@@ -304,7 +302,6 @@ def test_join_validate_match(
         *conditions,
     ]
     query = Query(
-        dataset="test",
         match=Join([Relationship(entity, "has", other_join_entity)]),
         select=[Column("test1", entity), Column("required1", other_join_entity)],
         where=join2_conditions,

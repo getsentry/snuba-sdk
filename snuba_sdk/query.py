@@ -7,21 +7,10 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Granularity, Limit, Offset
-from snuba_sdk.flags import (
-    Consistent,
-    Debug,
-    DryRun,
-    Feature,
-    Legacy,
-    ParentAPI,
-    Team,
-    Totals,
-    Turbo,
-)
+from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
-from snuba_sdk.query_visitors import InvalidQueryError, Printer, Translator, Validator
+from snuba_sdk.query_visitors import InvalidQueryError, Printer, Validator
 from snuba_sdk.relationships import Join
 
 
@@ -34,7 +23,6 @@ def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
 PRINTER = Printer()
 PRETTY_PRINTER = Printer(pretty=True)
 VALIDATOR = Validator()
-TRANSLATOR = Translator()
 
 
 SelectableExpression = Union[AliasedExpression, Column, CurriedFunction, Function]
@@ -57,7 +45,6 @@ class Query:
     """
 
     # These must be listed in the order that they must appear in the SnQL query.
-    dataset: str
     match: Union[Entity, Join, Query]
     select: Optional[Sequence[SelectableExpression]] = None
     groupby: Optional[Sequence[SelectableExpression]] = None
@@ -69,15 +56,7 @@ class Query:
     limit: Optional[Limit] = None
     offset: Optional[Offset] = None
     granularity: Optional[Granularity] = None
-    totals: Totals = Totals(False)
-    consistent: Consistent = Consistent(False)
-    turbo: Turbo = Turbo(False)
-    debug: Debug = Debug(False)
-    dry_run: DryRun = DryRun(False)
-    legacy: Legacy = Legacy(False)
-    parent_api: Optional[ParentAPI] = None
-    team: Optional[Team] = None
-    feature: Optional[Feature] = None
+    totals: Optional[Totals] = None
 
     def __post_init__(self) -> None:
         """
@@ -87,10 +66,6 @@ class Query:
         right away since the select columns can be added later.
 
         """
-        # TODO: Whitelist of Datasets and possible entities
-        if not isinstance(self.dataset, str) or self.dataset == "":
-            raise InvalidQueryError("queries must have a valid dataset")
-
         if not isinstance(self.match, (Query, Join, Entity)):
             raise InvalidQueryError("queries must have a valid Entity, Join or Query")
 
@@ -171,41 +146,16 @@ class Query:
     def set_totals(self, totals: bool) -> Query:
         return self._replace("totals", Totals(totals))
 
-    def set_consistent(self, consistent: bool) -> Query:
-        return self._replace("consistent", Consistent(consistent))
-
-    def set_turbo(self, turbo: bool) -> Query:
-        return self._replace("turbo", Turbo(turbo))
-
-    def set_debug(self, debug: bool) -> Query:
-        return self._replace("debug", Debug(debug))
-
-    def set_dry_run(self, dry_run: bool) -> Query:
-        return self._replace("dry_run", DryRun(dry_run))
-
-    def set_legacy(self, legacy: bool) -> Query:
-        return self._replace("legacy", Legacy(legacy))
-
-    def set_parent_api(self, parent_api: str) -> Query:
-        return self._replace("parent_api", ParentAPI(parent_api))
-
-    def set_team(self, team: str) -> Query:
-        return self._replace("team", Team(team))
-
-    def set_feature(self, feature: str) -> Query:
-        return self._replace("feature", Feature(feature))
-
     def validate(self) -> None:
         VALIDATOR.visit(self)
 
     def __str__(self) -> str:
+        return self.serialize()
+
+    def serialize(self) -> str:
         self.validate()
         return PRINTER.visit(self)
 
     def print(self) -> str:
         self.validate()
         return PRETTY_PRINTER.visit(self)
-
-    def snuba(self) -> str:
-        self.validate()
-        return TRANSLATOR.visit(self)
