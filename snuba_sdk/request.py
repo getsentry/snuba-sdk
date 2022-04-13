@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 
 from snuba_sdk.query import Query
 
@@ -33,14 +33,7 @@ class Flags:
 
     def to_dict(self) -> dict[str, bool]:
         self.validate()
-        values = {
-            "totals": self.totals,
-            "consistent": self.consistent,
-            "turbo": self.turbo,
-            "debug": self.debug,
-            "dry_run": self.dry_run,
-            "legacy": self.legacy,
-        }
+        values = asdict(self)
         return {f: v for f, v in values.items() if v is not None}
 
 
