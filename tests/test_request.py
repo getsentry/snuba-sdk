@@ -120,9 +120,8 @@ def test_request(
 
 def test_request_set_methods() -> None:
     request = Request("events", "default", BASIC_QUERY, Flags(consistent=True))
-    request = request.set_flags(Flags(consistent=False)).set_query(
-        BASIC_QUERY.set_select([Column("trace_id")])
-    )
+    request.flags = Flags(consistent=False)
+    request.query = BASIC_QUERY.set_select([Column("trace_id")])
     request.validate()
     assert request.query == BASIC_QUERY.set_select([Column("trace_id")])
     assert request.flags is not None and request.flags.consistent is False

@@ -47,14 +47,6 @@ class Request:
     query: Query
     flags: Flags | None = None
 
-    def set_query(self, query: Query) -> Request:
-        self.query = query
-        return self
-
-    def set_flags(self, flags: Flags) -> Request:
-        self.flags = flags
-        return self
-
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
             raise InvalidRequestError("Request must have a valid dataset")
