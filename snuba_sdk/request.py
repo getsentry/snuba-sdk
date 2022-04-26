@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, field, fields
 
 from snuba_sdk.query import Query
 
@@ -15,7 +15,7 @@ class InvalidFlagError(Exception):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass
 class Flags:
     totals: bool | None = None
     consistent: bool | None = None
@@ -45,7 +45,7 @@ class Request:
     dataset: str
     app_id: str
     query: Query
-    flags: Flags | None = None
+    flags: Flags = field(default_factory=Flags)
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
