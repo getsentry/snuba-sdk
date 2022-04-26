@@ -15,19 +15,9 @@ from snuba_sdk.query_visitors import InvalidQueryError
 
 def test_invalid_query() -> None:
     with pytest.raises(
-        InvalidQueryError, match=re.escape("queries must have a valid dataset")
-    ):
-        Query(dataset=1, match=Entity("events"))  # type: ignore
-
-    with pytest.raises(
-        InvalidQueryError, match=re.escape("queries must have a valid dataset")
-    ):
-        Query(dataset="", match=Entity("events"))
-
-    with pytest.raises(
         InvalidQueryError, match=re.escape("queries must have a valid Entity")
     ):
-        Query(dataset="discover", match="events")  # type: ignore
+        Query(match="events")  # type: ignore
 
     with pytest.raises(
         InvalidConditionError,
@@ -36,7 +26,7 @@ def test_invalid_query() -> None:
         ),
     ):
         (
-            Query("discover", Entity("events"))
+            Query(Entity("events"))
             .set_select([AliasedExpression(Column("transaction"), "tn")])
             .set_where(
                 [Condition(AliasedExpression(Column("project_id"), "pi"), Op.IN, (1,))]  # type: ignore
@@ -45,7 +35,7 @@ def test_invalid_query() -> None:
 
 
 def test_invalid_query_set() -> None:
-    query = Query("discover", Entity("events"))
+    query = Query(Entity("events"))
 
     tests: Mapping[str, Sequence[Any]] = {
         "match": (0, "0 must be a valid Entity"),
@@ -109,7 +99,7 @@ def test_invalid_subquery() -> None:
             "inner query is invalid: query must have at least one expression in select"
         ),
     ):
-        Query("discover", Query(dataset="discover", match=Entity("events"))).set_select(
+        Query(Query(match=Entity("events"))).set_select(
             [Column("event_id"), Column("title")]
         )
 
@@ -120,12 +110,10 @@ def test_invalid_subquery() -> None:
         ),
     ):
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Entity("events"),
                 select=[Column("title"), Column("timestamp")],
             ),
-        ).set_match(Query(dataset="discover", match=Entity("events"))).set_select(
+        ).set_match(Query(match=Entity("events"))).set_select(
             [Function("uniq", [Column("new_event")], "uniq_event"), Column("title")]
         )

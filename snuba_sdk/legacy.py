@@ -10,6 +10,7 @@ from snuba_sdk.entity import Entity, get_required_time_column
 from snuba_sdk.function import Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
+from snuba_sdk.request import Flags, Request
 
 CONDITION_OPERATORS = set(op.value for op in Op)
 
@@ -211,9 +212,9 @@ def parse_condition_to_function(cond: Sequence[Any]) -> Function:
     return Function(OPERATOR_TO_FUNCTION[op].value, (lhs, rhs))
 
 
-def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
+def json_to_snql(body: Mapping[str, Any], entity: str) -> Request:
     """
-    This will output a Query object that matches the Legacy query body that was passed in.
+    This will output a Request object that matches the Legacy query body that was passed in.
     The entity is necessary since the SnQL API requires an explicit entity. This doesn't
     support subquery or joins.
 
@@ -222,16 +223,14 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
     :param entity: The name of the entity being queried.
     :type entity: str
 
-    :raises InvalidExpressionError, InvalidQueryError: If the legacy body is invalid, the SDK will
+    :raises InvalidExpressionError, InvalidQueryError, InvalidRequestError: If the legacy body is invalid, the SDK will
         raise an exception.
 
     """
-
-    dataset = body.get("dataset") or entity
     sample = body.get("sample")
     if sample is not None:
         sample = float(sample)
-    query = Query(dataset, Entity(entity, None, sample))
+    query = Query(Entity(entity, None, sample))
 
     selected_columns = []
     for a in body.get("aggregations", []):
@@ -343,20 +342,28 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Query:
         limit, name = limitby
         query = query.set_limitby(LimitBy([Column(name)], int(limit)))
 
-    extras = (
+    query_extras = (
         "limit",
         "offset",
         "granularity",
         "totals",
+    )
+    for extra in query_extras:
+        if body.get(extra) is not None:
+            query = getattr(query, f"set_{extra}")(body.get(extra))
+
+    extras = {
         "consistent",
         "turbo",
         "debug",
         "dry_run",
-        "parent_api",
-    )
-    for extra in extras:
-        if body.get(extra) is not None:
-            query = getattr(query, f"set_{extra}")(body.get(extra))
+    }
+    found = {extra: body.get(extra) for extra in extras if body.get(extra)}
+    found["legacy"] = True
+    flags = Flags(**found)
 
-    query.set_legacy(True)
-    return query
+    dataset = body.get("dataset") or entity
+    app_id = body.get("app_id") or "legacy"
+    request = Request(dataset, app_id, query, flags)
+
+    return request

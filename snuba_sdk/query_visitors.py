@@ -1,18 +1,7 @@
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Generic,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Set,
-    TypeVar,
-    Union,
-)
+from typing import Any, Generic, Mapping, Optional, Sequence, Set, TypeVar, Union
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -20,18 +9,7 @@ from snuba_sdk import query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Expression, Granularity, Limit, Offset
-from snuba_sdk.flags import (
-    Consistent,
-    Debug,
-    DryRun,
-    Feature,
-    Legacy,
-    ParentAPI,
-    Team,
-    Totals,
-    Turbo,
-)
+from snuba_sdk.expressions import Expression, Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_validation import validate_match
@@ -99,10 +77,6 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_dataset(self, dataset: str) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
     def _visit_match(self, match: Union[Entity, Join, main.Query]) -> QVisited:
         raise NotImplementedError
 
@@ -151,39 +125,7 @@ class QueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_parent_api(self, parent_api: ParentAPI) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_team(self, team: Team) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_feature(self, feature: Feature) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_totals(self, totals: Totals) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_consistent(self, consistent: Consistent) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_turbo(self, turbo: Turbo) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_debug(self, debug: Debug) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_dry_run(self, dry_run: DryRun) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_legacy(self, legacy: Legacy) -> QVisited:
+    def _visit_totals(self, totals: Optional[Totals]) -> QVisited:
         raise NotImplementedError
 
 
@@ -202,35 +144,14 @@ class Printer(QueryVisitor[str]):
 
     def _combine(self, query: main.Query, returns: Mapping[str, str]) -> str:
         clause_order = query.get_fields()
-        # These fields are encoded outside of the SQL
-        to_skip = (
-            "dataset",
-            "consistent",
-            "turbo",
-            "debug",
-            "dry_run",
-            "legacy",
-            "parent_api",
-            "team",
-            "feature",
-        )
-
         separator = "\n" if (self.pretty and not self.is_inner) else " "
-        formatted = separator.join(
-            [returns[c] for c in clause_order if c not in to_skip and returns[c]]
-        )
+        formatted = separator.join([returns[c] for c in clause_order if returns[c]])
 
         if self.pretty and not self.is_inner:
             prefix = ""
-            for skip in to_skip:
-                if returns.get(skip):
-                    prefix += f"-- {skip.upper()}: {returns[skip]}\n"
             formatted = f"{prefix}{formatted}"
 
         return formatted
-
-    def _visit_dataset(self, dataset: str) -> str:
-        return dataset
 
     def _visit_match(self, match: Union[Entity, Join, main.Query]) -> str:
         if isinstance(match, (Entity, Join)):
@@ -296,67 +217,10 @@ class Printer(QueryVisitor[str]):
             return f"GRANULARITY {self.translator.visit(granularity)}"
         return ""
 
-    def _visit_totals(self, totals: Totals) -> str:
-        if totals:
+    def _visit_totals(self, totals: Optional[Totals]) -> str:
+        if totals is not None:
             return f"TOTALS {self.translator.visit(totals)}"
         return ""
-
-    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> str:
-        return parent_api.value if parent_api is not None else ""
-
-    def _visit_team(self, team: Optional[Team]) -> str:
-        return team.value if team is not None else ""
-
-    def _visit_feature(self, feature: Optional[Feature]) -> str:
-        return feature.value if feature is not None else ""
-
-    def _visit_consistent(self, consistent: Consistent) -> str:
-        return str(consistent) if consistent else ""
-
-    def _visit_turbo(self, turbo: Turbo) -> str:
-        return str(turbo) if turbo else ""
-
-    def _visit_debug(self, debug: Debug) -> str:
-        return str(debug) if debug else ""
-
-    def _visit_dry_run(self, dry_run: DryRun) -> str:
-        return str(dry_run) if dry_run else ""
-
-    def _visit_legacy(self, legacy: Legacy) -> str:
-        return str(legacy) if legacy else ""
-
-
-class Translator(Printer):
-    def __init__(self) -> None:
-        super().__init__(False)
-
-    def _combine(self, query: main.Query, returns: Mapping[str, str]) -> str:
-        formatted_query = super()._combine(query, returns)
-        if self.is_inner:
-            return formatted_query
-
-        body: MutableMapping[str, Union[str, bool]] = {
-            "dataset": query.dataset,
-            "query": formatted_query,
-        }
-        if query.consistent:
-            body["consistent"] = query.consistent.value
-        if query.turbo:
-            body["turbo"] = query.turbo.value
-        if query.debug:
-            body["debug"] = query.debug.value
-        if query.dry_run:
-            body["dry_run"] = query.dry_run.value
-        if query.legacy:
-            body["legacy"] = query.legacy.value
-        if query.parent_api:
-            body["parent_api"] = query.parent_api.value
-        if query.team:
-            body["team"] = query.team.value
-        if query.feature:
-            body["feature"] = query.feature.value
-
-        return json.dumps(body)
 
 
 class ExpressionSearcher(QueryVisitor[Set[Expression]]):
@@ -370,9 +234,6 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
         for ret in returns.values():
             found |= ret
         return found
-
-    def _visit_dataset(self, dataset: str) -> set[Expression]:
-        return set()
 
     def _visit_match(self, match: Union[Entity, Join, main.Query]) -> set[Expression]:
         if isinstance(match, (Entity, Join)):
@@ -422,32 +283,8 @@ class ExpressionSearcher(QueryVisitor[Set[Expression]]):
     def _visit_granularity(self, granularity: Optional[Granularity]) -> set[Expression]:
         return self.expression_finder.visit(granularity) if granularity else set()
 
-    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> set[Expression]:
-        return self.expression_finder.visit(parent_api) if parent_api else set()
-
-    def _visit_team(self, team: Optional[Team]) -> set[Expression]:
-        return self.expression_finder.visit(team) if team else set()
-
-    def _visit_feature(self, feature: Optional[Feature]) -> set[Expression]:
-        return self.expression_finder.visit(feature) if feature else set()
-
-    def _visit_totals(self, totals: Totals) -> set[Expression]:
+    def _visit_totals(self, totals: Optional[Totals]) -> set[Expression]:
         return self.expression_finder.visit(totals) if totals else set()
-
-    def _visit_consistent(self, consistent: Consistent) -> set[Expression]:
-        return self.expression_finder.visit(consistent) if consistent else set()
-
-    def _visit_turbo(self, turbo: Turbo) -> set[Expression]:
-        return self.expression_finder.visit(turbo) if turbo else set()
-
-    def _visit_debug(self, debug: Debug) -> set[Expression]:
-        return self.expression_finder.visit(debug) if debug else set()
-
-    def _visit_dry_run(self, dry_run: DryRun) -> set[Expression]:
-        return self.expression_finder.visit(dry_run) if dry_run else set()
-
-    def _visit_legacy(self, legacy: Legacy) -> set[Expression]:
-        return self.expression_finder.visit(legacy) if legacy else set()
 
 
 class Validator(QueryVisitor[None]):
@@ -461,11 +298,8 @@ class Validator(QueryVisitor[None]):
         if query.select is None or len(query.select) == 0:
             raise InvalidQueryError("query must have at least one expression in select")
 
-        if query.totals and not query.groupby:
+        if query.totals and query.totals.totals and not query.groupby:
             raise InvalidQueryError("totals is only valid with a groupby")
-
-    def _visit_dataset(self, dataset: str) -> None:
-        pass
 
     def _visit_match(self, match: Union[Entity, Join, main.Query]) -> None:
         match.validate()
@@ -509,29 +343,5 @@ class Validator(QueryVisitor[None]):
     def _visit_granularity(self, granularity: Optional[Granularity]) -> None:
         granularity.validate() if granularity is not None else None
 
-    def _visit_parent_api(self, parent_api: Optional[ParentAPI]) -> None:
-        parent_api.validate() if parent_api is not None else None
-
-    def _visit_team(self, team: Optional[Team]) -> None:
-        team.validate() if team is not None else None
-
-    def _visit_feature(self, feature: Optional[Feature]) -> None:
-        feature.validate() if feature is not None else None
-
-    def _visit_totals(self, totals: Totals) -> None:
-        totals.validate()
-
-    def _visit_consistent(self, consistent: Consistent) -> None:
-        consistent.validate()
-
-    def _visit_turbo(self, turbo: Turbo) -> None:
-        turbo.validate()
-
-    def _visit_debug(self, debug: Debug) -> None:
-        debug.validate()
-
-    def _visit_dry_run(self, dry_run: DryRun) -> None:
-        dry_run.validate()
-
-    def _visit_legacy(self, legacy: Legacy) -> None:
-        legacy.validate()
+    def _visit_totals(self, totals: Optional[Totals]) -> None:
+        totals.validate() if totals is not None else None

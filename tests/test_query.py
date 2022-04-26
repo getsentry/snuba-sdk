@@ -9,7 +9,6 @@ from snuba_sdk import (
     Column,
     Condition,
     CurriedFunction,
-    Debug,
     Direction,
     Entity,
     Function,
@@ -28,7 +27,6 @@ NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 tests = [
     pytest.param(
         Query(
-            dataset="discover",
             match=Entity("events"),
             select=[Column("event_id")],
             groupby=None,
@@ -41,7 +39,6 @@ tests = [
     ),
     pytest.param(
         Query(
-            dataset="discover",
             match=Entity("events", "ev", 0.2),
             select=[
                 Column("title"),
@@ -60,12 +57,11 @@ tests = [
             limit=Limit(10),
             offset=Offset(1),
             granularity=Granularity(3600),
-            debug=Debug(True),
         ),
         id="complex query",
     ),
     pytest.param(
-        Query("discover", Entity("events", None, 0.2))
+        Query(Entity("events", None, 0.2))
         .set_select([Column("event_id")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_limit(10)
@@ -74,7 +70,7 @@ tests = [
         id="basic query with replace",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query(Entity("events"))
         .set_select(
             [
                 Column("title"),
@@ -117,12 +113,11 @@ tests = [
         .set_limitby(LimitBy([Column("title")], 5))
         .set_limit(10)
         .set_offset(1)
-        .set_granularity(3600)
-        .set_debug(True),
+        .set_granularity(3600),
         id="complex query with replace",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query(Entity("events"))
         .set_select([Column("event_id")])
         .set_where(
             [
@@ -136,7 +131,7 @@ tests = [
         id="lists and tuples are allowed",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query(Entity("events"))
         .set_select([Column("event_id"), Column("title")])
         .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
         .set_orderby(
@@ -151,7 +146,7 @@ tests = [
         id="multiple ORDER BY",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query(Entity("events"))
         .set_select([Column("event_id"), Column("title")])
         .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
         .set_limit(10)
@@ -160,7 +155,7 @@ tests = [
         id="unary condition",
     ),
     pytest.param(
-        Query("discover", Entity("events"))
+        Query(Entity("events"))
         .set_select([Column("event_id"), Column("title")])
         .set_array_join([Column("exception_stacks"), Column("exception_stacks_2")])
         .set_where([Condition(Column("timestamp"), Op.IS_NOT_NULL)])
@@ -171,9 +166,7 @@ tests = [
     ),
     pytest.param(
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Entity("events"),
                 select=[Column("event_id"), Column("title"), Column("timestamp")],
             ),
@@ -187,9 +180,7 @@ tests = [
     ),
     pytest.param(
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Entity("events"),
                 select=[
                     Function("toString", [Column("event_id")], "new_event"),
@@ -210,11 +201,8 @@ tests = [
     ),
     pytest.param(
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Query(
-                    dataset="discover",
                     match=Entity("events"),
                     select=[Column("event_id"), Column("title"), Column("timestamp")],
                 ),
@@ -232,7 +220,7 @@ tests = [
         id="multiple nested",
     ),
     pytest.param(
-        Query("discover", Entity("discover"))
+        Query(Entity("discover"))
         .set_select(
             [
                 Function(
@@ -266,7 +254,6 @@ def test_query(query: Query) -> None:
 invalid_tests = [
     pytest.param(
         Query(
-            dataset="discover",
             match=Entity("events"),
             select=None,
             groupby=None,
@@ -280,7 +267,6 @@ invalid_tests = [
     ),
     pytest.param(
         Query(
-            dataset="discover",
             match=Entity("events"),
             select=[Column("title")],
             where=[Condition(Column("timestamp"), Op.GT, NOW)],
@@ -293,9 +279,7 @@ invalid_tests = [
     ),
     pytest.param(
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Entity("events"),
                 select=[Column("event_id"), Column("title"), Column("timestamp")],
             ),
@@ -312,9 +296,7 @@ invalid_tests = [
     ),
     pytest.param(
         Query(
-            "discover",
             Query(
-                dataset="discover",
                 match=Entity("events"),
                 select=[
                     Function("toString", [Column("event_id")], "new_event"),

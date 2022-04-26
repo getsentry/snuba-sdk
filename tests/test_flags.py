@@ -1,63 +1,31 @@
 import re
-from typing import Any
 
 import pytest
 
-from snuba_sdk.expressions import InvalidExpressionError
-from snuba_sdk.flags import (
-    Consistent,
-    Debug,
-    DryRun,
-    Feature,
-    Legacy,
-    ParentAPI,
-    Team,
-    Totals,
-    Turbo,
-)
+from snuba_sdk.request import Flags, InvalidFlagError
 
-boolean_tests = [
-    pytest.param("totals", Totals),
-    pytest.param("consistent", Consistent),
-    pytest.param("turbo", Turbo),
-    pytest.param("debug", Debug),
-    pytest.param("dry_run", DryRun),
-    pytest.param("legacy", Legacy),
+flag_tests = [
+    pytest.param("totals", True, None),
+    pytest.param("consistent", False, None),
+    pytest.param("turbo", 1, InvalidFlagError("turbo must be a boolean")),
+    pytest.param("dry_run", "string", InvalidFlagError("dry_run must be a boolean")),
 ]
 
 
-@pytest.mark.parametrize("name, flag", boolean_tests)
-def test_boolean_flags(name: str, flag: Any) -> None:
-    assert flag(True) is not None
-    assert flag(False) is not None
-    with pytest.raises(
-        InvalidExpressionError, match=re.escape(f"{name} must be a boolean")
-    ):
-        flag(0)
+@pytest.mark.parametrize("name, flag, exception", flag_tests)
+def test_flags(name: str, flag: bool, exception: Exception) -> None:
+    if exception is None:
+        f = Flags(**{name: flag})
+        assert getattr(f, name) == flag
+        f.validate()
+        assert f.to_dict() == {name: flag}
+    else:
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
+            f = Flags(**{name: flag})
+            f.validate()
 
 
-string_tests = [
-    pytest.param("parent_api", ParentAPI),
-    pytest.param("team", Team),
-    pytest.param("feature", Feature),
-]
-
-
-@pytest.mark.parametrize("name, flag", string_tests)
-def test_string_flags(name: str, flag: Any) -> None:
-    assert (
-        flag("/api/0/issues_groups/_issue_id_/integrations/_integration_id_/")
-        is not None
-    )
-    assert flag("sentry.tasks") is not None
-    with pytest.raises(
-        InvalidExpressionError, match=re.escape(f"{name} must be a non-empty string")
-    ):
-        flag(0)
-
-    if flag != ParentAPI:
-        with pytest.raises(
-            InvalidExpressionError,
-            match=re.escape(f"{name} contains invalid characters"),
-        ):
-            flag("`````")
+def test_flag_with_none() -> None:
+    f = Flags(debug=None, totals=False, dry_run=True)
+    f.validate()
+    assert f.to_dict() == {"totals": False, "dry_run": True}

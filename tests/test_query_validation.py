@@ -33,7 +33,6 @@ SEARCHER = ExpressionSearcher(Column)
 entity_match_tests = [
     pytest.param(
         Query(
-            dataset="test",
             match=ENTITY,
             select=[Column("test1"), Column("required1")],
         ),
@@ -42,7 +41,6 @@ entity_match_tests = [
     ),
     pytest.param(
         Query(
-            dataset="test",
             match=ENTITY,
             select=[Column("test1"), Column("outside")],
         ),
@@ -73,9 +71,7 @@ def test_entity_validate_match(query: Query, exception: Optional[Exception]) -> 
 subquery_match_tests = [
     pytest.param(
         Query(
-            "test",
             Query(
-                dataset="test",
                 match=ENTITY,
                 select=[Column("test1"), Column("test2")],
                 where=[
@@ -95,9 +91,7 @@ subquery_match_tests = [
     ),
     pytest.param(
         Query(
-            "test",
             Query(
-                dataset="test",
                 match=ENTITY,
                 select=[Column("test1"), Column("test2")],
                 where=[
@@ -119,11 +113,8 @@ subquery_match_tests = [
     ),
     pytest.param(
         Query(
-            dataset="test",
             match=Query(
-                dataset="test",
                 match=Query(
-                    dataset="test",
                     match=ENTITY,
                     select=[Column("test1"), Column("test2")],
                     where=[
@@ -162,14 +153,14 @@ JOIN2 = Entity("test_b", "tb", None, SCHEMA)
 JOIN = Join([Relationship(JOIN1, "has", JOIN2)])
 join_match_tests = [
     pytest.param(
-        Query("tests", JOIN)
+        Query(JOIN)
         .set_select([Column("test1"), Column("test2", JOIN2)])
         .set_where([Condition(Column("time", JOIN1), Op.IS_NOT_NULL)]),
         InvalidMatchError("column 'test1' must have a qualifying entity"),
         id="all columns must be qualified",
     ),
     pytest.param(
-        Query("tests", JOIN)
+        Query(JOIN)
         .set_select(
             [Column("test1", Entity("transactions", "t")), Column("test2", JOIN2)]
         )
@@ -178,7 +169,7 @@ join_match_tests = [
         id="column with different entity",
     ),
     pytest.param(
-        Query("tests", JOIN)
+        Query(JOIN)
         .set_select(
             [
                 Column("test1", Entity("test_a", "other", None, SCHEMA)),
@@ -190,7 +181,7 @@ join_match_tests = [
         id="column with different entity alias",
     ),
     pytest.param(
-        Query("tests", JOIN)
+        Query(JOIN)
         .set_select(
             [
                 Column("test1", Entity("test_a", "tb", None, SCHEMA)),
