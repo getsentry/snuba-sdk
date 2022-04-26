@@ -2,6 +2,7 @@
     :caption: SDK:
     :maxdepth: 4
 
+    request
     query
     conditions
     entity
