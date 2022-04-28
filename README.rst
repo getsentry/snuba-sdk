@@ -52,6 +52,7 @@ Requests and Queries can be created directly:
 Queries can also be built incrementally:
 
 .. code-block:: python
+
     query = (
         Query("discover", Entity("events"))
         .set_select(
@@ -92,7 +93,7 @@ This outputs:
         "dataset": "discover",
         "app_id": "myappid",
         "query": "MATCH (events) SELECT title, uniq(event_id) AS uniq_events BY title WHERE timestamp > toDateTime('2021-01-01T00:00:00.000000') AND project_id IN tuple(1, 2, 3) LIMIT 10 OFFSET 0 GRANULARITY 3600",
-        "debug": True,
+        "debug": true
     }
 
 If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpressionError`` exception will be thrown.
