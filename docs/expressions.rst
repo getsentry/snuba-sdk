@@ -20,8 +20,3 @@ Expressions
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. automodule:: snuba_sdk.flags
-   :members:
-   :undoc-members:
-   :show-inheritance:
