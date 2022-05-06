@@ -1,6 +1,6 @@
-.. image:: https://sentry-brand.storage.googleapis.com/sentry-logo-black.png
+.. image:: https://sentry-brand.storage.googleapis.com/sentry-wordmark-dark-280x84.png
     :width: 280
-    :target: https://sentry.io
+    :target: https://sentry.io/?utm_source=github&utm_medium=logo
 
 See here for the full `documentation <https://getsentry.github.io/snuba-sdk/>`_.
 
