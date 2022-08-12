@@ -49,7 +49,7 @@ tests = [
         ("e:sessions/duration@millisecond", None, None),
         "e:sessions/duration@millisecond",
         None,
-        id="mri format"
+        id="mri format",
     ),
     pytest.param(
         "a1[a:b][aasdc]",
