@@ -10,7 +10,7 @@ class InvalidColumnError(InvalidExpressionError):
     pass
 
 
-column_name_re = re.compile(r"^[a-zA-Z_](\w|\.|:)*(\[([^\[\]]*)\])?$")
+column_name_re = re.compile(r"^[a-zA-Z_](\w|\.|:|\/|@)*(\[([^\[\]]*)\])?$")
 
 
 @dataclass(frozen=True)
