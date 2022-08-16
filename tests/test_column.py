@@ -45,6 +45,13 @@ tests = [
         id="colon subscriptable",
     ),
     pytest.param(
+        "e:sessions/duration@millisecond",
+        ("e:sessions/duration@millisecond", None, None),
+        "e:sessions/duration@millisecond",
+        None,
+        id="mri format",
+    ),
+    pytest.param(
         "a1[a:b][aasdc]",
         None,
         None,
