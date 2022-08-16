@@ -1,6 +1,10 @@
 Changelog and versioning
 ==========================
 
+1.0.1
+------
+
+- Modify column_name_re to allow for @ and / characters in column names.
 
 1.0.0
 ------
