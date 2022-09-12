@@ -62,7 +62,7 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
         elif isinstance(node, Totals):
             return self._visit_totals(node.totals)
 
-        assert False, f"Unhandled Expression: {node}"
+        raise AssertionError(f"Unhandled Expression: {node}")
 
     @abstractmethod
     def _visit_aliased_expression(self, aliased: AliasedExpression) -> TVisited:
