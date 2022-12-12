@@ -28,6 +28,7 @@ tests = [
         "default",
         BASIC_QUERY,
         Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
+        "s/g",
         {
             "query": "MATCH (events) SELECT event_id, title WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
             "consistent": True,
@@ -36,6 +37,7 @@ tests = [
             "dry_run": True,
             "dataset": "events",
             "app_id": "default",
+            "parent_api": "s/g",
             "legacy": True,
         },
         None,
@@ -46,6 +48,7 @@ tests = [
         "default",
         BASIC_QUERY,
         Flags(consistent=True),
+        "s/g",
         None,
         InvalidRequestError("Request must have a valid dataset"),
         id="invalid_dataset",
@@ -55,6 +58,7 @@ tests = [
         "default",
         BASIC_QUERY,
         Flags(consistent=True),
+        "s/g",
         None,
         InvalidRequestError("'@@ff@@' is not a valid dataset"),
         id="invalid_dataset_chars",
@@ -64,24 +68,37 @@ tests = [
         2,
         BASIC_QUERY,
         Flags(consistent=True),
+        "s/g",
         None,
         InvalidRequestError("Request must have a valid app_id"),
-        id="invalid_dataset",
+        id="invalid_app_id",
     ),
     pytest.param(
         "events",
         "@@ff@@",
         BASIC_QUERY,
         Flags(consistent=True),
+        "s/g",
         None,
         InvalidRequestError("'@@ff@@' is not a valid app_id"),
-        id="invalid_dataset_chars",
+        id="invalid_app_id_chars",
+    ),
+    pytest.param(
+        "events",
+        "default",
+        BASIC_QUERY,
+        Flags(consistent=True),
+        6,
+        None,
+        InvalidRequestError("`6` is not a valid parent_api"),
+        id="invalid_parent_api",
     ),
     pytest.param(
         "events",
         "default",
         Query(Entity("events")),
         Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
+        "s/g",
         None,
         InvalidQueryError("query must have at least one expression in select"),
         id="invalid_query",
@@ -91,6 +108,7 @@ tests = [
         "default",
         BASIC_QUERY,
         Flags(consistent=1),  # type: ignore
+        "s/g",
         None,
         InvalidFlagError("consistent must be a boolean"),
         id="invalid_flags",
@@ -98,21 +116,24 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("dataset, app_id, query, flags, expected, exception", tests)
+@pytest.mark.parametrize(
+    "dataset, app_id, query, flags, parent_api, expected, exception", tests
+)
 def test_request(
     dataset: str,
     app_id: str,
     query: Query,
     flags: Flags,
+    parent_api: str,
     expected: Mapping[str, str | bool],
     exception: Exception | None,
 ) -> None:
     if exception:
         with pytest.raises(type(exception), match=re.escape(str(exception))):
-            request = Request(dataset, app_id, query, flags)
+            request = Request(dataset, app_id, query, flags, parent_api)
             request.validate()
     else:
-        request = Request(dataset, app_id, query, flags)
+        request = Request(dataset, app_id, query, flags, parent_api)
         request.validate()
         assert request.to_dict() == expected
         assert request.print() == json.dumps(expected, sort_keys=True, indent=4 * " ")
