@@ -46,6 +46,7 @@ class Request:
     app_id: str
     query: Query
     flags: Flags = field(default_factory=Flags)
+    parent_api: str = "<unknown>"
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
@@ -57,6 +58,9 @@ class Request:
             raise InvalidRequestError("Request must have a valid app_id")
         if not FLAG_RE.match(self.app_id):
             raise InvalidRequestError(f"'{self.app_id}' is not a valid app_id")
+
+        if not self.parent_api or not isinstance(self.parent_api, str):
+            raise InvalidRequestError(f"`{self.parent_api}` is not a valid parent_api")
 
         self.query.validate()
         if self.flags is not None:
@@ -70,6 +74,7 @@ class Request:
             "query": self.query.serialize(),
             "dataset": self.dataset,
             "app_id": self.app_id,
+            "parent_api": self.parent_api,
         }
 
     def serialize(self) -> str:

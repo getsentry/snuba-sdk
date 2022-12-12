@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+1.0.2
+------
+
+- Add the parent_api back to the Request so it can be passed from Sentry.
+
 1.0.1
 ------
 
