@@ -59,7 +59,7 @@ ENTITY_TIME_COLUMNS = {
     "discover_transactions": "finish_ts",
     "discover_events": "timestamp",
     "spans": "finish_ts",
-    "search_issues": "client_timestamp",
+    "search_issues": "timestamp",
 }
 
 
