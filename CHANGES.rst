@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+1.0.3
+------
+
+- Add the search issues time column to the legacy parser
+
 1.0.2
 ------
 
