@@ -11,6 +11,8 @@ artifactProvider:
 targets:
   - name: github
   - name: pypi
+  - name: sentry-pypi
+    internalPypiRepo: getsentry/pypi
 
 requireNames:
   - /^snuba_sdk-.+-py2.py3-none-any.whl$/
