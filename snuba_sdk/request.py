@@ -44,6 +44,7 @@ FLAG_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
 class Request:
     dataset: str
     app_id: str
+    tenant_ids: dict[str, str | int]
     query: Query
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
@@ -62,11 +63,14 @@ class Request:
         if not self.parent_api or not isinstance(self.parent_api, str):
             raise InvalidRequestError(f"`{self.parent_api}` is not a valid parent_api")
 
+        if not self.tenant_ids or not isinstance(self.tenant_ids, dict):
+            raise InvalidRequestError("Request must have a `tenant_ids` dictionary")
+
         self.query.validate()
         if self.flags is not None:
             self.flags.validate()
 
-    def to_dict(self) -> dict[str, str | bool]:
+    def to_dict(self) -> dict[str, str | bool | dict[str, str | int]]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
         return {
@@ -74,6 +78,7 @@ class Request:
             "query": self.query.serialize(),
             "dataset": self.dataset,
             "app_id": self.app_id,
+            "tenant_ids": self.tenant_ids,
             "parent_api": self.parent_api,
         }
 
