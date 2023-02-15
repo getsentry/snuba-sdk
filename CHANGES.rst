@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+1.0.4
+------
+
+- Add `tenant_ids` required field to Request object so additional information about the request can be passed from Sentry.
+    - "tenants" include referrer, organization ID, etc.
+
 1.0.3
 ------
 
