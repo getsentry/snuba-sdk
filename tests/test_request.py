@@ -26,6 +26,7 @@ tests = [
     pytest.param(
         "events",
         "default",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
         "s/g",
@@ -37,6 +38,7 @@ tests = [
             "dry_run": True,
             "dataset": "events",
             "app_id": "default",
+            "tenant_ids": {"organization_id": 1, "referrer": "default"},
             "parent_api": "s/g",
             "legacy": True,
         },
@@ -46,6 +48,7 @@ tests = [
     pytest.param(
         None,
         "default",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
         "s/g",
@@ -56,6 +59,7 @@ tests = [
     pytest.param(
         "@@ff@@",
         "default",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
         "s/g",
@@ -66,6 +70,7 @@ tests = [
     pytest.param(
         "events",
         2,
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
         "s/g",
@@ -76,6 +81,7 @@ tests = [
     pytest.param(
         "events",
         "@@ff@@",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
         "s/g",
@@ -86,6 +92,7 @@ tests = [
     pytest.param(
         "events",
         "default",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
         6,
@@ -96,6 +103,7 @@ tests = [
     pytest.param(
         "events",
         "default",
+        {"organization_id": 1, "referrer": "default"},
         Query(Entity("events")),
         Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
         "s/g",
@@ -106,6 +114,7 @@ tests = [
     pytest.param(
         "events",
         "default",
+        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=1),  # type: ignore
         "s/g",
@@ -117,11 +126,12 @@ tests = [
 
 
 @pytest.mark.parametrize(
-    "dataset, app_id, query, flags, parent_api, expected, exception", tests
+    "dataset, app_id, tenant_ids, query, flags, parent_api, expected, exception", tests
 )
 def test_request(
     dataset: str,
     app_id: str,
+    tenant_ids: dict[str, str | int],
     query: Query,
     flags: Flags,
     parent_api: str,
@@ -130,17 +140,23 @@ def test_request(
 ) -> None:
     if exception:
         with pytest.raises(type(exception), match=re.escape(str(exception))):
-            request = Request(dataset, app_id, query, flags, parent_api)
+            request = Request(dataset, app_id, tenant_ids, query, flags, parent_api)
             request.validate()
     else:
-        request = Request(dataset, app_id, query, flags, parent_api)
+        request = Request(dataset, app_id, tenant_ids, query, flags, parent_api)
         request.validate()
         assert request.to_dict() == expected
         assert request.print() == json.dumps(expected, sort_keys=True, indent=4 * " ")
 
 
 def test_request_set_methods() -> None:
-    request = Request("events", "default", BASIC_QUERY, Flags(consistent=True))
+    request = Request(
+        "events",
+        "default",
+        {"organization_id": 1, "referrer": "default"},
+        BASIC_QUERY,
+        Flags(consistent=True),
+    )
     request.flags = Flags(consistent=False)
     request.query = BASIC_QUERY.set_select([Column("trace_id")])
     request.validate()
