@@ -140,10 +140,10 @@ def test_request(
 ) -> None:
     if exception:
         with pytest.raises(type(exception), match=re.escape(str(exception))):
-            request = Request(dataset, app_id, tenant_ids, query, flags, parent_api)
+            request = Request(dataset, app_id, query, flags, parent_api, tenant_ids)
             request.validate()
     else:
-        request = Request(dataset, app_id, tenant_ids, query, flags, parent_api)
+        request = Request(dataset, app_id, query, flags, parent_api, tenant_ids)
         request.validate()
         assert request.to_dict() == expected
         assert request.print() == json.dumps(expected, sort_keys=True, indent=4 * " ")
@@ -153,7 +153,6 @@ def test_request_set_methods() -> None:
     request = Request(
         "events",
         "default",
-        {"organization_id": 1, "referrer": "default"},
         BASIC_QUERY,
         Flags(consistent=True),
     )

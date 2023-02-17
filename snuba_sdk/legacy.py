@@ -365,6 +365,6 @@ def json_to_snql(body: Mapping[str, Any], entity: str) -> Request:
     dataset = body.get("dataset") or entity
     app_id = body.get("app_id") or "legacy"
     tenant_ids = body.get("tenant_ids") or {"legacy": "legacy"}
-    request = Request(dataset, app_id, tenant_ids, query, flags)
+    request = Request(dataset, app_id, query, flags, tenant_ids=tenant_ids)
 
     return request
