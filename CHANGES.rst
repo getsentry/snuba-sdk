@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+1.0.5
+------
+
+- `tenant_ids` required field added previously is now optional to support gradual adoption
+
 1.0.4
 ------
 
