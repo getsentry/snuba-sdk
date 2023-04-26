@@ -30,6 +30,7 @@ Requests and Queries can be created directly:
     request = Request(
         dataset = "discover",
         app_id = "myappid",
+        tenant_ids = {"referrer": "my_referrer", "organization_id": 1234}
         query = Query(
             match=Entity("events"),
             select=[
