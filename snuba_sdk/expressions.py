@@ -52,6 +52,12 @@ class InvalidArrayError(Exception):
         )
 
 
+def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
+    return isinstance(vals, list) and all(
+        isinstance(v, tuple(type_classes)) for v in vals
+    )
+
+
 def is_literal(value: Any) -> bool:
     """
     Allow simple scalar types but not lists/tuples.
@@ -105,7 +111,7 @@ class Granularity(Expression):
         _validate_int_literal("granularity", self.granularity, 1, None)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Totals(Expression):
     totals: bool
 

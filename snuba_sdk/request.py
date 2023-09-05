@@ -4,7 +4,7 @@ import json
 import re
 from dataclasses import asdict, dataclass, field, fields
 
-from snuba_sdk.query import Query
+from snuba_sdk.query import BaseQuery
 
 
 class InvalidRequestError(Exception):
@@ -44,7 +44,7 @@ FLAG_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]]*$")
 class Request:
     dataset: str
     app_id: str
-    query: Query
+    query: BaseQuery
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
     tenant_ids: dict[str, str | int] = field(default_factory=dict)
