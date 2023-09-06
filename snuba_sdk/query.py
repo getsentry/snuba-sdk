@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields, replace
 from typing import Any, Optional, Sequence, Union
 
@@ -7,18 +8,11 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
+from snuba_sdk.expressions import Granularity, Limit, Offset, Totals, list_type
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQueryError, Printer, Validator
 from snuba_sdk.relationships import Join
-
-
-def list_type(vals: Sequence[Any], type_classes: Sequence[Any]) -> bool:
-    return isinstance(vals, list) and all(
-        isinstance(v, tuple(type_classes)) for v in vals
-    )
-
 
 PRINTER = Printer()
 PRETTY_PRINTER = Printer(pretty=True)
@@ -34,8 +28,27 @@ SelectableExpressionType: list[type] = [
 ]
 
 
+class BaseQuery(ABC):
+    """
+    This base class is what the Request is aware of and interacts with. Any other type of query
+    needs to provide these functions so the request can properly validate/serialize/print it.
+    """
+
+    @abstractmethod
+    def validate(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def serialize(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def print(self) -> str:
+        raise NotImplementedError
+
+
 @dataclass(frozen=True)
-class Query:
+class Query(BaseQuery):
     """
     A code representation of a SnQL query. It is immutable, so any set functions
     return a new copy of the query. Unlike Expressions it is possible to

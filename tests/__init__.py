@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
 from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.timeseries import Timeseries
 
 
 # Wrappers to lazily build the expressions
@@ -84,3 +85,16 @@ def cur_func(
         return CurriedFunction(function, initers, params, alias)
 
     return to_func
+
+
+def timeseries(
+    metric: Any,
+    aggregate: Any,
+    aggregate_params: list[Any] | None = None,
+    filters: list[Any] | None = None,
+    groupby: list[Any] | None = None,
+) -> Callable[[], Any]:
+    def to_timeseries() -> Timeseries:
+        return Timeseries(metric, aggregate, aggregate_params, filters, groupby)
+
+    return to_timeseries

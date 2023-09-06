@@ -1,6 +1,14 @@
 Changelog and versioning
 ==========================
 
+2.0.0
+------
+
+- Add a new syntax for querying timeseries metrics
+    - Add a MetricsQuery class that can be attached to a Request
+    - Add a Timeseries class that is used to capture a simple timeseries query
+    - Add various other classes to support the new syntax
+
 1.0.5
 ------
 
