@@ -39,12 +39,12 @@ Python development, and you can run the following to get started with ``pytest``
 Releasing a new version
 ----------------------------
 
-We use `craft <https://github.com/getsentry/craft#python-package-index-pypi>`_ to
-release new versions. You need credentials for the ``getsentry`` PyPI user, and
-must have ``twine`` installed globally.
+We use `craft <https://github.com/getsentry/craft#python-package-index-pypi>`_ under the
+hood to release new versions.
 
-The usual release process goes like this:
+1. Run the `releases` workflow in Github and input the new version you want to release
+2. This creates a PR in the `publish <https://github.com/getsentry/publish>`_ repo
+3. That PR needs to have the `accepted` label added to it
+4. Once that's done, the new library should be added automatically to the `pypi <https://github.com/getsentry/pypi>`_ repo
 
-1. Go through git log and write new entry into ``CHANGES.rst``, commit to master
-2. ``craft p a.b.c``
-3. ``craft pp a.b.c``
+After this the release should be available for Sentry and also external sources.
