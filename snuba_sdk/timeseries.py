@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from snuba_sdk.column import Column
@@ -31,6 +31,21 @@ class Metric(Expression):
             raise InvalidExpressionError(
                 "Metric must have at least one of public_name, mri or id"
             )
+
+    def set_mri(self, mri: str) -> Metric:
+        if not isinstance(mri, str):
+            raise InvalidExpressionError("mri must be an str")
+        return replace(self, mri=mri)
+
+    def set_public_name(self, public_name: str) -> Metric:
+        if not isinstance(public_name, str):
+            raise InvalidExpressionError("public_name must be an str")
+        return replace(self, public_name=public_name)
+
+    def set_id(self, id: int) -> Metric:
+        if not isinstance(id, int):
+            raise InvalidExpressionError("id must be an int")
+        return replace(self, id=id)
 
 
 @dataclass
@@ -83,3 +98,8 @@ class Timeseries(Expression):
             for g in self.groupby:
                 if not isinstance(g, Column):
                     raise InvalidExpressionError("groupby must be a list of Columns")
+
+    def set_metric(self, metric: Metric) -> Timeseries:
+        if not isinstance(metric, Metric):
+            raise InvalidExpressionError("metric must be a Metric")
+        return replace(self, metric=metric)
