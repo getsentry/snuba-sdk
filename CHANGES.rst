@@ -1,6 +1,14 @@
 Changelog and versioning
 ==========================
 
+2.0.1
+-----
+
+### Various fixes & improvements
+
+- add additional setters to metric query child classes (#119) by @enochtangg
+- update contributing to reflect new release procedure (#118) by @evanh
+
 2.0.0
 ------
 
