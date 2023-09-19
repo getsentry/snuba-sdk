@@ -46,6 +46,10 @@ class BaseQuery(ABC):
     def print(self) -> str:
         raise NotImplementedError
 
+    def get_fields(self) -> Sequence[str]:
+        self_fields = fields(self)  # Verified the order in the Python source
+        return tuple(f.name for f in self_fields)
+
 
 @dataclass(frozen=True)
 class Query(BaseQuery):
@@ -91,10 +95,6 @@ class Query(BaseQuery):
     def _replace(self, field: str, value: Any) -> Query:
         new = replace(self, **{field: value})
         return new
-
-    def get_fields(self) -> Sequence[str]:
-        self_fields = fields(self)  # Verified the order in the Python source
-        return tuple(f.name for f in self_fields)
 
     def set_match(self, match: Union[Entity, Join, Query]) -> Query:
         if not isinstance(match, (Entity, Join, Query)):

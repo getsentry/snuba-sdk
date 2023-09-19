@@ -1,6 +1,15 @@
 Changelog and versioning
 ==========================
 
+
+2.0.2
+-----
+
+- Add validators and translators for the MetricsQuery and all its child objects
+- Rename some components to be consistent between Metric and Metrics
+- Move MetricsScope and Rollup to the timeseries module
+    - Also stop treating them as Expressions, so they can be visited in a more nuanced way
+
 2.0.1
 -----
 

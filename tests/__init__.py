@@ -90,9 +90,9 @@ def cur_func(
 def timeseries(
     metric: Any,
     aggregate: Any,
-    aggregate_params: list[Any] | None = None,
-    filters: list[Any] | None = None,
-    groupby: list[Any] | None = None,
+    aggregate_params: Any = None,
+    filters: Any = None,
+    groupby: Any = None,
 ) -> Callable[[], Any]:
     def to_timeseries() -> Timeseries:
         return Timeseries(metric, aggregate, aggregate_params, filters, groupby)
