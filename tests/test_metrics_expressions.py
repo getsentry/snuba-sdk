@@ -106,8 +106,8 @@ metric_scope_tests = [
     pytest.param(
         [1, 2],
         [11, 12],
-        "111",
-        InvalidExpressionError("use_case_id must be an int"),
+        1,
+        InvalidExpressionError("use_case_id must be an str"),
     ),
 ]
 

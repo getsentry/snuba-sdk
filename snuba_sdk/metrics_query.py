@@ -79,7 +79,7 @@ class MetricScope(Expression):
 
     org_ids: list[int]
     project_ids: list[int]
-    use_case_id: int | None = None
+    use_case_id: str | None = None
 
     def validate(self) -> None:
         if not list_type(self.org_ids, (int,)):
@@ -88,12 +88,12 @@ class MetricScope(Expression):
         if not list_type(self.project_ids, (int,)):
             raise InvalidExpressionError("project_ids must be a list of integers")
 
-        if self.use_case_id is not None and not isinstance(self.use_case_id, int):
-            raise InvalidExpressionError("use_case_id must be an int")
+        if self.use_case_id is not None and not isinstance(self.use_case_id, str):
+            raise InvalidExpressionError("use_case_id must be an str")
 
-    def set_use_case_id(self, use_case_id: int) -> MetricScope:
-        if not isinstance(use_case_id, int):
-            raise InvalidExpressionError("use_case_id must be an int")
+    def set_use_case_id(self, use_case_id: str) -> MetricScope:
+        if not isinstance(use_case_id, str):
+            raise InvalidExpressionError("use_case_id must be an str")
         return replace(self, use_case_id=use_case_id)
 
 
