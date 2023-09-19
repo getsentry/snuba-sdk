@@ -64,50 +64,50 @@ def test_rollup(
 
 
 metric_scope_tests = [
-    pytest.param([1], [11], 111, None),
-    pytest.param([1, 2], [11, 12], 111, None),
+    pytest.param([1], [11], "transactions", None),
+    pytest.param([1, 2], [11, 12], "transactions", None),
     pytest.param([1, 2], [11, 12], None, None),
     pytest.param(
         "1",
         [11, 12],
-        111,
+        "transactions",
         InvalidExpressionError("org_ids must be a list of integers"),
     ),
     pytest.param(
         [1, "2"],
         [11, 12],
-        111,
+        "transactions",
         InvalidExpressionError("org_ids must be a list of integers"),
     ),
     pytest.param(
         None,
         [11, 12],
-        111,
+        "transactions",
         InvalidExpressionError("org_ids must be a list of integers"),
     ),
     pytest.param(
         [1, 2],
         "12",
-        111,
+        "transactions",
         InvalidExpressionError("project_ids must be a list of integers"),
     ),
     pytest.param(
         [1, 2],
         [11, "12"],
-        111,
+        "transactions",
         InvalidExpressionError("project_ids must be a list of integers"),
     ),
     pytest.param(
         [1, 2],
         None,
-        111,
+        "transactions",
         InvalidExpressionError("project_ids must be a list of integers"),
     ),
     pytest.param(
         [1, 2],
         [11, 12],
-        "111",
-        InvalidExpressionError("use_case_id must be an int"),
+        1,
+        InvalidExpressionError("use_case_id must be an str"),
     ),
 ]
 

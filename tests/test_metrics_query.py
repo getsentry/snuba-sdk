@@ -26,7 +26,9 @@ tests = [
             start=NOW,
             end=NOW + timedelta(days=14),
             rollup=Rollup(interval=3600, totals=None),
-            scope=MetricScope(org_ids=[1], project_ids=[11], use_case_id=111),
+            scope=MetricScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
         ),
         id="basic query",
     ),
