@@ -110,14 +110,6 @@ metric_tests = [
         None,
         InvalidTimeseriesError("entity must be a string"),
     ),
-    pytest.param(
-        "transaction.duration",
-        "d:transactions/duration@millisecond",
-        123,
-        "generic_metrics",
-        None,
-        InvalidTimeseriesError("'generic_metrics' is not a valid metrics entity"),
-    ),
 ]
 
 METRIC_PRINTER = MetricSnQLPrinter()

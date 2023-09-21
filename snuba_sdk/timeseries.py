@@ -13,18 +13,6 @@ class InvalidTimeseriesError(Exception):
     pass
 
 
-VALID_ENTITIES = set(
-    [
-        "generic_metrics_distributions",
-        "generic_metrics_counters",
-        "generic_metrics_sets",
-        "metrics_distributions",
-        "metrics_counters",
-        "metrics_sets",
-    ]
-)
-
-
 @dataclass(frozen=True)
 class Metric:
     """
@@ -53,10 +41,6 @@ class Metric:
             raise InvalidTimeseriesError("id must be an integer")
         if self.entity is not None and not isinstance(self.entity, str):
             raise InvalidTimeseriesError("entity must be a string")
-        if self.entity is not None and self.entity not in VALID_ENTITIES:
-            raise InvalidTimeseriesError(
-                f"'{self.entity}' is not a valid metrics entity"
-            )
 
         if all(v is None for v in (self.public_name, self.mri, self.id)):
             raise InvalidTimeseriesError(
@@ -77,6 +61,11 @@ class Metric:
         if not isinstance(id, int):
             raise InvalidExpressionError("id must be an int")
         return replace(self, id=id)
+
+    def set_entity(self, entity: str) -> Metric:
+        if not isinstance(entity, str):
+            raise InvalidExpressionError("entity must be an str")
+        return replace(self, entity=entity)
 
 
 @dataclass
