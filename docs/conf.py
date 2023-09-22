@@ -27,7 +27,7 @@ copyright = "2021, Sentry Team and Contributors"
 author = "Sentry Team and Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "2.0.1"
+release = "2.0.2"
 version = ".".join(release.split(".")[:3])
 
 
