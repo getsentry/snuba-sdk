@@ -80,52 +80,74 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
         self.separator = "\n" if self.pretty else " "
+        self.match_clause = "MATCH ({entity})"
+        self.select_clause = "SELECT {select_columns}"
+        self.groupby_clause = "BY {groupby_columns}"
+        self.where_clause = "WHERE {where_clauses}"
+        self.orderby_clause = "ORDER BY {orderby_columns}"
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
     ) -> str:
-        clauses = []
-
         timeseries_data = returns["query"]
         assert isinstance(timeseries_data, dict)
 
         entity = timeseries_data["entity"]
-        clauses.append(f"MATCH ({entity})")
 
         select_columns = []
-        assert query.rollup is not None
-        if not query.rollup.totals:
-            select_columns.append(
-                "timestamp"
-            )  # TODO: For arbitrary intervals, this might be a function
-
-        if timeseries_data["groupby"]:
-            select_columns.append(timeseries_data["groupby"])
-
         select_columns.append(timeseries_data["aggregate"])
-        clauses.append(f"SELECT {', '.join(select_columns)}")
+
+        rollup_data = returns["rollup"]
+        assert isinstance(rollup_data, dict)
+
+        groupby_columns = []
+        orderby_columns = []
+        where_clauses = []
+
+        # Rollup information is a little complicated
+        # If an interval is specified, then we need to use the interval
+        # function to properly group by and order the query.
+        # If totals is specified, then the order by will come from the
+        # rollup itself and we don't use interval data.
+        if rollup_data["interval"]:
+            groupby_columns.append(rollup_data["interval"])
+        if rollup_data["orderby"]:
+            orderby_columns.append(rollup_data["orderby"])
+        where_clauses.append(rollup_data["filter"])
 
         if timeseries_data["groupby"]:
-            clauses.append(f"BY {timeseries_data['groupby']}")
+            groupby_columns.append(timeseries_data["groupby"])
 
-        where_clauses = []
         where_clauses.append(timeseries_data["metric_filter"])
         if timeseries_data["filters"]:
             where_clauses.append(timeseries_data["filters"])
         if returns["filters"]:
             where_clauses.append(returns["filters"])
 
-        rollup_data = returns["rollup"]
-        assert isinstance(rollup_data, dict)
-
-        where_clauses.append(rollup_data["filter"])
         where_clauses.append(returns["scope"])
         where_clauses.append(returns["start"])
         where_clauses.append(returns["end"])
 
-        clauses.append(f"WHERE {' AND '.join(where_clauses)}")
+        groupby_clause = (
+            self.groupby_clause.format(groupby_columns=", ".join(groupby_columns))
+            if groupby_columns
+            else ""
+        )
+        orderby_clause = (
+            self.orderby_clause.format(orderby_columns=", ".join(orderby_columns))
+            if orderby_columns
+            else ""
+        )
 
-        return self.separator.join(clauses)
+        return self.separator.join(
+            [
+                self.match_clause.format(entity=entity),
+                self.select_clause.format(select_columns=", ".join(select_columns)),
+                groupby_clause,
+                self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
+                orderby_clause,
+            ]
+        ).strip()
 
     def _visit_query(self, query: Timeseries | None) -> Mapping[str, str]:
         if query is None:

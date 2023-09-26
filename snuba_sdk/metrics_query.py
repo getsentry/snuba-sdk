@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.expressions import list_type
@@ -31,7 +32,7 @@ class MetricsQuery(BaseQuery):
     # causes import loop problems.
     query: Timeseries | None = None
     filters: ConditionGroup | None = None
-    groupby: list[Column] | None = None
+    groupby: list[Column | AliasedExpression] | None = None
     start: datetime | None = None
     end: datetime | None = None
     rollup: Rollup | None = None
@@ -46,13 +47,17 @@ class MetricsQuery(BaseQuery):
             raise InvalidQueryError("query must be a Function or Timeseries")
         return self._replace("query", query)
 
-    def set_filters(self, filters: ConditionGroup) -> MetricsQuery:
-        if not list_type(filters, (BooleanCondition, Condition)):
+    def set_filters(self, filters: ConditionGroup | None) -> MetricsQuery:
+        if filters is not None and not list_type(
+            filters, (BooleanCondition, Condition)
+        ):
             raise InvalidQueryError("filters must be a list of Conditions")
         return self._replace("filters", filters)
 
-    def set_groupby(self, groupby: list[Column]) -> MetricsQuery:
-        if not list_type(groupby, (Column,)):
+    def set_groupby(
+        self, groupby: list[Column | AliasedExpression] | None
+    ) -> MetricsQuery:
+        if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
             raise InvalidQueryError("groupby must be a list of Columns")
         return self._replace("groupby", groupby)
 

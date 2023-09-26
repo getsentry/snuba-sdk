@@ -1,6 +1,23 @@
 Changelog and versioning
 ==========================
 
+2.0.3
+-----
+
+- Bug fixes and changes to support using the MetricsQuery in production
+- Add `granularity` to the Rollup to delineate the interval (the results
+bucketing) vs. the granularity of the underlying data
+    - `granularity` is mandatory for now
+    - This means adding back the restrictions of having interval or totals but not both
+- Use the interval to rollup the time automatically
+    - This also means supporting arbitrary intervals
+    - Automatically order timeseries by the rolled up time
+- Allow AliasedExpression in the groupby clause. This is to support resolving
+    in Sentry. The result of the query should have the original tag key, not the
+    resolved tag number. With AliasedExpression we can have Clickhouse do the mapping
+    automatically.
+
+
 
 2.0.2
 -----

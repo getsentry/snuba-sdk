@@ -6,8 +6,8 @@ from typing import Any, Generic, Mapping, TypeVar
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import InvalidExpressionError
-from snuba_sdk.function import CurriedFunction
-from snuba_sdk.orderby import OrderBy
+from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
 
@@ -162,14 +162,33 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
         condition = Condition(
             lhs=Column("granularity"),
             op=Op.EQ,
-            rhs=rollup.interval,
+            rhs=rollup.granularity,
         )
+
+        interval = ""
         orderby = ""
-        if rollup.orderby is not None:
+        if rollup.interval:
+            interval_exp = Function(
+                "toStartOfInterval",
+                [
+                    Column("timestamp"),
+                    Function("toIntervalSecond", [rollup.interval]),
+                    "Universal",
+                ],
+                alias="time",
+            )
+            interval = self.translator.visit(interval_exp)
+            orderby_exp = OrderBy(Column("time"), Direction.ASC)
+            orderby = self.translator.visit(orderby_exp)
+        elif rollup.orderby is not None:
             orderby_exp = OrderBy(Column(AGGREGATE_ALIAS), rollup.orderby)
             orderby = self.translator.visit(orderby_exp)
 
-        return {"orderby": orderby, "filter": self.translator.visit(condition)}
+        return {
+            "orderby": orderby,
+            "filter": self.translator.visit(condition),
+            "interval": interval,
+        }
 
 
 class ScopeVisitor(ABC, Generic[TVisited]):
