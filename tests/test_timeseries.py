@@ -5,6 +5,7 @@ from typing import Any, Callable, Mapping, Optional
 
 import pytest
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.metrics_visitors import MetricSnQLPrinter, TimeseriesSnQLPrinter
@@ -243,6 +244,30 @@ timeseries_tests = [
         },
         None,
         id="groupbys",
+    ),
+    pytest.param(
+        timeseries(
+            Metric(id=123, entity="metrics_sets"),
+            "quantile",
+            [0.95],
+            [
+                Condition(Column("tags[release]"), Op.EQ, "1.2.3"),
+                Condition(Column("tags[highway]"), Op.EQ, "401"),
+            ],
+            [
+                AliasedExpression(Column("tags[transaction]"), "transaction"),
+                AliasedExpression(Column("tags[device]"), "device"),
+            ],
+        ),
+        {
+            "entity": "metrics_sets",
+            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
+            "filters": "tags[release] = '1.2.3' AND tags[highway] = '401'",
+            "groupby": "tags[transaction] AS `transaction`, tags[device] AS `device`",
+            "metric_filter": "metric_id = 123",
+        },
+        None,
+        id="aliased groupbys",
     ),
     pytest.param(
         timeseries(Metric(id=123, entity="metrics_sets"), 456, None, None, None),

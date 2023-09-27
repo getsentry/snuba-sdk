@@ -3,9 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, fields, replace
 from typing import Any, Sequence
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition
-from snuba_sdk.expressions import InvalidExpressionError, is_literal, list_type
+from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
+from snuba_sdk.expressions import (
+    InvalidExpressionError,
+    _validate_int_literal,
+    is_literal,
+    list_type,
+)
 from snuba_sdk.orderby import Direction
 
 
@@ -80,8 +86,8 @@ class Timeseries:
     metric: Metric
     aggregate: str
     aggregate_params: list[Any] | None = None
-    filters: list[Condition] | None = None
-    groupby: list[Column] | None = None
+    filters: ConditionGroup | None = None
+    groupby: list[Column | AliasedExpression] | None = None
 
     def __post_init__(self) -> None:
         self.validate()
@@ -123,13 +129,40 @@ class Timeseries:
             if not isinstance(self.groupby, list):
                 raise InvalidTimeseriesError("groupby must be a list")
             for g in self.groupby:
-                if not isinstance(g, Column):
-                    raise InvalidTimeseriesError("groupby must be a list of Columns")
+                if not isinstance(g, (Column, AliasedExpression)):
+                    raise InvalidTimeseriesError(
+                        "groupby must be a list of Columns or AliasedExpression"
+                    )
 
     def set_metric(self, metric: Metric) -> Timeseries:
         if not isinstance(metric, Metric):
             raise InvalidTimeseriesError("metric must be a Metric")
         return replace(self, metric=metric)
+
+    def set_aggregate(
+        self, aggregate: str, aggregate_params: list[Any] | None = None
+    ) -> Timeseries:
+        if not isinstance(aggregate, str):
+            raise InvalidTimeseriesError("aggregate must be a str")
+        if aggregate_params is not None and not isinstance(aggregate_params, list):
+            raise InvalidTimeseriesError("aggregate_params must be a list")
+        return replace(self, aggregate=aggregate, aggregate_params=aggregate_params)
+
+    def set_filters(self, filters: ConditionGroup | None) -> Timeseries:
+        if filters is not None and not list_type(
+            filters, (BooleanCondition, Condition)
+        ):
+            raise InvalidTimeseriesError("filters must be a list of Conditions")
+        return replace(self, filters=filters)
+
+    def set_groupby(
+        self, groupby: list[Column | AliasedExpression] | None
+    ) -> Timeseries:
+        if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
+            raise InvalidTimeseriesError(
+                "groupby must be a list of Columns or AliasedExpression"
+            )
+        return replace(self, groupby=groupby)
 
 
 ALLOWED_GRANULARITIES = (60, 3600, 86400)
@@ -146,37 +179,35 @@ class Rollup:
     interval: int | None = None
     totals: bool | None = None
     orderby: Direction | None = None  # TODO: This doesn't make sense: ordered by what?
+    granularity: int | None = None
 
     def __post_init__(self) -> None:
         self.validate()
 
     def validate(self) -> None:
-        # TODO: This value is currently used directly to select a granularity
-        # However, a totals query in theory shouldn't need to specify an interval
-        # Ensure an interval is always set for now, and once we have code in place
-        # to allow arbitrary intervals we can also add code to pick the appropriate
-        # granularity based on the start/end interval of the query.
-        if self.interval is None:
+        # The interval is used to determine how the timestamp is rolled up in the group by of the query.
+        # The granularity is separate since it ultimately determines which data we retrieve.
+        # At a future point the granularity might be able to be inferred based on other attributes
+        # e.g. for totals queries, pick the highest possible granularity. For now it must be specified.
+        if self.granularity is None or self.granularity not in ALLOWED_GRANULARITIES:
+            # TODO: This could possibly be inferred from the interval, for now it's hardcoded
             raise InvalidExpressionError(
-                f"interval must be an integer and one of {ALLOWED_GRANULARITIES}"
+                f"granularity must be an integer and one of {ALLOWED_GRANULARITIES}"
             )
 
-        if not isinstance(self.interval, int):
-            raise InvalidExpressionError(
-                f"interval must be an integer and one of {ALLOWED_GRANULARITIES}"
-            )
+        if self.interval is not None:
+            _validate_int_literal(
+                "interval", self.interval, 10, None
+            )  # Minimum 10 seconds
+            if self.interval < self.granularity:
+                raise InvalidExpressionError(
+                    "interval must be greater than or equal to granularity"
+                )
 
-        # TODO: this can allow more values once we support automatic granularity calculations
-        if self.interval not in ALLOWED_GRANULARITIES:
+        if self.interval is not None and self.totals is not None:
             raise InvalidExpressionError(
-                f"interval {self.interval} must be one of {ALLOWED_GRANULARITIES}"
+                "Only one of interval and totals can be set: Timeseries can't be rolled up by an interval and by a total"
             )
-
-        # TODO: Add this back once we can properly infer granularity. See comment above.
-        # if self.interval is not None and self.totals is not None:
-        #     raise InvalidExpressionError(
-        #         "Only one of interval and totals can be set: Timeseries can't be rolled up by an interval and by a total"
-        #     )
 
         if self.totals is not None:
             if not isinstance(self.totals, bool):
@@ -191,11 +222,10 @@ class Rollup:
                 "Metric queries can't be ordered without using totals"
             )
 
-        # TODO: Add this back once we can properly infer granularity. See comment above.
-        # if self.interval is None and not self.totals:
-        #     raise InvalidExpressionError(
-        #         "Rollup must have at least one of interval or totals"
-        #     )
+        if self.interval is None and not self.totals:
+            raise InvalidExpressionError(
+                "Rollup must have at least one of interval or totals"
+            )
 
 
 @dataclass

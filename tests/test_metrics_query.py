@@ -30,12 +30,12 @@ tests = [
             groupby=None,
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT timestamp, max(value) AS `aggregate_value` WHERE metric_id = 123 AND granularity = 3600 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time` WHERE granularity = 3600 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="basic query",
     ),
     pytest.param(
@@ -56,12 +56,12 @@ tests = [
             groupby=[Column("tags[status_code]")],
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT timestamp, max(value) AS `aggregate_value` WHERE metric_id = 123 AND tags[transaction] = 'foo' AND granularity = 3600 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time` WHERE granularity = 3600 AND metric_id = 123 AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="top level filters/group by",
     ),
     pytest.param(
@@ -82,12 +82,12 @@ tests = [
             groupby=[Column("tags[status_code]")],
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT timestamp, tags[environment], max(value) AS `aggregate_value` BY tags[environment] WHERE metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND granularity = 3600 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[environment] WHERE granularity = 3600 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="top level filters/group by with low level filters",
     ),
     pytest.param(
@@ -108,12 +108,12 @@ tests = [
             groupby=[Column("tags[status_code]")],
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=60, totals=True),
+            rollup=Rollup(totals=True, granularity=60),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT tags[environment], max(value) AS `aggregate_value` BY tags[environment] WHERE metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND granularity = 60 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY tags[environment] WHERE granularity = 60 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
         id="totals query",
     ),
 ]
@@ -133,7 +133,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -156,7 +156,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -179,7 +179,7 @@ invalid_tests = [
             groupby=[1],  # type: ignore
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -202,7 +202,7 @@ invalid_tests = [
             groupby=None,
             start=None,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -225,7 +225,7 @@ invalid_tests = [
             groupby=None,
             start="today",  # type: ignore
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -248,7 +248,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end=None,
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -271,7 +271,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end="today",  # type: ignore
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
@@ -340,7 +340,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=None,
         ),
         InvalidMetricsQueryError("scope is required for a metrics query"),
@@ -361,7 +361,7 @@ invalid_tests = [
             groupby=None,
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
             scope=6,  # type: ignore
         ),
         InvalidMetricsQueryError("scope must be a MetricsScope object"),

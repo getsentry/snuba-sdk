@@ -11,59 +11,136 @@ from snuba_sdk.orderby import Direction
 from snuba_sdk.timeseries import MetricsScope, Rollup
 
 rollup_tests = [
-    pytest.param(60, None, None, {"orderby": "", "filter": "granularity = 60"}, None),
     pytest.param(
         60,
+        None,
+        None,
+        60,
+        {
+            "orderby": "time ASC",
+            "filter": "granularity = 60",
+            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
+        },
+        None,
+        id="1",
+    ),
+    pytest.param(
+        3600,
+        None,
+        None,
+        60,
+        {
+            "orderby": "time ASC",
+            "filter": "granularity = 60",
+            "interval": "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`",
+        },
+        None,
+        id="2",
+    ),
+    pytest.param(
+        None,
+        None,
+        None,
+        60,
+        None,
+        InvalidExpressionError("Rollup must have at least one of interval or totals"),
+        id="3",
+    ),
+    pytest.param(
+        None,
         True,
         Direction.ASC,
-        {"orderby": "aggregate_value ASC", "filter": "granularity = 60"},
+        60,
+        {
+            "orderby": "aggregate_value ASC",
+            "filter": "granularity = 60",
+            "interval": "",
+        },
         None,
-    ),
-    pytest.param(
-        None,
-        None,
-        None,
-        None,
-        InvalidExpressionError(
-            "interval must be an integer and one of (60, 3600, 86400)"
-        ),
-    ),
-    pytest.param(
-        61,
-        None,
-        None,
-        None,
-        InvalidExpressionError("interval 61 must be one of (60, 3600, 86400)"),
+        id="4",
     ),
     pytest.param(
         "61",
         None,
         None,
+        60,
         None,
-        InvalidExpressionError(
-            "interval must be an integer and one of (60, 3600, 86400)"
-        ),
+        InvalidExpressionError("interval '61' must be an integer"),
+        id="5",
+    ),
+    pytest.param(
+        None,
+        Totals(True),
+        None,
+        60,
+        None,
+        InvalidExpressionError("totals must be a boolean"),
+        id="6",
     ),
     pytest.param(
         60,
         Totals(True),
         None,
+        60,
         None,
-        InvalidExpressionError("totals must be a boolean"),
+        InvalidExpressionError(
+            "Only one of interval and totals can be set: Timeseries can't be rolled up by an interval and by a total"
+        ),
+        id="7",
     ),
     pytest.param(
-        60,
+        None,
         "False",
         None,
+        60,
         None,
         InvalidExpressionError("totals must be a boolean"),
+        id="8",
     ),
     pytest.param(
         60,
         None,
         6,
+        60,
         None,
         InvalidExpressionError("orderby must be a Direction object"),
+        id="9",
+    ),
+    pytest.param(
+        60,
+        None,
+        None,
+        None,
+        None,
+        InvalidExpressionError("granularity must be an integer"),
+        id="10",
+    ),
+    pytest.param(
+        60,
+        None,
+        6,
+        "60",
+        None,
+        InvalidExpressionError("granularity must be an integer"),
+        id="11",
+    ),
+    pytest.param(
+        60,
+        None,
+        None,
+        61,
+        None,
+        InvalidExpressionError("granularity must be an integer"),
+        id="12",
+    ),
+    pytest.param(
+        60,
+        None,
+        None,
+        3600,
+        None,
+        InvalidExpressionError("interval must be greater than or equal to granularity"),
+        id="13",
     ),
 ]
 
@@ -72,20 +149,21 @@ TRANSLATOR = RollupSnQLPrinter()
 
 
 @pytest.mark.parametrize(
-    "interval, totals, orderby, translated, exception", rollup_tests
+    "interval, totals, orderby, granularity, translated, exception", rollup_tests
 )
 def test_rollup(
     interval: Any,
     totals: Any,
     orderby: Any,
+    granularity: Any,
     translated: Mapping[str, str],
     exception: Optional[Exception],
 ) -> None:
     if exception is not None:
         with pytest.raises(type(exception), match=re.escape(str(exception))):
-            Rollup(interval, totals, orderby)
+            Rollup(interval, totals, orderby, granularity)
     else:
-        rollup = Rollup(interval, totals, orderby)
+        rollup = Rollup(interval, totals, orderby, granularity)
         assert rollup.interval == interval
         assert TRANSLATOR.visit(rollup) == translated
 
