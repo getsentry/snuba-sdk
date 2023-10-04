@@ -63,7 +63,6 @@ OPERATOR_TO_FUNCTION: Mapping[Op, ConditionFunction] = {
     Op.NOT_LIKE: ConditionFunction.NOT_LIKE,
 }
 
-
 def is_unary(op: Op) -> bool:
     return op in [Op.IS_NULL, Op.IS_NOT_NULL]
 

@@ -13,7 +13,7 @@ help:
 	@false
 
 .venv:
-	virtualenv -ppython3.8 $(VENV_PATH)
+	virtualenv $(VENV_PATH)
 	. $(VENV_PATH)/bin/activate
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
