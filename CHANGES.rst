@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.4
+-----
+- Fix a bug where the groupby on the MetricsQuery was not being serialized
+
+
 2.0.3
 -----
 

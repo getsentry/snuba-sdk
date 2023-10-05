@@ -7,6 +7,7 @@ from typing import Generic, Mapping, Sequence, TypeVar
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 from snuba_sdk import metrics_query as main
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import list_type
@@ -52,7 +53,9 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> QVisited:
+    def _visit_groupby(
+        self, groupby: Sequence[Column | AliasedExpression] | None
+    ) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -117,6 +120,8 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
 
         if timeseries_data["groupby"]:
             groupby_columns.append(timeseries_data["groupby"])
+        if returns["groupby"]:
+            groupby_columns.append(returns["groupby"])
 
         where_clauses.append(timeseries_data["metric_filter"])
         if timeseries_data["filters"]:
@@ -160,7 +165,9 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             return f"{' AND '.join(self.expression_visitor.visit(c) for c in filters)}"
         return ""
 
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> str:
+    def _visit_groupby(
+        self, groupby: Sequence[Column | AliasedExpression] | None
+    ) -> str:
         if groupby is not None:
             return f"{', '.join(self.expression_visitor.visit(g) for g in groupby)}"
         return ""
@@ -212,9 +219,11 @@ class Validator(MetricsQueryVisitor[None]):
                 raise InvalidMetricsQueryError("filters must be a list of Conditions")
             (c.validate() for c in filters)
 
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> None:
+    def _visit_groupby(
+        self, groupby: Sequence[Column | AliasedExpression] | None
+    ) -> None:
         if groupby is not None:
-            if not list_type(groupby, (Column,)):
+            if not list_type(groupby, (Column, AliasedExpression)):
                 raise InvalidMetricsQueryError("groupby must be a list of Columns")
             for g in groupby:
                 g.validate()
