@@ -28,6 +28,7 @@ from snuba_sdk.dsl.types import (
 )
 from snuba_sdk.metrics_query import MetricsQuery
 
+PLACEHOLDER = "PLACEHOLDER"
 GRAMMAR = Grammar(
     r"""
 expression = term (_ expr_op _ term)*
@@ -43,11 +44,11 @@ tag_key = ~"[a-zA-Z0-9_]+"
 tag_value = string / string_tuple / variable
 string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 string_tuple = "(" _ string (_ "," _ string)* _ ")"
-target = variable / quoted_metric / nested_expression / function / unquoted_metric
+target = variable / quoted_metric / nested_expression / aggregate / unquoted_metric
 variable = "$" ~"[a-zA-Z0-9_]+"
 nested_expression = "(" _ expression _ ")"
-function = function_name "(" _ expression (_ "," _ expression)* _ ")"
-function_name = ~"[a-zA-Z0-9_]+"
+aggregate = aggregate_name "(" _ expression (_ "," _ expression)* _ ")"
+aggregate_name = ~"[a-zA-Z0-9_]+"
 quoted_metric = ~r'`([^`]*)`'
 unquoted_metric = ~"[a-zA-Z0-9_]+"
 _ = ~r"\s*"
@@ -64,15 +65,6 @@ TERM_OPERATORS: Mapping[str, str] = {
     "/": ArithmeticFunction.DIVIDE.value,
 }
 
-# CONDITION_OPERATORS: Mapping[str, str] = {
-#     "=": ConditionFunction.EQ.value,
-#     "!=": ConditionFunction.NEQ.value,
-#     "~": ConditionFunction.LIKE.value,
-#     "!~": ConditionFunction.NOT_LIKE.value,
-#     "IN": ConditionFunction.IN.value,
-#     "NOT IN": ConditionFunction.NOT_IN.value,
-# }
-
 def parse_expression(mql: str) -> Expression:
     """
     Parse a metrics expression from a string.
@@ -87,34 +79,61 @@ def parse_expression(mql: str) -> Expression:
     return MqlVisitor().visit(tree)
 
 
+# TODO: Need to determine whether or not target is a MRI and public name
+
 class MqlVisitor(NodeVisitor):
+    def visit(self, node):
+        """Walk a parse tree, transforming it into another representation.
+
+        Recursively descend a parse tree, dispatching to the method named after
+        the rule in the :class:`~parsimonious.grammar.Grammar` that produced
+        each node. If, for example, a rule was... ::
+
+            bold = '<b>'
+
+        ...the ``visit_bold()`` method would be called. It is your
+        responsibility to subclass :class:`NodeVisitor` and implement those
+        methods.
+
+        """
+        method = getattr(self, 'visit_' + node.expr_name, self.generic_visit)
+
+        # Call that method, and show where in the tree it failed if it blows up.
+        try:
+            return method(node, [self.visit(n) for n in node])
+        except Exception:
+            raise Exception
+
     def visit_expression(self, node, children):
         expr, zero_or_more_others = children
-        print('visiting expression')
-        print(type(expr))
-        print(zero_or_more_others)
 
         for _, op, _, other in zero_or_more_others:
+            # In what cases will this be hit?
             expr = Function(op, [expr, other])
             raise InvalidQueryError("Invalid metrics syntax")
+
+        if isinstance(expr, Timeseries):
+            metric_query = MetricsQuery(query=expr)
+            return metric_query
+
         return expr
 
     def visit_expr_op(self, node, children):
+        raise InvalidQueryError("Arithmetic function not supported")
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(self, node, children):
         term, zero_or_more_others = children
-        print('visiting term')
-        print(type(term))
-        print(zero_or_more_others)
 
         for _, op, _, other in zero_or_more_others:
+            # In what cases will this be hit?
             term = Function(op, [term, other])
             raise InvalidQueryError("Invalid metrics syntax")
 
         return term
 
     def visit_term_op(self, node, children):
+        raise InvalidQueryError("Arithmetic function not supported")
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(self, node, children):
@@ -125,21 +144,20 @@ class MqlVisitor(NodeVisitor):
 
     def visit_filter(self, node, children):
         target, zero_or_one = children
-        if isinstance(target, str):
-            return target
-        assert isinstance(target, MetricsQuery)
-        print("visiting filter")
-        print(type(target))
-        print(target.__dict__)
-        print(zero_or_one)
+
         if not zero_or_one:
             return target
 
         _, _, first, zero_or_more_others, _, _ = zero_or_one[0]
-        conditions = [first, *(v for _, _, _, v in zero_or_more_others)]
-        new_target = target.set_filters(conditions)
-        print(new_target.__dict__)
-        return new_target
+        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+        if isinstance(target, str):
+            # Timeseries object not created yet for metric so we need to create it
+            timeseries = Timeseries(metric=Metric(mri=target), aggregate=PLACEHOLDER, filters=filters)
+            return timeseries
+        elif isinstance(target, MetricsQuery):
+            # second time visiting which means this must be an outer filter
+            metrics_query = MetricsQuery(query=target, filters=filters)
+            return metrics_query
 
     def visit_condition(self, node, children):
         key_or_variable, _, op, _, rhs = children
@@ -170,22 +188,19 @@ class MqlVisitor(NodeVisitor):
     def visit_nested_expression(self, node, children):
         return children[2]
 
-    def visit_function(self, node, children):
-        function_name, _, _, first, zero_or_more_others, _, _ = children
-        print('visiting function')
-        print(function_name)
-        print(first)
-        print(zero_or_more_others)
-        parameters = [first, *(v for _, _, _, v in zero_or_more_others)]
-        print(parameters)
-        result = MetricsQuery(query=Timeseries(metric=Metric(mri=first), aggregate=function_name))
-        print(result.__dict__)
-        return result
+    def visit_aggregate(self, node, children):
+        aggregate_name, _, _, first, zero_or_more_others, _, _ = children
 
+        if isinstance(first, Timeseries):
+            timeseries = first.set_aggregate(aggregate_name)
+        elif isinstance(first, MetricsQuery):
+            metric_query = first.set_query(first.query.set_aggregate(aggregate_name))
+            return metric_query
+        else:
+            timeseries = Timeseries(metric=Metric(mri=first), aggregate=aggregate_name)
+        return timeseries
 
-        # return Function(function_name, parameters)
-
-    def visit_function_name(self, node, children):
+    def visit_aggregate_name(self, node, children):
         return node.text
 
     def visit_quoted_metric(self, node, children):
