@@ -80,6 +80,7 @@ def parse_expression(mql: str) -> Expression:
 
 
 # TODO: Need to determine whether or not target is a MRI and public name
+# - match group by clause
 
 class MqlVisitor(NodeVisitor):
     def visit(self, node):
@@ -100,23 +101,36 @@ class MqlVisitor(NodeVisitor):
 
         # Call that method, and show where in the tree it failed if it blows up.
         try:
-            return method(node, [self.visit(n) for n in node])
+            result = method(node, [self.visit(n) for n in node])
+            metric_query = self.formulate_metric_query(result)
+            return metric_query
         except Exception:
             raise Exception
+    def formulate_metric_query(self, result):
+        return result
 
     def visit_expression(self, node, children):
+        print('visited expression')
         expr, zero_or_more_others = children
-
-        for _, op, _, other in zero_or_more_others:
-            # In what cases will this be hit?
-            expr = Function(op, [expr, other])
-            raise InvalidQueryError("Invalid metrics syntax")
-
-        if isinstance(expr, Timeseries):
-            metric_query = MetricsQuery(query=expr)
-            return metric_query
-
+        output = {}
+        print(expr)
         return expr
+        # for child in children:
+        #     print(child)
+
+
+
+        # for _, op, _, other in zero_or_more_others:
+        #     # In what cases will this be hit?
+        #     expr = Function(op, [expr, other])
+        #     print(zero_or_more_others)
+        #     raise InvalidQueryError("Invalid metrics syntax")
+
+        # if isinstance(expr, Timeseries):
+        #     metric_query = MetricsQuery(query=expr)
+        #     return metric_query
+
+        return output
 
     def visit_expr_op(self, node, children):
         raise InvalidQueryError("Arithmetic function not supported")
@@ -124,11 +138,12 @@ class MqlVisitor(NodeVisitor):
 
     def visit_term(self, node, children):
         term, zero_or_more_others = children
-
-        for _, op, _, other in zero_or_more_others:
-            # In what cases will this be hit?
-            term = Function(op, [term, other])
-            raise InvalidQueryError("Invalid metrics syntax")
+        print('visited term')
+        print(children)
+        # for _, op, _, other in zero_or_more_others:
+        #     # In what cases will this be hit?
+        #     term = Function(op, [term, other])
+        #     raise InvalidQueryError("Invalid metrics syntax")
 
         return term
 
@@ -137,6 +152,8 @@ class MqlVisitor(NodeVisitor):
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(self, node, children):
+        print('visited coefficient')
+        print(children[0])
         return children[0]
 
     def visit_number(self, node, children):
@@ -144,24 +161,34 @@ class MqlVisitor(NodeVisitor):
 
     def visit_filter(self, node, children):
         target, zero_or_one = children
-
+        print('visited filter')
         if not zero_or_one:
             return target
-
+        print(children)
+        print(target)
         _, _, first, zero_or_more_others, _, _ = zero_or_one[0]
         filters = [first, *(v for _, _, _, v in zero_or_more_others)]
-        if isinstance(target, str):
-            # Timeseries object not created yet for metric so we need to create it
-            timeseries = Timeseries(metric=Metric(mri=target), aggregate=PLACEHOLDER, filters=filters)
-            return timeseries
-        elif isinstance(target, MetricsQuery):
-            # second time visiting which means this must be an outer filter
-            metrics_query = MetricsQuery(query=target, filters=filters)
-            return metrics_query
+        print(filters)
+        result = {"target": target, "filters": filters}
+        print(result)
+        return result
+
+
+        # if isinstance(target, str):
+        #     # Timeseries object not created yet for metric so we need to create it
+        #     timeseries = Timeseries(metric=Metric(mri=target), aggregate=PLACEHOLDER, filters=filters)
+        #     return timeseries
+        # elif isinstance(target, MetricsQuery):
+        #     # second time visiting which means this must be an outer filter
+        #     metrics_query = MetricsQuery(query=target, filters=filters)
+        #     return metrics_query
+        return children
 
     def visit_condition(self, node, children):
-        key_or_variable, _, op, _, rhs = children
-        return Condition(key_or_variable[0], op, rhs)
+        print('visited condition')
+        print(children)
+        lhs, _, op, _, rhs = children
+        return Condition(lhs[0], op, rhs)
 
     def visit_condition_op(self, node, children):
         return Op(node.text)
@@ -180,6 +207,8 @@ class MqlVisitor(NodeVisitor):
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
     def visit_target(self, node, children):
+        print('visiting target')
+        print(children)
         return children[0]
 
     def visit_variable(self, node, children):
@@ -190,13 +219,17 @@ class MqlVisitor(NodeVisitor):
 
     def visit_aggregate(self, node, children):
         aggregate_name, _, _, first, zero_or_more_others, _, _ = children
-
-        if isinstance(first, Timeseries):
-            timeseries = first.set_aggregate(aggregate_name)
-        elif isinstance(first, MetricsQuery):
+        first.update({"aggregate": aggregate_name})
+        print('visited aggregate')
+        print(first)
+        return first
+        if isinstance(first, MetricsQuery):
             metric_query = first.set_query(first.query.set_aggregate(aggregate_name))
             return metric_query
+        elif isinstance(first, Timeseries):
+            timeseries = first.set_aggregate(aggregate_name)
         else:
+            assert isinstance(first, str)
             timeseries = Timeseries(metric=Metric(mri=first), aggregate=aggregate_name)
         return timeseries
 

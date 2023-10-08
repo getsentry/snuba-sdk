@@ -14,7 +14,7 @@ def test_parse_expression2() -> None:
     expr = Function("sum", [MetricName("d:transactions/duration@millisecond")])
     result = parse_expression(dsl)
     print("final parsed expression")
-    print(result.__dict__)
+    print(result)
     # assert parse_expression(dsl) == expr
 
 def test_parse_expression3() -> None:
@@ -22,11 +22,19 @@ def test_parse_expression3() -> None:
     expr = Function("sum", [MetricName("d:transactions/duration@millisecond")])
     result = parse_expression(dsl)
     print("final parsed expression")
-    print(result.__dict__)
+    print(result)
+    # assert parse_expression(dsl) == expr
+
+def test_parse_expression4() -> None:
+    dsl = 'max(`d:transactions/duration@millisecond`{status_code=500}) by transaction'
+    expr = Function("sum", [MetricName("d:transactions/duration@millisecond")])
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
     # assert parse_expression(dsl) == expr
 
 
-def test_parse_expression4() -> None:
+def test_parse_expression6() -> None:
     dsl = '(count(transactions{satisfaction="satisfied"}) + count(transactions{satisfaction="tolerable"}) / 2) / count(transactions)'
     result = parse_expression(dsl)
     print("final parsed expression")
