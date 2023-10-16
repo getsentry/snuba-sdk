@@ -44,11 +44,16 @@ tag_key = ~"[a-zA-Z0-9_]+"
 tag_value = string / string_tuple / variable
 string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 string_tuple = "(" _ string (_ "," _ string)* _ ")"
-target = variable / quoted_metric / nested_expression / aggregate / unquoted_metric
+target = variable / nested_expression / function / metric
 variable = "$" ~"[a-zA-Z0-9_]+"
 nested_expression = "(" _ expression _ ")"
-aggregate = aggregate_name "(" _ expression (_ "," _ expression)* _ ")"
+function = aggregate (group_by)?
+aggregate = aggregate_name ("(" _ expression (_ "," _ expression)* _ ")")
 aggregate_name = ~"[a-zA-Z0-9_]+"
+group_by = _ "by" _ (group_by_name / group_by_name_tuple)
+group_by_name = ~"[a-zA-Z0-9_]+"
+group_by_name_tuple = "(" _ group_by_name (_ "," _ group_by_name)* _ ")"
+metric = quoted_metric / unquoted_metric
 quoted_metric = ~r'`([^`]*)`'
 unquoted_metric = ~"[a-zA-Z0-9_]+"
 _ = ~r"\s*"
@@ -144,8 +149,9 @@ class MqlVisitor(NodeVisitor):
         if not zero_or_one:
             return {"target": target}
         print(children)
+        print(zero_or_one)
         print(target)
-        _, _, first, zero_or_more_others, _, _ = zero_or_one[0]
+        _, _, first, zero_or_more_others, *_, = zero_or_one[0]
         filters = [first, *(v for _, _, _, v in zero_or_more_others)]
         print(filters)
         result = {"target": target, "filters": filters}
@@ -157,6 +163,25 @@ class MqlVisitor(NodeVisitor):
         print(children)
         lhs, _, op, _, rhs = children
         return Condition(lhs[0], op, rhs)
+
+    def visit_function(self, node, children):
+        print('visited function')
+        print(children)
+        target, zero_or_one = children
+        group_by = zero_or_one[0]
+        if isinstance(group_by, list):
+            target["groupby"] = group_by
+        else:
+            target["groupby"] = [group_by]
+        print(target)
+        return target
+
+    def visit_group_by(self, node, children):
+        print('visited group_by')
+        *_, group_by = children
+        print(children)
+        print(group_by[0])
+        return group_by[0]
 
     def visit_condition_op(self, node, children):
         return Op(node.text)
@@ -174,6 +199,18 @@ class MqlVisitor(NodeVisitor):
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
+    def visit_group_by_name(self, node, children):
+        print('visiting group_by_name')
+        return node.text
+
+    def visit_group_by_name_tuple(self, node, children):
+        _, _, first, zero_or_more_others, _, _ = children
+        print('visiting group_by_name_tuple')
+        print(children)
+        print(zero_or_more_others)
+        print([first, *(v for _, _, _, v in zero_or_more_others)])
+        return [first, *(v for _, _, _, v in zero_or_more_others)]
+
     def visit_target(self, node, children):
         print('visiting target')
         print(children)
@@ -186,9 +223,9 @@ class MqlVisitor(NodeVisitor):
         return children[2]
 
     def visit_aggregate(self, node, children):
-        aggregate_name, _, _, first, zero_or_more_others, _, _ = children
-        print('visited aggregate')
         print(children)
+        aggregate_name, zero_or_one = children
+        _, _, first, zero_or_more_others, *_ = zero_or_one
         assert isinstance(first, dict)
         first.update({"aggregate": aggregate_name})
         return first

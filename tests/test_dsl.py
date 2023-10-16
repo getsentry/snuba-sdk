@@ -114,7 +114,7 @@ def test_multiple_filters() -> None:
     # assert parse_expression(dsl) == expr
 
 
-def test_multi_layer_filters()) -> None:
+def test_multi_layer_filters() -> None:
     dsl = 'sum(`d:transactions/duration@millisecond`{foo="foz", hee="haw"}){bar="baz"}'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
@@ -130,14 +130,39 @@ def test_multi_layer_filters()) -> None:
 
 
 def test_group_by() -> None:
-    # TODO: need to implement this groupby
-    dsl = 'max(`d:transactions/duration@millisecond`{status_code=500}) by transaction'
+    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
             mri="d:transactions/duration@millisecond"),
         aggregate="max",
-        filters=[Condition(Column("status_code"), Op.EQ, 500)]),
+        filters=[Condition(Column("foo"), Op.EQ, "foz")]),
         groupby=[Column("transaction")]
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert parse_expression(dsl) == expr
+
+    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            mri="d:transactions/duration@millisecond"),
+        aggregate="max",
+        filters=[Condition(Column("foo"), Op.EQ, "foz")]),
+        groupby=[Column("transaction")]
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert parse_expression(dsl) == expr
+
+    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by (a, b)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            mri="d:transactions/duration@millisecond"),
+        aggregate="max",
+        filters=[Condition(Column("foo"), Op.EQ, "foz")]),
+        groupby=[Column("a"), Column("b")]
     )
     result = parse_expression(dsl)
     print("final parsed expression")
