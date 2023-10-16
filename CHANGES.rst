@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+
+2.0.5
+-----
+- Support the TOTALS clause in the Rollup of a MetricsQuery
+- Allow 10s granularity in MetricsQuery
+
+
 2.0.4
 -----
 - Fix a bug where the groupby on the MetricsQuery was not being serialized

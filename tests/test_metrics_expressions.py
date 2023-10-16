@@ -20,6 +20,7 @@ rollup_tests = [
             "orderby": "time ASC",
             "filter": "granularity = 60",
             "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
+            "with_totals": "",
         },
         None,
         id="1",
@@ -33,6 +34,7 @@ rollup_tests = [
             "orderby": "time ASC",
             "filter": "granularity = 60",
             "interval": "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`",
+            "with_totals": "",
         },
         None,
         id="2",
@@ -55,6 +57,7 @@ rollup_tests = [
             "orderby": "aggregate_value ASC",
             "filter": "granularity = 60",
             "interval": "",
+            "with_totals": "",
         },
         None,
         id="4",
@@ -79,13 +82,16 @@ rollup_tests = [
     ),
     pytest.param(
         60,
-        Totals(True),
+        True,
         None,
         60,
+        {
+            "orderby": "time ASC",
+            "filter": "granularity = 60",
+            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
+            "with_totals": "TOTALS True",
+        },
         None,
-        InvalidExpressionError(
-            "Only one of interval and totals can be set: Timeseries can't be rolled up by an interval and by a total"
-        ),
         id="7",
     ),
     pytest.param(

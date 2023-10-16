@@ -143,6 +143,31 @@ tests = [
         "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="aliased groupby",
     ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    "transaction.duration",
+                    "d:transactions/duration@millisecond",
+                    123,
+                    "metrics_sets",
+                ),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.99],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")],
+            rollup=Rollup(interval=60, granularity=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+        ),
+        "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC TOTALS True",
+        id="with totals",
+    ),
 ]
 
 
