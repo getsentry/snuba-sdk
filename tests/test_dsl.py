@@ -109,7 +109,7 @@ def test_filter() -> None:
     dsl = 'sum(foo){bar="baz"}'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
-            public_name="user"),
+            public_name="foo"),
         aggregate="sum"),
         filters=[Condition(Column("bar"), Op.EQ, "baz")]
     )
@@ -123,7 +123,7 @@ def test_in_filter() -> None:
     dsl = 'sum(foo){bar IN ("baz", "bap")}'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
-            public_name="user"),
+            public_name="foo"),
         aggregate="sum"),
         filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])]
     )
@@ -137,7 +137,7 @@ def test_filter_inside_aggregate() -> None:
     dsl = 'sum(foo{bar="baz"})'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
-            public_name="user"),
+            public_name="foo"),
         aggregate="sum",
         filters=[Condition(Column("bar"), Op.EQ, "baz")])
     )

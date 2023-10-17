@@ -29,31 +29,40 @@ GRAMMAR = Grammar(
     rf"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
+
 term = coefficient (_ term_op _ coefficient)*
 term_op = "*" / "/"
 coefficient = number / filter
+
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target ("{" _ condition (_ "," _ condition)* _ "}")?
+filter = target ("{{" _ condition (_ "," _ condition)* _ "}}")?
+
 condition = (variable / tag_key) _ condition_op _ tag_value
 condition_op = "=" / "!=" / "~" / "!~" / "IN" / "NOT IN"
 tag_key = ~"[a-zA-Z0-9_]+"
 tag_value = quoted_string / quoted_string_tuple / variable
+
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 quoted_string_tuple = "(" _ quoted_string (_ "," _ quoted_string)* _ ")"
+
 target = variable / nested_expression / function / metric
 variable = "$" ~"[a-zA-Z0-9_]+"
 nested_expression = "(" _ expression _ ")"
+
 function = aggregate (group_by)?
 aggregate = aggregate_name ("(" _ expression (_ "," _ expression)* _ ")")
 aggregate_name = ~"[a-zA-Z0-9_]+"
+
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~"[a-zA-Z0-9_]+"
 group_by_name_tuple = "(" _ group_by_name (_ "," _ group_by_name)* _ ")"
+
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = ~r'`{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}`'
 unquoted_mri = ~r'{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
 quoted_public_name = ~r'`([a-z_]+(?:\.[a-z_]+)*)`'
 unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
+
 _ = ~r"\s*"
 """
 )
@@ -145,7 +154,7 @@ class MqlVisitor(NodeVisitor):
         target, zero_or_one = children
         print('visited filter')
         if not zero_or_one:
-            return {"target": target}
+            return target
         print(children)
         print(zero_or_one)
         print(target)
@@ -193,7 +202,7 @@ class MqlVisitor(NodeVisitor):
         return children[0]
 
     def visit_quoted_string(self, node, children):
-        return node.text[1:-1]
+        return str(node.text[1:-1])
 
     def visit_quoted_string_tuple(self, node, children):
         _, _, first, zero_or_more_others, _, _ = children
