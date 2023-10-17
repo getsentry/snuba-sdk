@@ -6,7 +6,7 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, ConditionFunction, Op
 
 
-def test_quoted_name() -> None:
+def test_quoted_mri_name() -> None:
     dsl = 'sum(`d:transactions/duration@millisecond`)'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
@@ -19,8 +19,55 @@ def test_quoted_name() -> None:
     # assert result == metric_query
 
 
-def test_unquoted_name() -> None:
-    # TODO: assign metric name to public_name or mri depending on whether it's quoted?
+def test_unquoted_mri_name() -> None:
+    dsl = 'sum(`d:transactions/duration@millisecond`)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            mri="d:transactions/duration@millisecond"),
+        aggregate="sum")
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert result == metric_query
+
+
+def test_quoted_public_name() -> None:
+    dsl = 'sum(`transactions.duration`)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            public_name="transactions.duration"),
+        aggregate="sum")
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert result == metric_query
+
+    dsl = 'sum(`foo`)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            public_name="foo"),
+        aggregate="sum")
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert result == metric_query
+
+
+def test_unquoted_public_name() -> None:
+    dsl = 'sum(transactions.duration)'
+    metric_query = MetricsQuery(query=Timeseries(
+        metric=Metric(
+            public_name="transactions.duration"),
+        aggregate="sum")
+    )
+    result = parse_expression(dsl)
+    print("final parsed expression")
+    print(result)
+    # assert result == metric_query
+
     dsl = 'sum(foo)'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
