@@ -20,7 +20,7 @@ def test_quoted_mri_name() -> None:
 
 
 def test_unquoted_mri_name() -> None:
-    dsl = 'sum(`d:transactions/duration@millisecond`)'
+    dsl = 'sum(d:transactions/duration@millisecond)'
     metric_query = MetricsQuery(query=Timeseries(
         metric=Metric(
             mri="d:transactions/duration@millisecond"),

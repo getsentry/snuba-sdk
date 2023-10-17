@@ -18,19 +18,15 @@ from snuba_sdk.arithmetic import ArithmeticFunction
 from snuba_sdk.function import Function
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.column import Column
-from snuba_sdk.dsl.types import (
-    Filter,
-    # Function,
-    # InvalidMetricsQuery,
-    # MetricName,
-    # Tag,
-    Variable,
-)
+from snuba_sdk.dsl.types import Variable
 from snuba_sdk.metrics_query import MetricsQuery
 
-PLACEHOLDER = "PLACEHOLDER"
+ENTITY_TYPE_REGEX = r'(c|s|d|g|e)'
+NAMESPACE_REGEX = r'(transactions|errors|issues|sessions|alerts|custom|spans|escalating_issues)'
+MRI_NAME_REGEX = r'([a-z_]+(?:\.[a-z_]+)*)'
+UNIT_REGEX = r'([\w.]*)'
 GRAMMAR = Grammar(
-    r"""
+    rf"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
 term = coefficient (_ term_op _ coefficient)*
@@ -53,9 +49,11 @@ aggregate_name = ~"[a-zA-Z0-9_]+"
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~"[a-zA-Z0-9_]+"
 group_by_name_tuple = "(" _ group_by_name (_ "," _ group_by_name)* _ ")"
-metric = quoted_metric / unquoted_metric
-quoted_metric = ~r'`([^`]*)`'
-unquoted_metric = ~"[.a-zA-Z0-9_]+"
+metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
+quoted_mri = ~r'`{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}`'
+unquoted_mri = ~r'{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
+quoted_public_name = ~r'`([a-z_]+(?:\.[a-z_]+)*)`'
+unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
 _ = ~r"\s*"
 """
 )
@@ -216,6 +214,8 @@ class MqlVisitor(NodeVisitor):
     def visit_target(self, node, children):
         print('visiting target')
         print(children[0])
+        if isinstance(children[0], list):
+            return children[0][0]
         return children[0]
 
     def visit_variable(self, node, children):
@@ -235,15 +235,25 @@ class MqlVisitor(NodeVisitor):
     def visit_aggregate_name(self, node, children):
         return node.text
 
-    def visit_quoted_metric(self, node, children):
-        print("visited quoted metric")
-        print(node.text)
-        return str(node.text[1:-1])
+    def visit_quoted_mri(self, node, children):
+        print("visited quoted mri")
+        print({"metric_name": str(node.text[1:-1]), "metric_name_type": "mri"})
+        return {"metric_name": str(node.text[1:-1]), "metric_name_type": "mri"}
 
-    def visit_unquoted_metric(self, node, children):
-        print("visited unquoted metric")
-        print(node.text)
-        return str(node.text)
+    def visit_unquoted_mri(self, node, children):
+        print("visited unquoted mri")
+        print({"metric_name": str(node.text), "metric_name_type": "mri"})
+        return {"metric_name": str(node.text), "metric_name_type": "mri"}
+
+    def visit_quoted_public_name(self, node, children):
+        print("visited quoted public_name")
+        print({"metric_name": str(node.text[1:-1]), "metric_name_type": "public_name"})
+        return {"metric_name": str(node.text[1:-1]), "metric_name_type": "public_name"}
+
+    def visit_unquoted_public_name(self, node, children):
+        print("visited unquoted public_name")
+        print({"metric_name": str(node.text), "metric_name_type": "public_name"})
+        return {"metric_name": str(node.text), "metric_name_type": "public_name"}
 
     def visit_identifier(self, node, children):
         return node.text
