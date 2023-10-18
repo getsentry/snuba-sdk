@@ -144,6 +144,10 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             else ""
         )
 
+        totals_clause = ""
+        if rollup_data["with_totals"]:
+            totals_clause = rollup_data["with_totals"]
+
         return self.separator.join(
             [
                 self.match_clause.format(entity=entity),
@@ -151,6 +155,7 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
                 groupby_clause,
                 self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
                 orderby_clause,
+                totals_clause,
             ]
         ).strip()
 

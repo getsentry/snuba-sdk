@@ -5,7 +5,7 @@ from typing import Any, Generic, Mapping, TypeVar
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, ConditionGroup, Op
-from snuba_sdk.expressions import InvalidExpressionError
+from snuba_sdk.expressions import InvalidExpressionError, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
@@ -167,6 +167,7 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
 
         interval = ""
         orderby = ""
+        with_totals = ""
         if rollup.interval:
             interval_exp = Function(
                 "toStartOfInterval",
@@ -180,6 +181,8 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
             interval = self.translator.visit(interval_exp)
             orderby_exp = OrderBy(Column("time"), Direction.ASC)
             orderby = self.translator.visit(orderby_exp)
+            if rollup.totals:
+                with_totals = f"TOTALS {self.translator.visit(Totals(rollup.totals))}"
         elif rollup.orderby is not None:
             orderby_exp = OrderBy(Column(AGGREGATE_ALIAS), rollup.orderby)
             orderby = self.translator.visit(orderby_exp)
@@ -188,6 +191,7 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
             "orderby": orderby,
             "filter": self.translator.visit(condition),
             "interval": interval,
+            "with_totals": with_totals,
         }
 
 
