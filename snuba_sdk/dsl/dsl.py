@@ -3,14 +3,13 @@ Contains the definition of MQL, the Metrics Query Language.
 Use ``parse_expression` to parse an MQL string into an expression.
 """
 
-from typing import Mapping
+from typing import Mapping, Any, Dict, List, Sequence, Optional, Union
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
-from parsimonious.nodes import NodeVisitor
+from parsimonious.nodes import Node, NodeVisitor
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries, Metric
 
-# from sentry.utils.strings import unescape_string
 from snuba_sdk.query import Query
 from snuba_sdk.conditions import Condition, ConditionFunction, Op
 from snuba_sdk.expressions import Expression
@@ -21,10 +20,13 @@ from snuba_sdk.column import Column
 from snuba_sdk.dsl.types import Variable
 from snuba_sdk.metrics_query import MetricsQuery
 
-ENTITY_TYPE_REGEX = r'(c|s|d|g|e)'
-NAMESPACE_REGEX = r'(transactions|errors|issues|sessions|alerts|custom|spans|escalating_issues)'
-MRI_NAME_REGEX = r'([a-z_]+(?:\.[a-z_]+)*)'
-UNIT_REGEX = r'([\w.]*)'
+AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
+ENTITY_TYPE_REGEX = r"(c|s|d|g|e)"
+NAMESPACE_REGEX = (
+    r"(transactions|errors|issues|sessions|alerts|custom|spans|escalating_issues)"
+)
+MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
+UNIT_REGEX = r"([\w.]*)"
 GRAMMAR = Grammar(
     rf"""
 expression = term (_ expr_op _ term)*
@@ -35,7 +37,7 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target ("{{" _ condition (_ "," _ condition)* _ "}}")?
+filter = target ("{{" _ condition (_ "," _ condition)* _ "}}")? (group_by)?
 
 condition = (variable / tag_key) _ condition_op _ tag_value
 condition_op = "=" / "!=" / "~" / "!~" / "IN" / "NOT IN"
@@ -77,7 +79,8 @@ TERM_OPERATORS: Mapping[str, str] = {
     "/": ArithmeticFunction.DIVIDE.value,
 }
 
-def parse_expression(mql: str) -> Expression:
+
+def parse_expression(mql: str) -> MetricsQuery:
     """
     Parse a metrics expression from a string.
     """
@@ -87,15 +90,12 @@ def parse_expression(mql: str) -> Expression:
         print(tree)
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
-    print('done parsing')
+    print("done parsing")
     return MqlVisitor().visit(tree)
 
 
-# TODO: Need to determine whether or not target is a MRI and public name
-# - match group by clause
-
 class MqlVisitor(NodeVisitor):
-    def visit(self, node):
+    def visit(self, node: Node) -> MetricsQuery:
         """Walk a parse tree, transforming it into another representation.
 
         Recursively descend a parse tree, dispatching to the method named after
@@ -109,164 +109,188 @@ class MqlVisitor(NodeVisitor):
         methods.
 
         """
-        method = getattr(self, 'visit_' + node.expr_name, self.generic_visit)
+        method = getattr(self, "visit_" + node.expr_name, self.generic_visit)
 
         # Call that method, and show where in the tree it failed if it blows up.
         try:
             result = method(node, [self.visit(n) for n in node])
-            metric_query = self.formulate_metric_query(result)
-            return metric_query
+            return result
         except Exception:
             raise Exception
-    def formulate_metric_query(self, result):
-        return result
 
-    def visit_expression(self, node, children):
+    def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
         expr, zero_or_more_others = children
-        print('visited expression')
-        print(expr)
+        if isinstance(expr, Timeseries):
+            return MetricsQuery(query=expr)
+        print("visited expression")
         return expr
 
-
-    def visit_expr_op(self, node, children):
+    def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Arithmetic function not supported")
         return EXPRESSION_OPERATORS[node.text]
 
-    def visit_term(self, node, children):
+    def visit_term(self, node: Node, children: Sequence[Any]) -> Any:
         term, zero_or_more_others = children
-        print('visited term')
+        print("visited term")
         print(children)
         return term
 
-    def visit_term_op(self, node, children):
+    def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Arithmetic function not supported")
         return TERM_OPERATORS[node.text]
 
-    def visit_coefficient(self, node, children):
-        print('visited coefficient')
-        print(children[0])
+    def visit_coefficient(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visited coefficient")
         return children[0]
 
-    def visit_number(self, node, children):
+    def visit_number(self, node: Node, children: Sequence[Any]) -> Any:
         return float(node.text)
 
-    def visit_filter(self, node, children):
-        target, zero_or_one = children
-        print('visited filter')
-        if not zero_or_one:
+    def visit_filter(self, node: Node, children: Sequence[Any]) -> Any:
+        target, packed_filters, packed_group_bys, *_ = children
+        print("visited filter")
+        if not packed_filters and not packed_group_bys:
             return target
         print(children)
-        print(zero_or_one)
-        print(target)
-        _, _, first, zero_or_more_others, *_, = zero_or_one[0]
-        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
-        print(filters)
-        result = {"target": target, "filters": filters}
-        print(result)
-        return result
+        print(packed_filters)
+        print(packed_group_bys)
+        if packed_filters:
+            (
+                _,
+                _,
+                first,
+                zero_or_more_others,
+                *_,
+            ) = packed_filters[0]
+            filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+            print(filters)
+            target = target.set_filters(filters)
+        if packed_group_bys:
+            group_bys = packed_group_bys[0]
+            print("ya")
+            print(type(target))
+            if isinstance(target, Timeseries):
+                target = MetricsQuery(query=target, groupby=group_bys)
+            else:
+                target = target.set_groupby(group_bys)
+        return target
 
-    def visit_condition(self, node, children):
-        print('visited condition')
+    def visit_condition(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visited condition")
         print(children)
         lhs, _, op, _, rhs = children
         return Condition(lhs[0], op, rhs)
 
-    def visit_function(self, node, children):
-        print('visited function')
+    def visit_function(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visited function")
         print(children)
-        target, zero_or_one = children
-        if len(zero_or_one) > 0:
-            group_by = zero_or_one[0]
-            if isinstance(group_by, list):
-                target["groupby"] = group_by
-            else:
-                target["groupby"] = [group_by]
-        print(target)
+        target, packed_group_by = children
+        if len(packed_group_by) > 0:
+            group_by = packed_group_by[0]
+            if not isinstance(group_by, list):
+                group_by = [group_by]
+            if isinstance(target, MetricsQuery):
+                return target.set_groupby(group_by)
+            if isinstance(target, Timeseries):
+                return MetricsQuery(query=target, groupby=group_by)
         return target
 
-
-    def visit_group_by(self, node, children):
-        print('visited group_by')
+    def visit_group_by(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visited group_by")
         *_, group_by = children
         print(children)
         print(group_by[0])
         return group_by[0]
 
-    def visit_condition_op(self, node, children):
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Any:
         return Op(node.text)
 
-    def visit_tag_key(self, node, children):
+    def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Any:
         return Column(node.text)
 
-    def visit_tag_value(self, node, children):
+    def visit_tag_value(self, node: Node, children: Sequence[Any]) -> Any:
         return children[0]
 
-    def visit_quoted_string(self, node, children):
+    def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> Any:
         return str(node.text[1:-1])
 
-    def visit_quoted_string_tuple(self, node, children):
+    def visit_quoted_string_tuple(self, node: Node, children: Sequence[Any]) -> Any:
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
-    def visit_group_by_name(self, node, children):
-        print('visiting group_by_name')
+    def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visiting group_by_name")
         return Column(node.text)
 
-    def visit_group_by_name_tuple(self, node, children):
+    def visit_group_by_name_tuple(self, node: Node, children: Sequence[Any]) -> Any:
         _, _, first, zero_or_more_others, _, _ = children
-        print('visiting group_by_name_tuple')
+        print("visiting group_by_name_tuple")
         print(children)
         print(zero_or_more_others)
         print([first, *(v for _, _, _, v in zero_or_more_others)])
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
-    def visit_target(self, node, children):
-        print('visiting target')
-        print(children[0])
+    def visit_target(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visiting target")
+        print(children)
+        target = children[0]
         if isinstance(children[0], list):
-            return children[0][0]
-        return children[0]
+            target = children[0][0]
+        print("shamone")
+        print(type(target))
+        if isinstance(target, Metric):
+            timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
+            return timeseries
+        return target
 
-    def visit_variable(self, node, children):
+    def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
         return Variable(node.text[1:])
 
-    def visit_nested_expression(self, node, children):
+    def visit_nested_expression(self, node: Node, children: Sequence[Any]) -> Any:
         return children[2]
 
-    def visit_aggregate(self, node, children):
+    def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Any:
+        print("visted aggregate")
         print(children)
         aggregate_name, zero_or_one = children
-        _, _, first, zero_or_more_others, *_ = zero_or_one
-        assert isinstance(first, dict)
-        first.update({"aggregate": aggregate_name})
-        return first
+        _, _, target, zero_or_more_others, *_ = zero_or_one
+        if isinstance(target, Timeseries):
+            return target.set_aggregate(aggregate_name)
+        if isinstance(target, MetricsQuery):
+            assert target.query is not None
+            return target.set_query(target.query.set_aggregate(aggregate_name))
+        return target
 
-    def visit_aggregate_name(self, node, children):
+    def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> Any:
         return node.text
 
-    def visit_quoted_mri(self, node, children):
+    def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Any:
         print("visited quoted mri")
-        print({"metric_name": str(node.text[1:-1]), "metric_name_type": "mri"})
-        return {"metric_name": str(node.text[1:-1]), "metric_name_type": "mri"}
+        metric = Metric(mri=str(node.text[1:-1]))
+        print(metric)
+        return metric
 
-    def visit_unquoted_mri(self, node, children):
+    def visit_unquoted_mri(self, node: Node, children: Sequence[Any]) -> Any:
         print("visited unquoted mri")
-        print({"metric_name": str(node.text), "metric_name_type": "mri"})
-        return {"metric_name": str(node.text), "metric_name_type": "mri"}
+        metric = Metric(mri=str(node.text))
+        print(metric)
+        return metric
 
-    def visit_quoted_public_name(self, node, children):
+    def visit_quoted_public_name(self, node: Node, children: Sequence[Any]) -> Any:
         print("visited quoted public_name")
-        print({"metric_name": str(node.text[1:-1]), "metric_name_type": "public_name"})
-        return {"metric_name": str(node.text[1:-1]), "metric_name_type": "public_name"}
+        metric = Metric(public_name=str(node.text[1:-1]))
+        print(metric)
+        return metric
 
-    def visit_unquoted_public_name(self, node, children):
+    def visit_unquoted_public_name(self, node: Node, children: Sequence[Any]) -> Any:
         print("visited unquoted public_name")
-        print({"metric_name": str(node.text), "metric_name_type": "public_name"})
-        return {"metric_name": str(node.text), "metric_name_type": "public_name"}
+        metric = Metric(public_name=str(node.text))
+        print(metric)
+        return metric
 
-    def visit_identifier(self, node, children):
+    def visit_identifier(self, node: Node, children: Sequence[Any]) -> Any:
         return node.text
 
-    def generic_visit(self, node, children):
+    def generic_visit(self, node: Node, children: Sequence[Any]) -> Any:
         """The generic visit method."""
         return children
