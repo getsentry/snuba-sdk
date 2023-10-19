@@ -117,8 +117,13 @@ rollup_tests = [
         None,
         None,
         None,
+        {
+            "orderby": "time ASC",
+            "filter": "",
+            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
+            "with_totals": "",
+        },
         None,
-        InvalidExpressionError("granularity must be an integer"),
         id="10",
     ),
     pytest.param(

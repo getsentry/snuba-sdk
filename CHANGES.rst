@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.6
+-----
+- Make the `granularity` field optional in the Rollup, so that it can
+  be automatically inferred by the API layer
+
 
 2.0.5
 -----

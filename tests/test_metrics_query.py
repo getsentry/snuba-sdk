@@ -419,6 +419,31 @@ invalid_tests = [
         InvalidMetricsQueryError("scope must be a MetricsScope object"),
         id="bad scope type",
     ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    "transaction.duration",
+                    "d:transactions/duration@millisecond",
+                    123,
+                    "metrics_sets",
+                ),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.99],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")],
+            rollup=Rollup(interval=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+        ),
+        InvalidMetricsQueryError("granularity must be set on the rollup"),
+        id="granularity must be present",
+    ),
 ]
 
 
