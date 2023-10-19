@@ -1,9 +1,9 @@
 """
 Contains the definition of MQL, the Metrics Query Language.
-Use ``parse_expression` to parse an MQL string into an expression.
+Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Mapping, Any, Sequence, TypeVar
+from typing import Any, Mapping, Sequence
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
@@ -15,9 +15,8 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.function import Function
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
-from snuba_sdk.timeseries import Timeseries, Metric
+from snuba_sdk.timeseries import Metric, Timeseries
 
-T = TypeVar("T")
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 ENTITY_TYPE_REGEX = r"(c|s|d|g|e)"
@@ -79,7 +78,7 @@ TERM_OPERATORS: Mapping[str, str] = {
 }
 
 
-def parse_expression(mql: str) -> MetricsQuery:
+def parse_mql(mql: str) -> MetricsQuery:
     """
     Parse a MQL string into a MetricsQuery object.
     """
@@ -87,12 +86,12 @@ def parse_expression(mql: str) -> MetricsQuery:
         tree = GRAMMAR.parse(mql.strip())
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
-    result = MqlVisitor().visit(tree)
+    result = MQLlVisitor().visit(tree)
     assert isinstance(result, MetricsQuery)
     return result
 
 
-class MqlVisitor(NodeVisitor[T]):
+class MQLlVisitor(NodeVisitor):
     def visit(self, node: Node) -> Any:
         """Walk a parse tree, transforming it into a MetricsQuery object.
 
@@ -105,8 +104,6 @@ class MqlVisitor(NodeVisitor[T]):
         ...the ``visit_bold()`` method would be called.
         """
         method = getattr(self, "visit_" + node.expr_name, self.generic_visit)
-
-        # Call that method, and show where in the tree it failed if it blows up.
         try:
             result = method(node, [self.visit(n) for n in node])
             return result
@@ -133,6 +130,9 @@ class MqlVisitor(NodeVisitor[T]):
         return timeseries.set_filters(combined_filters).set_groupby(combined_groupby)
 
     def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Top level node, wraps the expression in a MetricsQuery object.
+        """
         expr, zero_or_more_others = children
         if isinstance(expr, Timeseries) or isinstance(expr, Function):
             return MetricsQuery(query=expr)
@@ -143,13 +143,18 @@ class MqlVisitor(NodeVisitor[T]):
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Checks if the current node contains two term children, if so
+        then merge them into a single Function with the operator. If the
+        children are MetricQuery objects, then collapse them into a Timeseries first.
+        """
         term, zero_or_more_others = children
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
-            if isinstance(coefficient, MetricsQuery):
-                coefficient = self.collapse_into_timeseries(coefficient)
             if isinstance(term, MetricsQuery):
                 term = self.collapse_into_timeseries(term)
+            if isinstance(coefficient, MetricsQuery):
+                coefficient = self.collapse_into_timeseries(coefficient)
             function = Function(term_operator, [term, coefficient])
             return MetricsQuery(query=function)
         return term
@@ -165,13 +170,17 @@ class MqlVisitor(NodeVisitor[T]):
         return float(node.text)
 
     def visit_filter(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Given a target (which could be either a MetricsQuery or Timeseries object),
+        and set its children filters and groupbys on it.
+        """
         target, packed_filters, packed_groupbys, *_ = children
         if not packed_filters and not packed_groupbys:
             return target
+        assert isinstance(target, MetricsQuery) or isinstance(target, Timeseries)
         if packed_filters:
             _, _, first, zero_or_more_others, *_ = packed_filters[0]
             filters = [first, *(v for _, _, _, v in zero_or_more_others)]
-            assert isinstance(target, MetricsQuery) or isinstance(target, Timeseries)
             current_filters = target.filters if target.filters else []
             filters.extend(current_filters)
             target = target.set_filters(filters)
@@ -179,10 +188,9 @@ class MqlVisitor(NodeVisitor[T]):
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
                 group_by = [group_by]
-            if isinstance(target, Timeseries):
-                target = MetricsQuery(query=target, groupby=group_by)
-            if isinstance(target, MetricsQuery):
-                target = target.set_groupby(group_by)
+            current_groupby = target.groupby if target.groupby else []
+            group_by.extend(current_groupby)
+            target = target.set_groupby(group_by)
         return target
 
     def visit_condition(self, node: Node, children: Sequence[Any]) -> Any:
@@ -190,16 +198,19 @@ class MqlVisitor(NodeVisitor[T]):
         return Condition(lhs[0], op, rhs)
 
     def visit_function(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Given an target (which could be either a MetricsQuery or Timeseries object),
+        and set its children filters and groupbys on it.
+        """
         target, packed_groupbys = children
-        if len(packed_groupbys) > 0:
+        assert isinstance(target, MetricsQuery) or isinstance(target, Timeseries)
+        if packed_groupbys:
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
                 group_by = [group_by]
-            if isinstance(target, MetricsQuery):
-                assert target.query is not None and isinstance(target.query, Timeseries)
-                return target.set_query(target.query.set_groupby(group_by))
-            if isinstance(target, Timeseries):
-                return MetricsQuery(query=target, groupby=group_by)
+            current_groupby = target.groupby if target.groupby else []
+            group_by.extend(current_groupby)
+            target = target.set_groupby(group_by)
         return target
 
     def visit_group_by(self, node: Node, children: Sequence[Any]) -> Any:
@@ -230,10 +241,14 @@ class MqlVisitor(NodeVisitor[T]):
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
     def visit_target(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Given a target (which is a Metric object), create a Timeseries object and return it.
+        """
         target = children[0]
         if isinstance(children[0], list):
             target = children[0][0]
         if isinstance(target, Metric):
+            # it visit the aggregate name furthur down the tree, for now just set it to a placeholder.
             timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
             return timeseries
         return target
@@ -245,6 +260,10 @@ class MqlVisitor(NodeVisitor[T]):
         return children[2]
 
     def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Any:
+        """
+        Given a target (which is either a MetricsQuery or Timeseries object),
+        set the aggregate on it.
+        """
         aggregate_name, zero_or_one = children
         _, _, target, zero_or_more_others, *_ = zero_or_one
         if isinstance(target, Timeseries):
