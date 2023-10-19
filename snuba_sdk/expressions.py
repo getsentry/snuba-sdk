@@ -26,7 +26,7 @@ ALIAS_RE = re.compile(r"^[a-zA-Z0-9_\.\+\*\/:\-\[\]\(\)\@]*$")
 # For type hinting
 ScalarLiteralType = Union[None, bool, str, bytes, float, int, date, datetime]
 ScalarSequenceType = Sequence[Union[Expression, ScalarLiteralType]]
-ScalarType = Union[ScalarLiteralType, ScalarSequenceType]
+ScalarType = Union[ScalarLiteralType, ScalarSequenceType, Expression]
 
 # For type checking
 Scalar: set[type] = {

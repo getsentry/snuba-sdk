@@ -1,3 +1,5 @@
+import pytest
+
 from snuba_sdk.dsl.dsl import parse_expression
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.timeseries import Timeseries, Metric
@@ -45,7 +47,6 @@ def test_quoted_public_name() -> None:
 def test_unquoted_public_name() -> None:
     dsl = "sum(transactions.duration)"
     result = parse_expression(dsl)
-    print(result.__dict__)
     assert result == MetricsQuery(
         query=Timeseries(
             metric=Metric(public_name="transactions.duration"), aggregate="sum"
@@ -137,14 +138,13 @@ def test_multi_layer_filters() -> None:
 def test_group_by() -> None:
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction'
     result = parse_expression(dsl)
-    print(result.__dict__)
     assert result == MetricsQuery(
         query=Timeseries(
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="max",
             filters=[Condition(Column("foo"), Op.EQ, "foz")],
+            groupby=[Column("transaction")],
         ),
-        groupby=[Column("transaction")],
     )
 
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)'
@@ -154,8 +154,8 @@ def test_group_by() -> None:
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="max",
             filters=[Condition(Column("foo"), Op.EQ, "foz")],
+            groupby=[Column("transaction")],
         ),
-        groupby=[Column("transaction")],
     )
 
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)'
@@ -171,10 +171,10 @@ def test_group_by() -> None:
     )
 
 
+@pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
     dsl = "sum(foo) / 1000"
     result = parse_expression(dsl)
-    print(result.__dict__)
     assert result == MetricsQuery(
         query=Function(
             "divide",
@@ -190,7 +190,6 @@ def test_terms() -> None:
 
     dsl = "sum(foo) * sum(bar)"
     result = parse_expression(dsl)
-    print(result.__dict__)
     assert result == MetricsQuery(
         query=Function(
             "multiply",
@@ -208,6 +207,7 @@ def test_terms() -> None:
     )
 
 
+@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
     result = parse_expression(dsl)
@@ -249,6 +249,7 @@ def test_terms_with_filters() -> None:
     )
 
 
+@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_groupby() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
     result = parse_expression(dsl)
