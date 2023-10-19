@@ -30,7 +30,7 @@ class MetricsQuery(BaseQuery):
 
     # TODO: This should support some kind of calculation. Simply using Function
     # causes import loop problems.
-    query: Timeseries | None = None
+    query: Timeseries | Function | None = None
     filters: ConditionGroup | None = None
     groupby: list[Column | AliasedExpression] | None = None
     start: datetime | None = None

@@ -72,3 +72,8 @@ class Column(Expression):
             raise InvalidColumnError(
                 f"entity '{entity.name}' does not support the column '{self.name}'"
             )
+
+
+@dataclass(frozen=True)
+class Variable(Column):
+    pass

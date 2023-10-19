@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping, Optional, Sequence, Union
+from typing import Mapping, Optional, Union, List
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (
@@ -62,6 +62,7 @@ OPERATOR_TO_FUNCTION: Mapping[Op, ConditionFunction] = {
     Op.LIKE: ConditionFunction.LIKE,
     Op.NOT_LIKE: ConditionFunction.NOT_LIKE,
 }
+
 
 def is_unary(op: Op) -> bool:
     return op in [Op.IS_NULL, Op.IS_NOT_NULL]
@@ -141,7 +142,7 @@ class Or(BooleanCondition):
     conditions: ConditionGroup = field(default_factory=list)
 
 
-ConditionGroup = Sequence[Union[BooleanCondition, Condition]]
+ConditionGroup = List[Union[BooleanCondition, Condition]]
 
 
 def get_first_level_and_conditions(conditions: ConditionGroup) -> ConditionGroup:

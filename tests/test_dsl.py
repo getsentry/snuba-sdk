@@ -3,6 +3,7 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.timeseries import Timeseries, Metric
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.function import Function
 
 
 def test_quoted_mri_name() -> None:
@@ -44,6 +45,7 @@ def test_quoted_public_name() -> None:
 def test_unquoted_public_name() -> None:
     dsl = "sum(transactions.duration)"
     result = parse_expression(dsl)
+    print(result.__dict__)
     assert result == MetricsQuery(
         query=Timeseries(
             metric=Metric(public_name="transactions.duration"), aggregate="sum"
@@ -166,4 +168,209 @@ def test_group_by() -> None:
         ),
         filters=[Condition(Column("bar"), Op.EQ, "baz")],
         groupby=[Column("a"), Column("b")],
+    )
+
+
+def test_terms() -> None:
+    dsl = "sum(foo) / 1000"
+    result = parse_expression(dsl)
+    print(result.__dict__)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                ),
+                1000.0,
+            ],
+        )
+    )
+
+    dsl = "sum(foo) * sum(bar)"
+    result = parse_expression(dsl)
+    print(result.__dict__)
+    assert result == MetricsQuery(
+        query=Function(
+            "multiply",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                ),
+            ],
+        )
+    )
+
+
+def test_terms_with_filters() -> None:
+    dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                ),
+            ],
+        ),
+        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+    )
+
+    dsl = 'sum(foo{tag="tag_value"}) / sum(bar{tag="tag_value"})'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                ),
+            ],
+        ),
+    )
+
+
+def test_terms_with_groupby() -> None:
+    dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                ),
+            ],
+        ),
+        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+        groupby=[Column("transaction")],
+    )
+
+    dsl = "(sum(foo) by transaction / sum(bar) by transaction)"
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                    groupby=[Column("transaction")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                    groupby=[Column("transaction")],
+                ),
+            ],
+        ),
+    )
+
+    dsl = '(sum(foo) by transaction / sum(bar) by transaction){tag="tag_value"}'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                    groupby=[Column("transaction")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                    groupby=[Column("transaction")],
+                ),
+            ],
+        ),
+        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+    )
+
+    dsl = '(sum(foo{tag="tag_value"}) by transaction) / (sum(bar{tag="tag_value"}) by transaction)'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    groupby=[Column("transaction")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    groupby=[Column("transaction")],
+                ),
+            ],
+        ),
+    )
+
+    dsl = '(sum(foo){tag="tag_value"}) by transaction / (sum(bar){tag="tag_value"}) by transaction'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    groupby=[Column("transaction")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    groupby=[Column("transaction")],
+                ),
+            ],
+        ),
+    )
+
+    dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    result = parse_expression(dsl)
+    assert result == MetricsQuery(
+        query=Function(
+            "divide",
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo"),
+                    aggregate="sum",
+                ),
+                Timeseries(
+                    metric=Metric(public_name="bar"),
+                    aggregate="sum",
+                ),
+            ],
+        ),
+        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+        groupby=[Column("transaction")],
     )
