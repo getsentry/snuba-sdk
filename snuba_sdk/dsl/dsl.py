@@ -35,7 +35,7 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target ("{{" _ condition (_ "," _ condition)* _ "}}")? (group_by)?
+filter = target (open_brace _ condition (_ comma _ condition)* _ close_brace)? (group_by)?
 
 condition = (variable / tag_key) _ condition_op _ tag_value
 condition_op = "=" / "!=" / "~" / "!~" / "IN" / "NOT IN"
@@ -43,26 +43,32 @@ tag_key = ~"[a-zA-Z0-9_]+"
 tag_value = quoted_string / quoted_string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-quoted_string_tuple = "(" _ quoted_string (_ "," _ quoted_string)* _ ")"
+quoted_string_tuple = open_paren _ quoted_string (_ comma _ quoted_string)* _ close_paren
 
 target = variable / nested_expression / function / metric
 variable = "$" ~"[a-zA-Z0-9_]+"
-nested_expression = "(" _ expression _ ")"
+nested_expression = open_paren _ expression _ close_paren
 
 function = aggregate (group_by)?
-aggregate = aggregate_name ("(" _ expression (_ "," _ expression)* _ ")")
+aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
 aggregate_name = ~"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~"[a-zA-Z0-9_]+"
-group_by_name_tuple = "(" _ group_by_name (_ "," _ group_by_name)* _ ")"
+group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
-quoted_mri = ~r'`{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}`'
+quoted_mri = backtick unquoted_mri backtick
 unquoted_mri = ~r'{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
-quoted_public_name = ~r'`([a-z_]+(?:\.[a-z_]+)*)`'
+quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
 
+open_paren = "("
+close_paren = ")"
+open_brace = "{{"
+close_brace = "}}"
+comma = ","
+backtick = "`"
 _ = ~r"\s*"
 """
 )
@@ -112,7 +118,7 @@ class MQLlVisitor(NodeVisitor):
 
     def collapse_into_timeseries(self, metric_query: MetricsQuery) -> Timeseries:
         """
-        Collpases the filters and groupbys of a MetricsQuery into the Timeseries object.
+        Collapses the filters and groupbys of a MetricsQuery into the Timeseries object.
         """
         metric_query_filters = metric_query.filters if metric_query.filters else []
         metric_query_groupby = metric_query.groupby if metric_query.groupby else []
