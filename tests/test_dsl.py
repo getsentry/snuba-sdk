@@ -147,6 +147,17 @@ def test_group_by() -> None:
         groupby=[Column("transaction")],
     )
 
+    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)'
+    result = parse_mql(dsl)
+    assert result == MetricsQuery(
+        query=Timeseries(
+            metric=Metric(mri="d:transactions/duration@millisecond"),
+            aggregate="max",
+            filters=[Condition(Column("foo"), Op.EQ, "foz")],
+            groupby=[Column("transaction")],
+        ),
+    )
+
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)'
     result = parse_mql(dsl)
     assert result == MetricsQuery(

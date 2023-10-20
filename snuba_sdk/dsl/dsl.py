@@ -10,7 +10,7 @@ from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.arithmetic import ArithmeticFunction
-from snuba_sdk.column import Column, Variable
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.function import Function
 from snuba_sdk.metrics_query import MetricsQuery
@@ -19,10 +19,8 @@ from snuba_sdk.timeseries import Metric, Timeseries
 
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
-ENTITY_TYPE_REGEX = r"(c|s|d|g|e)"
-NAMESPACE_REGEX = (
-    r"(transactions|errors|issues|sessions|alerts|custom|spans|escalating_issues)"
-)
+METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
+NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
 MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
 UNIT_REGEX = r"([\w.]*)"
 GRAMMAR = Grammar(
@@ -59,7 +57,7 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r'{ENTITY_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
+unquoted_mri = ~r'{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
 
@@ -113,8 +111,8 @@ class MQLlVisitor(NodeVisitor):
         try:
             result = method(node, [self.visit(n) for n in node])
             return result
-        except Exception:
-            raise Exception
+        except Exception as e:
+            raise e
 
     def collapse_into_timeseries(self, metric_query: MetricsQuery) -> Timeseries:
         """
@@ -206,10 +204,10 @@ class MQLlVisitor(NodeVisitor):
     def visit_function(self, node: Node, children: Sequence[Any]) -> Any:
         """
         Given an target (which could be either a MetricsQuery or Timeseries object),
-        and set its children filters and groupbys on it.
+        and set its children groupbys on it.
         """
         target, packed_groupbys = children
-        assert isinstance(target, MetricsQuery) or isinstance(target, Timeseries)
+        assert isinstance(target, MetricsQuery)
         if packed_groupbys:
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
