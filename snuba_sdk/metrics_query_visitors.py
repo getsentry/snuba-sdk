@@ -250,6 +250,12 @@ class Validator(MetricsQueryVisitor[None]):
             raise InvalidMetricsQueryError("rollup is required for a metrics query")
         elif not isinstance(rollup, Rollup):
             raise InvalidMetricsQueryError("rollup must be a Rollup object")
+
+        # Since the granularity is inferred by the API, it can be initially None, but must be present when
+        # the query is ultimately serialized and sent to Snuba.
+        if rollup.granularity is None:
+            raise InvalidMetricsQueryError("granularity must be set on the rollup")
+
         rollup.validate()
         return {}
 

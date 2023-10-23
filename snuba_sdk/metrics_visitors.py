@@ -159,11 +159,13 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
         self.translator = translator or Translation()
 
     def visit(self, rollup: Rollup) -> Mapping[str, str]:
-        condition = Condition(
-            lhs=Column("granularity"),
-            op=Op.EQ,
-            rhs=rollup.granularity,
-        )
+        condition = None
+        if rollup.granularity is not None:
+            condition = Condition(
+                lhs=Column("granularity"),
+                op=Op.EQ,
+                rhs=rollup.granularity,
+            )
 
         interval = ""
         orderby = ""
@@ -189,7 +191,7 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
 
         return {
             "orderby": orderby,
-            "filter": self.translator.visit(condition),
+            "filter": self.translator.visit(condition) if condition else "",
             "interval": interval,
             "with_totals": with_totals,
         }

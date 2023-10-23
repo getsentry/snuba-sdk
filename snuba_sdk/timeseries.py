@@ -189,10 +189,7 @@ class Rollup:
     def validate(self) -> None:
         # The interval is used to determine how the timestamp is rolled up in the group by of the query.
         # The granularity is separate since it ultimately determines which data we retrieve.
-        # At a future point the granularity might be able to be inferred based on other attributes
-        # e.g. for totals queries, pick the highest possible granularity. For now it must be specified.
-        if self.granularity is None or self.granularity not in ALLOWED_GRANULARITIES:
-            # TODO: This could possibly be inferred from the interval, for now it's hardcoded
+        if self.granularity and self.granularity not in ALLOWED_GRANULARITIES:
             raise InvalidExpressionError(
                 f"granularity must be an integer and one of {ALLOWED_GRANULARITIES}"
             )
@@ -201,7 +198,7 @@ class Rollup:
             _validate_int_literal(
                 "interval", self.interval, 10, None
             )  # Minimum 10 seconds
-            if self.interval < self.granularity:
+            if self.granularity is not None and self.interval < self.granularity:
                 raise InvalidExpressionError(
                     "interval must be greater than or equal to granularity"
                 )
