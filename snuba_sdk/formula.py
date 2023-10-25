@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional, Sequence, Union
 
-from snuba_sdk.column import Column
-from snuba_sdk.expressions import Expression, InvalidExpressionError
 from snuba_sdk.aliased_expression import AliasedExpression
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import ConditionGroup
+from snuba_sdk.expressions import Expression, InvalidExpressionError
 from snuba_sdk.timeseries import Timeseries
 
 

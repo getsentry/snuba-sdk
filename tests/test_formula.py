@@ -1,20 +1,13 @@
+import pytest
 import re
+
 from typing import Any, Callable, Optional
 
-import pytest
-
-from snuba_sdk.column import Column, InvalidColumnError
+from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.formula import InvalidFormulaError
-from snuba_sdk.function import (
-    Function,
-    Identifier,
-    InvalidFunctionError,
-    Lambda,
-)
 from snuba_sdk.timeseries import Metric, Timeseries
-from snuba_sdk.visitors import Translation
-from tests import col, formula
+from tests import formula
 
 tests = [
     pytest.param(
