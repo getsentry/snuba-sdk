@@ -1,3 +1,7 @@
+"""
+.. include:: ../README.md
+"""
+
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
