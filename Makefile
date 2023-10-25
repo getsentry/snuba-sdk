@@ -63,3 +63,7 @@ apidocs-hotfix: apidocs
 	$(VENV_PATH)/bin/pip install ghp-import
 	$(VENV_PATH)/bin/ghp-import -pf docs/_build
 .PHONY: apidocs-hotfix
+
+make generate-pdocs: .venv
+	$(VENV_PATH)/bin/pip install -U -r ./docs-requirements.txt
+	$(VENV_PATH)/bin/pdoc --html --output-dir docs/_html --template-dir docs/_templates snuba_sdk
