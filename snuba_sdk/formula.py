@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, Any
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import ConditionGroup
-from snuba_sdk.expressions import Expression, InvalidExpressionError
+from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
+from snuba_sdk.expressions import Expression, InvalidExpressionError, list_type
 from snuba_sdk.timeseries import Timeseries
 
 
@@ -68,3 +68,21 @@ class Formula(Expression):
             and self.filters == other.filters
             and self.groupby == other.groupby
         )
+
+    def _replace(self, field: str, value: Any) -> Formula:
+        new = replace(self, **{field: value})
+        return new
+
+    def set_filters(self, filters: ConditionGroup | None) -> Formula:
+        if filters is not None and not list_type(
+            filters, (BooleanCondition, Condition)
+        ):
+            raise InvalidFormulaError("filters must be a list of Conditions")
+        return self._replace("filters", filters)
+
+    def set_groupby(
+        self, groupby: list[Column | AliasedExpression] | None
+    ) -> Formula:
+        if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
+            raise InvalidFormulaError("groupby must be a list of Columns")
+        return self._replace("groupby", groupby)
