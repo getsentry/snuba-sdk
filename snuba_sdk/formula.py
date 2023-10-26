@@ -27,7 +27,7 @@ class ArithmeticOperator(Enum):
 
 
 @dataclass(frozen=True)
-class Formula(Expression):
+class Formula:
     operator: ArithmeticOperator
     parameters: Optional[
         Sequence[
