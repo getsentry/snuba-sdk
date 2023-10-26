@@ -12,7 +12,7 @@ from parsimonious.nodes import Node, NodeVisitor
 from snuba_sdk.arithmetic import ArithmeticFunction
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.function import Function
+from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
@@ -91,8 +91,10 @@ def parse_mql(mql: str) -> MetricsQuery:
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
     result = MQLlVisitor().visit(tree)
-    assert isinstance(result, MetricsQuery)
-    return result
+    print(type(result))
+    assert isinstance(result, (Timeseries, Formula))
+    metrics_query = MetricsQuery(query=result)
+    return metrics_query
 
 
 class MQLlVisitor(NodeVisitor):
@@ -114,32 +116,41 @@ class MQLlVisitor(NodeVisitor):
         except Exception as e:
             raise e
 
-    def collapse_into_timeseries(self, metric_query: MetricsQuery) -> Timeseries:
+    def collapse_into_timeseries(self, formula: Formula) -> Timeseries:
         """
-        Collapses the filters and groupbys of a MetricsQuery into the Timeseries object.
+        Collapses the filters and groupbys of a MetricsQuery into the Timeseries object
+        using the distributive property.
+
+        For example:
+        (sum(foo){tag="value"} / sum(bar){tag="value"}){tag2="value2"}
+        becomes ->
+        (sum(foo){tag="value", tag2="value2"} / sum(bar){tag="value", tag2="value2"})
         """
-        metric_query_filters = metric_query.filters if metric_query.filters else []
-        metric_query_groupby = metric_query.groupby if metric_query.groupby else []
-        timeseries = metric_query.query
-        assert timeseries is not None and isinstance(timeseries, Timeseries)
+        formula_filters = formula.filters if formula.filters else []
+        formula_groupby = formula.groupby if formula.groupby else []
+        new_parameters = []
+        if formula.parameters:
+            for parameter in formula.parameters:
+                if isinstance(parameter, Timeseries):
+                    timeseries_filters = parameter.filters if parameter.filters else []
+                    timeseries_groupby = parameter.groupby if parameter.groupby else []
+                    combined_filters = formula_filters + timeseries_filters
+                    combined_groupby = formula_groupby + timeseries_groupby
+                    combined_filters = combined_filters if combined_filters else None
+                    combined_groupby = combined_groupby if combined_groupby else None
+                    new_timeseries = parameter.set_filters(combined_filters).set_groupby(combined_groupby)
+                    new_parameters.append(new_timeseries)
+                else:
+                    new_parameters.append(parameter)
+            formula.parameters = new_parameters
 
-        timeseries_filters = timeseries.filters if timeseries.filters else []
-        timeseries_groupby = timeseries.groupby if timeseries.groupby else []
 
-        combined_filters = metric_query_filters + timeseries_filters
-        combined_groupby = metric_query_groupby + timeseries_groupby
-
-        combined_groupby = combined_groupby if combined_groupby else None
-        combined_filters = combined_filters if combined_filters else None
-        return timeseries.set_filters(combined_filters).set_groupby(combined_groupby)
 
     def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
         """
         Top level node, wraps the expression in a MetricsQuery object.
         """
         expr, zero_or_more_others = children
-        if isinstance(expr, Timeseries) or isinstance(expr, Function):
-            return MetricsQuery(query=expr)
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
@@ -155,12 +166,11 @@ class MQLlVisitor(NodeVisitor):
         term, zero_or_more_others = children
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
-            if isinstance(term, MetricsQuery):
+            if isinstance(term, Formula):
                 term = self.collapse_into_timeseries(term)
-            if isinstance(coefficient, MetricsQuery):
+            if isinstance(coefficient, Formula):
                 coefficient = self.collapse_into_timeseries(coefficient)
-            function = Function(term_operator, [term, coefficient])
-            return MetricsQuery(query=function)
+            return Formula(term_operator, [term, coefficient])
         return term
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
@@ -175,13 +185,13 @@ class MQLlVisitor(NodeVisitor):
 
     def visit_filter(self, node: Node, children: Sequence[Any]) -> Any:
         """
-        Given a target (which could be either a MetricsQuery or Timeseries object),
+        Given a target (which could be either a Formula or Timeseries object),
         and set its children filters and groupbys on it.
         """
         target, packed_filters, packed_groupbys, *_ = children
         if not packed_filters and not packed_groupbys:
             return target
-        assert isinstance(target, MetricsQuery) or isinstance(target, Timeseries)
+        assert isinstance(target, Formula) or isinstance(target, Timeseries)
         if packed_filters:
             _, _, first, zero_or_more_others, *_ = packed_filters[0]
             filters = [first, *(v for _, _, _, v in zero_or_more_others)]
@@ -203,11 +213,10 @@ class MQLlVisitor(NodeVisitor):
 
     def visit_function(self, node: Node, children: Sequence[Any]) -> Any:
         """
-        Given an target (which could be either a MetricsQuery or Timeseries object),
+        Given an target (which could be either a Formula or Timeseries object),
         and set its children groupbys on it.
         """
         target, packed_groupbys = children
-        assert isinstance(target, MetricsQuery)
         if packed_groupbys:
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
@@ -258,7 +267,8 @@ class MQLlVisitor(NodeVisitor):
         return target
 
     def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
-        return Variable(node.text[1:])
+        raise InvalidQueryError("Variables are not supported yet")
+        return None
 
     def visit_nested_expression(self, node: Node, children: Sequence[Any]) -> Any:
         return children[2]

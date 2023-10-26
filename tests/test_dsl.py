@@ -3,7 +3,7 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.dsl.dsl import parse_mql
-from snuba_sdk.function import Function
+from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.timeseries import Timeseries, Metric
 
@@ -78,8 +78,7 @@ def test_filter() -> None:
     dsl = 'sum(foo){bar="baz"}'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum"),
-        filters=[Condition(Column("bar"), Op.EQ, "baz")],
+        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.EQ, "baz")])
     )
 
 
@@ -87,8 +86,8 @@ def test_in_filter() -> None:
     dsl = 'sum(foo){bar IN ("baz", "bap")}'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum"),
-        filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])])
+        ,
     )
 
 
@@ -127,11 +126,11 @@ def test_multi_layer_filters() -> None:
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="sum",
             filters=[
+                Condition(Column("bar"), Op.EQ, "baz"),
                 Condition(Column("foo"), Op.EQ, "foz"),
                 Condition(Column("hee"), Op.EQ, "haw"),
             ],
         ),
-        filters=[Condition(Column("bar"), Op.EQ, "baz")],
     )
 
 
@@ -143,8 +142,8 @@ def test_group_by() -> None:
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="max",
             filters=[Condition(Column("foo"), Op.EQ, "foz")],
-        ),
-        groupby=[Column("transaction")],
+            groupby=[Column("transaction")],
+        )
     )
 
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)'
@@ -165,8 +164,8 @@ def test_group_by() -> None:
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="max",
             filters=[Condition(Column("foo"), Op.EQ, "foz")],
+            groupby=[Column("transaction")],
         ),
-        groupby=[Column("transaction")],
     )
 
     dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)'
@@ -175,10 +174,9 @@ def test_group_by() -> None:
         query=Timeseries(
             metric=Metric(mri="d:transactions/duration@millisecond"),
             aggregate="max",
-            filters=[Condition(Column("foo"), Op.EQ, "foz")],
-        ),
-        filters=[Condition(Column("bar"), Op.EQ, "baz")],
-        groupby=[Column("a"), Column("b")],
+            filters=[Condition(Column("bar"), Op.EQ, "baz"), Condition(Column("foo"), Op.EQ, "foz")],
+            groupby=[Column("a"), Column("b")]
+        )
     )
 
 
@@ -187,7 +185,7 @@ def test_terms() -> None:
     dsl = "sum(foo) / 1000"
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -202,7 +200,7 @@ def test_terms() -> None:
     dsl = "sum(foo) * sum(bar)"
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "multiply",
             [
                 Timeseries(
@@ -223,7 +221,7 @@ def test_terms_with_filters() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -235,14 +233,14 @@ def test_terms_with_filters() -> None:
                     aggregate="sum",
                 ),
             ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
         ),
-        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
     )
 
     dsl = 'sum(foo{tag="tag_value"}) / sum(bar{tag="tag_value"})'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -265,7 +263,7 @@ def test_terms_with_groupby() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -277,15 +275,15 @@ def test_terms_with_groupby() -> None:
                     aggregate="sum",
                 ),
             ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
         ),
-        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-        groupby=[Column("transaction")],
     )
 
     dsl = "(sum(foo) by transaction / sum(bar) by transaction)"
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -305,7 +303,7 @@ def test_terms_with_groupby() -> None:
     dsl = '(sum(foo) by transaction / sum(bar) by transaction){tag="tag_value"}'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -319,14 +317,14 @@ def test_terms_with_groupby() -> None:
                     groupby=[Column("transaction")],
                 ),
             ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
         ),
-        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
     )
 
     dsl = '(sum(foo{tag="tag_value"}) by transaction) / (sum(bar{tag="tag_value"}) by transaction)'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -348,7 +346,7 @@ def test_terms_with_groupby() -> None:
     dsl = '(sum(foo){tag="tag_value"}) by transaction / (sum(bar){tag="tag_value"}) by transaction'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -370,7 +368,7 @@ def test_terms_with_groupby() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
-        query=Function(
+        query=Formula(
             "divide",
             [
                 Timeseries(
@@ -382,7 +380,7 @@ def test_terms_with_groupby() -> None:
                     aggregate="sum",
                 ),
             ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
         ),
-        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-        groupby=[Column("transaction")],
     )

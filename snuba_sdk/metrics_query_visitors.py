@@ -10,6 +10,7 @@ from snuba_sdk import metrics_query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import list_type
+from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
@@ -45,14 +46,6 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _visit_query(self, query: Timeseries | None) -> Mapping[str, QVisited]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_filters(self, filters: ConditionGroup | None) -> QVisited:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -121,8 +114,6 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         where_clauses.append(timeseries_data["metric_filter"])
         if timeseries_data["filters"]:
             where_clauses.append(timeseries_data["filters"])
-        if returns["filters"]:
-            where_clauses.append(returns["filters"])
 
         where_clauses.append(returns["scope"])
         where_clauses.append(returns["start"])
@@ -149,21 +140,12 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             ]
         ).strip()
 
-    def _visit_query(self, query: Timeseries | None) -> Mapping[str, str]:
+    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
-
+        if isinstance(query, Formula):
+            raise InvalidMetricsQueryError("Serializing a Formula in MetricQuery.query is unsupported")
         return self.timeseries_visitor.visit(query)
-
-    def _visit_filters(self, filters: ConditionGroup | None) -> str:
-        if filters is not None:
-            return f"{' AND '.join(self.expression_visitor.visit(c) for c in filters)}"
-        return ""
-
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> str:
-        if groupby is not None:
-            return f"{', '.join(self.expression_visitor.visit(g) for g in groupby)}"
-        return ""
 
     def _visit_start(self, start: datetime | None) -> str:
         if start is None:
@@ -198,26 +180,13 @@ class Validator(MetricsQueryVisitor[None]):
     ) -> None:
         pass
 
-    def _visit_query(self, query: Timeseries | None) -> Mapping[str, None]:
+    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, None]:
         if query is None:
             raise InvalidMetricsQueryError("query is required for a metrics query")
-        elif not isinstance(query, Timeseries):
-            raise InvalidMetricsQueryError("query must be a Timeseries")
+        elif not isinstance(query, (Formula, Timeseries)):
+            raise InvalidMetricsQueryError("query must be a Timeseries or Formula")
         query.validate()
         return {}  # Necessary for typing
-
-    def _visit_filters(self, filters: ConditionGroup | None) -> None:
-        if filters is not None:
-            if not list_type(filters, (Condition, BooleanCondition)):
-                raise InvalidMetricsQueryError("filters must be a list of Conditions")
-            (c.validate() for c in filters)
-
-    def _visit_groupby(self, groupby: Sequence[Column] | None) -> None:
-        if groupby is not None:
-            if not list_type(groupby, (Column,)):
-                raise InvalidMetricsQueryError("groupby must be a list of Columns")
-            for g in groupby:
-                g.validate()
 
     def _visit_start(self, start: datetime | None) -> None:
         if start is None:
