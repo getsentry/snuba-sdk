@@ -19,17 +19,17 @@ jobs:
       - name: Build docs
         run: |
           pip install virtualenv
-          make apidocs
+          make generate-docs
 
       - uses: peaceiris/actions-gh-pages@v3.7.3
         name: Publish to GitHub Pages
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_build
+          publish_dir: docs/_html
           force_orphan: true
 
       - name: Archive Docs
         uses: actions/upload-artifact@v3.1.1
         with:
           name: docs
-          path: docs/_build
+          path: docs/_html
