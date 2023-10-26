@@ -28,7 +28,7 @@ class ArithmeticOperator(Enum):
 
 @dataclass(frozen=True)
 class Formula(Expression):
-    operator: str
+    operator: ArithmeticOperator
     parameters: Optional[
         Sequence[
             Union[Formula, Timeseries, float, int]
@@ -38,15 +38,8 @@ class Formula(Expression):
     groupby: Optional[list[Column | AliasedExpression]] = None
 
     def validate(self) -> None:
-        if not isinstance(self.operator, str):
-            raise InvalidFormulaError(f"formula '{self.operator}' must be a string")
-        if self.operator == "":
-            raise InvalidFormulaError("operator cannot be empty")
-        if self.operator not in [op.value for op in ArithmeticOperator]:
-            raise InvalidFormulaError(
-                f"operator '{self.operator}' is not supported"
-            )
-
+        if not isinstance(self.operator, ArithmeticOperator):
+            raise InvalidFormulaError(f"formula '{self.operator}' must be a ArithmeticOperator")
         if self.parameters is not None:
             if not isinstance(self.parameters, Sequence):
                 raise InvalidFormulaError(
@@ -57,17 +50,6 @@ class Formula(Expression):
                     raise InvalidFormulaError(
                         f"parameter '{param}' of formula {self.operator} is an invalid type"
                     )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Formula):
-            return False
-
-        return (
-            self.operator == other.operator
-            and self.parameters == other.parameters
-            and self.filters == other.filters
-            and self.groupby == other.groupby
-        )
 
     def _replace(self, field: str, value: Any) -> Formula:
         new = replace(self, **{field: value})
