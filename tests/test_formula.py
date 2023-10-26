@@ -5,58 +5,48 @@ from typing import Any, Callable, Optional
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.formula import InvalidFormulaError
+from snuba_sdk.formula import ArithmeticOperator, InvalidFormulaError
 from snuba_sdk.timeseries import Metric, Timeseries
 from tests import formula
 
 tests = [
     pytest.param(
-        formula("plus", [1, 1], None, None),
+        formula(ArithmeticOperator.PLUS, [1, 1], None, None),
         None,
         id="basic formula test",
     ),
     pytest.param(
-        formula("plus", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, None),
+        formula(ArithmeticOperator.PLUS, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, None),
         None,
         id="timeseries and number formula test",
     ),
     pytest.param(
-        formula("plus", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], [Condition(Column("tags[transaction]"), Op.EQ, "foo")], None),
+        formula(ArithmeticOperator.PLUS, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], [Condition(Column("tags[transaction]"), Op.EQ, "foo")], None),
         None,
         id="filters in formula",
     ),
     pytest.param(
-        formula("plus", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, [Column("tags[status_code]")]),
+        formula(ArithmeticOperator.PLUS, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, [Column("tags[status_code]")]),
         None,
         id="groupby in formula",
     ),
     pytest.param(
-        formula("plus", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), Timeseries(metric=Metric(public_name="bar"), aggregate="sum")], None, None),
+        formula(ArithmeticOperator.PLUS, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), Timeseries(metric=Metric(public_name="bar"), aggregate="sum")], None, None),
         None,
         id="timeseries in formula",
     ),
     pytest.param(
         formula(42, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, None),
-        InvalidFormulaError("formula '42' must be a string"),
+        InvalidFormulaError("formula '42' must be a ArithmeticOperator"),
         id="invalid operator type",
     ),
     pytest.param(
-        formula("", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, None),
-        InvalidFormulaError("operator cannot be empty"),
-        id="empty operator",
-    ),
-    pytest.param(
-        formula("impossible_operator", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), 1], None, None),
-        InvalidFormulaError("operator 'impossible_operator' is not supported"),
-        id="unsupported operator",
-    ),
-    pytest.param(
-        formula("plus", 42, None, None),
+        formula(ArithmeticOperator.PLUS, 42, None, None),
         InvalidFormulaError("parameters of formula plus must be a Sequence"),
         id="invalid parameters",
     ),
     pytest.param(
-        formula("multiply", [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), "foo"], None, None),
+        formula(ArithmeticOperator.MULTIPLY, [Timeseries(metric=Metric(public_name="foo"), aggregate="sum"), "foo"], None, None),
         InvalidFormulaError("parameter 'foo' of formula multiply is an invalid type"),
         id="unsupported parameter for operator",
     ),

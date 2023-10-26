@@ -43,12 +43,12 @@ class Formula:
         if self.parameters is not None:
             if not isinstance(self.parameters, Sequence):
                 raise InvalidFormulaError(
-                    f"parameters of formula {self.operator} must be a Sequence"
+                    f"parameters of formula {self.operator.value} must be a Sequence"
                 )
             for param in self.parameters:
                 if not isinstance(param, (Formula, Timeseries, float, int)):
                     raise InvalidFormulaError(
-                        f"parameter '{param}' of formula {self.operator} is an invalid type"
+                        f"parameter '{param}' of formula {self.operator.value} is an invalid type"
                     )
 
     def _replace(self, field: str, value: Any) -> Formula:
