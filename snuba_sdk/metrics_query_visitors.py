@@ -10,8 +10,8 @@ from snuba_sdk import metrics_query as main
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
-from snuba_sdk.expressions import list_type
 from snuba_sdk.formula import Formula
+from snuba_sdk.expressions import Limit, Offset, list_type
 from snuba_sdk.metrics_visitors import (
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
@@ -75,6 +75,13 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
     def _visit_scope(self, scope: MetricsScope | None) -> QVisited:
         raise NotImplementedError
 
+    @abstractmethod
+    def _visit_limit(self, limit: Limit | None) -> QVisited:
+        raise NotImplementedError
+
+    def _visit_offset(self, offset: Offset | None) -> QVisited:
+        raise NotImplementedError
+
 
 class SnQLPrinter(MetricsQueryVisitor[str]):
     def __init__(self, pretty: bool = False) -> None:
@@ -89,6 +96,8 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         self.groupby_clause = "BY {groupby_columns}"
         self.where_clause = "WHERE {where_clauses}"
         self.orderby_clause = "ORDER BY {orderby_columns}"
+        self.limit_clause = "LIMIT {limit}"
+        self.offset_clause = "OFFSET {offset}"
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
@@ -145,20 +154,30 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             else ""
         )
 
+        limit_clause = ""
+        if returns["limit"]:
+            limit_clause = self.limit_clause.format(limit=returns["limit"])
+
+        offset_clause = ""
+        if returns["offset"]:
+            offset_clause = self.offset_clause.format(offset=returns["offset"])
+
         totals_clause = ""
         if rollup_data["with_totals"]:
             totals_clause = rollup_data["with_totals"]
 
-        return self.separator.join(
-            [
-                self.match_clause.format(entity=entity),
-                self.select_clause.format(select_columns=", ".join(select_columns)),
-                groupby_clause,
-                self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
-                orderby_clause,
-                totals_clause,
-            ]
-        ).strip()
+        clauses = [
+            self.match_clause.format(entity=entity),
+            self.select_clause.format(select_columns=", ".join(select_columns)),
+            groupby_clause,
+            self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
+            orderby_clause,
+            limit_clause,
+            offset_clause,
+            totals_clause,
+        ]
+
+        return self.separator.join(filter(lambda x: x != "", clauses)).strip()
 
     def _visit_query(self, query: Timeseries | None) -> Mapping[str, str]:
         if query is None:
@@ -203,6 +222,16 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
 
         return self.scope_visitor.visit(scope)
+
+    def _visit_limit(self, limit: Limit | None) -> str:
+        if limit is not None:
+            return self.expression_visitor.visit(limit)
+        return ""
+
+    def _visit_offset(self, offset: Offset | None) -> str:
+        if offset is not None:
+            return self.expression_visitor.visit(offset)
+        return ""
 
 
 class Validator(MetricsQueryVisitor[None]):
@@ -266,3 +295,19 @@ class Validator(MetricsQueryVisitor[None]):
         elif not isinstance(scope, MetricsScope):
             raise InvalidMetricsQueryError("scope must be a MetricsScope object")
         scope.validate()
+
+    def _visit_limit(self, limit: Limit | None) -> None:
+        if limit is None:
+            return
+        elif not isinstance(limit, Limit):
+            raise InvalidMetricsQueryError("limit must be a Limit object")
+
+        limit.validate()
+
+    def _visit_offset(self, offset: Offset | None) -> None:
+        if offset is None:
+            return
+        elif not isinstance(offset, Offset):
+            raise InvalidMetricsQueryError("offset must be a Offset object")
+
+        offset.validate()

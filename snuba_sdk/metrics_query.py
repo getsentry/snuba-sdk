@@ -7,7 +7,7 @@ from typing import Any
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
-from snuba_sdk.expressions import list_type
+from snuba_sdk.expressions import Limit, Offset, list_type
 from snuba_sdk.function import Function
 from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
 from snuba_sdk.query import BaseQuery
@@ -37,6 +37,8 @@ class MetricsQuery(BaseQuery):
     end: datetime | None = None
     rollup: Rollup | None = None
     scope: MetricsScope | None = None
+    limit: Limit | None = None
+    offset: Offset | None = None
 
     def _replace(self, field: str, value: Any) -> MetricsQuery:
         new = replace(self, **{field: value})
@@ -80,6 +82,12 @@ class MetricsQuery(BaseQuery):
         if not isinstance(scope, MetricsScope):
             raise InvalidQueryError("scope must be a MetricsScope")
         return self._replace("scope", scope)
+
+    def set_limit(self, limit: int) -> MetricsQuery:
+        return self._replace("limit", Limit(limit))
+
+    def set_offset(self, offset: int) -> MetricsQuery:
+        return self._replace("offset", Offset(offset))
 
     def validate(self) -> None:
         Validator().visit(self)

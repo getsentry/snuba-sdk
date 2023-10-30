@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.7
+-----
+- Support the `limit` and `offset` field in the MetricsQuery
+    - This will set the appropriate LIMIT and OFFSET clauses in the resulting SQL query,
+    allowing for pagination
+
+
 2.0.6
 -----
 - Make the `granularity` field optional in the Rollup, so that it can
