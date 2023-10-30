@@ -8,176 +8,179 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.timeseries import Timeseries, Metric
 
 
-def test_quoted_mri_name() -> None:
-    dsl = "sum(`d:transactions/duration@millisecond`)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
-        )
-    )
-
-
-def test_unquoted_mri_name() -> None:
-    dsl = "sum(d:transactions/duration@millisecond)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
-        )
-    )
-
-
-def test_quoted_public_name() -> None:
-    dsl = "sum(`transactions.duration`)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(public_name="transactions.duration"), aggregate="sum"
-        )
-    )
-
-    dsl = "sum(`foo`)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
-    )
-
-
-def test_unquoted_public_name() -> None:
-    dsl = "sum(transactions.duration)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(public_name="transactions.duration"), aggregate="sum"
-        )
-    )
-
-    dsl = "sum(foo)"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
-    )
-
-
-def test_nested_expression() -> None:
-    dsl = "(sum(foo))"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
-    )
-
-    dsl = "sum((foo))"
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
-    )
-
-
-def test_filter() -> None:
-    dsl = 'sum(foo){bar="baz"}'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.EQ, "baz")])
-    )
-
-
-def test_in_filter() -> None:
-    dsl = 'sum(foo){bar IN ("baz", "bap")}'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])])
-        ,
-    )
-
-
-def test_filter_inside_aggregate() -> None:
-    dsl = 'sum(foo{bar="baz"})'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(public_name="foo"),
-            aggregate="sum",
-            filters=[Condition(Column("bar"), Op.EQ, "baz")],
-        )
-    )
-
-
-def test_multiple_filters() -> None:
-    dsl = 'sum(user{bar="baz", foo="foz"})'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(public_name="user"),
-            aggregate="sum",
-            filters=[
-                Condition(Column("bar"), Op.EQ, "baz"),
-                Condition(Column("foo"), Op.EQ, "foz"),
-            ],
-        )
-    )
-
-
-def test_multi_layer_filters() -> None:
-    dsl = 'sum(`d:transactions/duration@millisecond`{foo="foz", hee="haw"}){bar="baz"}'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"),
-            aggregate="sum",
-            filters=[
-                Condition(Column("bar"), Op.EQ, "baz"),
-                Condition(Column("foo"), Op.EQ, "foz"),
-                Condition(Column("hee"), Op.EQ, "haw"),
-            ],
+tests = [
+    pytest.param(
+        'sum(`d:transactions/duration@millisecond`)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
+            )
         ),
-    )
-
-
-def test_group_by() -> None:
-    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"),
-            aggregate="max",
-            filters=[Condition(Column("foo"), Op.EQ, "foz")],
-            groupby=[Column("transaction")],
-        )
-    )
-
-    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"),
-            aggregate="max",
-            filters=[Condition(Column("foo"), Op.EQ, "foz")],
-            groupby=[Column("transaction")],
+        id="test quoted mri name"
+    ),
+    pytest.param(
+        'sum(d:transactions/duration@millisecond)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
+            )
         ),
-    )
-
-    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"),
-            aggregate="max",
-            filters=[Condition(Column("foo"), Op.EQ, "foz")],
-            groupby=[Column("transaction")],
+        id="test unquoted mri name"
+    ),
+    pytest.param(
+        'sum(`transactions.duration`)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transactions.duration"), aggregate="sum"
+            )
         ),
-    )
+        id="test quoted public name 1"
+    ),
+    pytest.param(
+        'sum(`foo`)',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
+        ),
+        id="test quoted public name 2"
+    ),
+    pytest.param(
+        'sum(transactions.duration)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transactions.duration"), aggregate="sum"
+            )
+        ),
+        id="test unquoted public name 1"
+    ),
+    pytest.param(
+        'sum(foo)',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
+        ),
+        id="test unquoted public name 1"
+    ),
+    pytest.param(
+        '(sum(foo))',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
+        ),
+        id="test nested expressions 1"
+    ),
+    pytest.param(
+        '(sum(foo))',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
+        ),
+        id="test nested expressions 2"
+    ),
+    pytest.param(
+        'sum(foo){bar="baz"}',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.EQ, "baz")])
+        ),
+        id="test filter"
+    ),
+    pytest.param(
+        'sum(foo){bar IN ("baz", "bap")}',
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])])
+        ),
+        id="test in filter"
+    ),
+    pytest.param(
+        'sum(foo{bar="baz"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+            )
+        ),
+        id="test filter inside aggregate"
+    ),
+    pytest.param(
+        'sum(user{bar="baz", foo="foz"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters"
+    ),
+    pytest.param(
+        'sum(`d:transactions/duration@millisecond`{foo="foz", hee="haw"}){bar="baz"}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("hee"), Op.EQ, "haw"),
+                ],
+            ),
+        ),
+        id="test multiple layer filters"
+    ),
+    pytest.param(
+        'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="max",
+                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test group by 1"
+    ),
+    pytest.param(
+        'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="max",
+                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test group by 2"
+    ),
+    pytest.param(
+        'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="max",
+                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test group by 3"
+    ),
+    pytest.param(
+        'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="max",
+                filters=[Condition(Column("bar"), Op.EQ, "baz"), Condition(Column("foo"), Op.EQ, "foz")],
+                groupby=[Column("a"), Column("b")]
+            )
+        ),
+        id="test group by 4"
+    ),
+]
 
-    dsl = 'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)'
-    result = parse_mql(dsl)
-    assert result == MetricsQuery(
-        query=Timeseries(
-            metric=Metric(mri="d:transactions/duration@millisecond"),
-            aggregate="max",
-            filters=[Condition(Column("bar"), Op.EQ, "baz"), Condition(Column("foo"), Op.EQ, "foz")],
-            groupby=[Column("a"), Column("b")]
-        )
-    )
+@pytest.mark.parametrize("mql_string, metrics_query", tests)
+def test_query(mql_string, metrics_query: MetricsQuery) -> None:
+    result = parse_mql(mql_string)
+    assert result == metrics_query
 
 
 @pytest.mark.xfail(reason="Not supported")
