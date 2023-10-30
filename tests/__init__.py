@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
 from snuba_sdk.function import CurriedFunction, Function
+from snuba_sdk.formula import Formula
 from snuba_sdk.timeseries import Timeseries
 
 
@@ -85,6 +86,18 @@ def cur_func(
         return CurriedFunction(function, initers, params, alias)
 
     return to_func
+
+
+def formula(
+    operator: Any,
+    parameters: Any,
+    filters: Any = None,
+    groupby: Any = None,
+) -> Callable[[], Any]:
+    def to_formula() -> Formula:
+        return Formula(operator, parameters, filters, groupby)
+
+    return to_formula
 
 
 def timeseries(

@@ -11,6 +11,7 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import list_type
+from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
@@ -210,11 +211,11 @@ class Validator(MetricsQueryVisitor[None]):
     ) -> None:
         pass
 
-    def _visit_query(self, query: Timeseries | None) -> Mapping[str, None]:
+    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, None]:
         if query is None:
             raise InvalidMetricsQueryError("query is required for a metrics query")
-        elif not isinstance(query, Timeseries):
-            raise InvalidMetricsQueryError("query must be a Timeseries")
+        elif not isinstance(query, (Timeseries, Formula)):
+            raise InvalidMetricsQueryError("query must be a Timeseries or Formula")
         query.validate()
         return {}  # Necessary for typing
 
