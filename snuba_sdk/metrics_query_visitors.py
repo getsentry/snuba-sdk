@@ -191,7 +191,7 @@ class Validator(MetricsQueryVisitor[None]):
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, None]:
         if query is None:
             raise InvalidMetricsQueryError("query is required for a metrics query")
-        elif not isinstance(query, (Formula, Timeseries)):
+        elif not isinstance(query, (Timeseries, Formula)):
             raise InvalidMetricsQueryError("query must be a Timeseries or Formula")
         query.validate()
         return {}  # Necessary for typing

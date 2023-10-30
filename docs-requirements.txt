@@ -1,5 +1,1 @@
-Jinja2<3.1
-sphinx==3.5.4
-sphinx-rtd-theme
-sphinx-autodoc-typehints[type_comments]>=1.8.0
-typing-extensions
+pdoc3==0.10.0
