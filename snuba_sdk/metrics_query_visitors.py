@@ -111,8 +111,6 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
 
         if timeseries_data["groupby"]:
             groupby_columns.append(timeseries_data["groupby"])
-        if returns["groupby"]:
-            groupby_columns.append(returns["groupby"])
 
         where_clauses.append(timeseries_data["metric_filter"])
         if timeseries_data["filters"]:

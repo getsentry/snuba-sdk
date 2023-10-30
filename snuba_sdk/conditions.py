@@ -142,7 +142,7 @@ class Or(BooleanCondition):
     conditions: ConditionGroup = field(default_factory=list)
 
 
-ConditionGroup = List[Union[BooleanCondition, Condition]]
+ConditionGroup = list[Union[BooleanCondition, Condition]]
 
 
 def get_first_level_and_conditions(conditions: ConditionGroup) -> ConditionGroup:

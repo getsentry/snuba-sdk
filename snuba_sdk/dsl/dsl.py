@@ -91,7 +91,6 @@ def parse_mql(mql: str) -> MetricsQuery:
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
     result = MQLlVisitor().visit(tree)
-    print(type(result))
     assert isinstance(result, (Timeseries, Formula))
     metrics_query = MetricsQuery(query=result)
     return metrics_query
