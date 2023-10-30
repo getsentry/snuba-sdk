@@ -166,7 +166,7 @@ class Timeseries(Expression):
         return replace(self, groupby=groupby)
 
 
-ALLOWED_GRANULARITIES = (60, 3600, 86400)
+ALLOWED_GRANULARITIES = (10, 60, 3600, 86400)
 
 
 @dataclass(frozen=True)
@@ -175,6 +175,8 @@ class Rollup:
     Rollup instructs how the timeseries queries should be grouped on time. If the query is for a set of timeseries, then
     the interval field should be specified. It is the number of seconds to group the timeseries by.
     For a query that returns only the totals, specify Totals(True). A totals query can be ordered using the orderby field.
+    If totals is set to True and the interval is specified, then an extra row will be returned in the result with the totals
+    for the timeseries.
     """
 
     interval: int | None = None
@@ -188,10 +190,7 @@ class Rollup:
     def validate(self) -> None:
         # The interval is used to determine how the timestamp is rolled up in the group by of the query.
         # The granularity is separate since it ultimately determines which data we retrieve.
-        # At a future point the granularity might be able to be inferred based on other attributes
-        # e.g. for totals queries, pick the highest possible granularity. For now it must be specified.
-        if self.granularity is None or self.granularity not in ALLOWED_GRANULARITIES:
-            # TODO: This could possibly be inferred from the interval, for now it's hardcoded
+        if self.granularity and self.granularity not in ALLOWED_GRANULARITIES:
             raise InvalidExpressionError(
                 f"granularity must be an integer and one of {ALLOWED_GRANULARITIES}"
             )
@@ -200,32 +199,27 @@ class Rollup:
             _validate_int_literal(
                 "interval", self.interval, 10, None
             )  # Minimum 10 seconds
-            if self.interval < self.granularity:
+            if self.granularity is not None and self.interval < self.granularity:
                 raise InvalidExpressionError(
                     "interval must be greater than or equal to granularity"
                 )
-
-        if self.interval is not None and self.totals is not None:
-            raise InvalidExpressionError(
-                "Only one of interval and totals can be set: Timeseries can't be rolled up by an interval and by a total"
-            )
 
         if self.totals is not None:
             if not isinstance(self.totals, bool):
                 raise InvalidExpressionError("totals must be a boolean")
 
+        if self.interval is None and self.totals is None:
+            raise InvalidExpressionError(
+                "Rollup must have at least one of interval or totals"
+            )
+
         if self.orderby is not None:
             if not isinstance(self.orderby, Direction):
                 raise InvalidExpressionError("orderby must be a Direction object")
 
-        if self.totals is None and self.orderby is not None:
+        if self.interval is not None and self.orderby is not None:
             raise InvalidExpressionError(
-                "Metric queries can't be ordered without using totals"
-            )
-
-        if self.interval is None and not self.totals:
-            raise InvalidExpressionError(
-                "Rollup must have at least one of interval or totals"
+                "Timeseries queries can't be ordered when using interval"
             )
 
 

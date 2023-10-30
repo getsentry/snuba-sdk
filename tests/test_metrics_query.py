@@ -5,7 +5,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from snuba_sdk import Column, Condition, Op
+from snuba_sdk.aliased_expression import AliasedExpression
+from snuba_sdk.column import Column
+from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
@@ -61,7 +63,7 @@ tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time` WHERE granularity = 3600 AND metric_id = 123 AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[status_code] WHERE granularity = 3600 AND metric_id = 123 AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="top level filters/group by",
     ),
     pytest.param(
@@ -87,7 +89,7 @@ tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[environment] WHERE granularity = 3600 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[environment], tags[status_code] WHERE granularity = 3600 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="top level filters/group by with low level filters",
     ),
     pytest.param(
@@ -113,8 +115,58 @@ tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY tags[environment] WHERE granularity = 60 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY tags[environment], tags[status_code] WHERE granularity = 60 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05')",
         id="totals query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    "transaction.duration",
+                    "d:transactions/duration@millisecond",
+                    123,
+                    "metrics_sets",
+                ),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.99],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")],
+            rollup=Rollup(interval=60, granularity=60),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+        ),
+        "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
+        id="aliased groupby",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    "transaction.duration",
+                    "d:transactions/duration@millisecond",
+                    123,
+                    "metrics_sets",
+                ),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.99],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")],
+            rollup=Rollup(interval=60, granularity=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+        ),
+        "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC TOTALS True",
+        id="with totals",
     ),
 ]
 
@@ -366,6 +418,31 @@ invalid_tests = [
         ),
         InvalidMetricsQueryError("scope must be a MetricsScope object"),
         id="bad scope type",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    "transaction.duration",
+                    "d:transactions/duration@millisecond",
+                    123,
+                    "metrics_sets",
+                ),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.99],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")],
+            rollup=Rollup(interval=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+        ),
+        InvalidMetricsQueryError("granularity must be set on the rollup"),
+        id="granularity must be present",
     ),
 ]
 

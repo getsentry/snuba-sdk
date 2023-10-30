@@ -7,6 +7,7 @@ from typing import Generic, Mapping, Sequence, TypeVar
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 from snuba_sdk import metrics_query as main
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import list_type
@@ -110,6 +111,8 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
 
         if timeseries_data["groupby"]:
             groupby_columns.append(timeseries_data["groupby"])
+        if returns["groupby"]:
+            groupby_columns.append(returns["groupby"])
 
         where_clauses.append(timeseries_data["metric_filter"])
         if timeseries_data["filters"]:
@@ -130,6 +133,10 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             else ""
         )
 
+        totals_clause = ""
+        if rollup_data["with_totals"]:
+            totals_clause = rollup_data["with_totals"]
+
         return self.separator.join(
             [
                 self.match_clause.format(entity=entity),
@@ -137,6 +144,7 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
                 groupby_clause,
                 self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
                 orderby_clause,
+                totals_clause,
             ]
         ).strip()
 
@@ -205,6 +213,12 @@ class Validator(MetricsQueryVisitor[None]):
             raise InvalidMetricsQueryError("rollup is required for a metrics query")
         elif not isinstance(rollup, Rollup):
             raise InvalidMetricsQueryError("rollup must be a Rollup object")
+
+        # Since the granularity is inferred by the API, it can be initially None, but must be present when
+        # the query is ultimately serialized and sent to Snuba.
+        if rollup.granularity is None:
+            raise InvalidMetricsQueryError("granularity must be set on the rollup")
+
         rollup.validate()
         return {}
 

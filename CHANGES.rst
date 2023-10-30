@@ -1,6 +1,23 @@
 Changelog and versioning
 ==========================
 
+2.0.6
+-----
+- Make the `granularity` field optional in the Rollup, so that it can
+  be automatically inferred by the API layer
+
+
+2.0.5
+-----
+- Support the TOTALS clause in the Rollup of a MetricsQuery
+- Allow 10s granularity in MetricsQuery
+
+
+2.0.4
+-----
+- Fix a bug where the groupby on the MetricsQuery was not being serialized
+
+
 2.0.3
 -----
 
