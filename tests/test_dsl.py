@@ -178,7 +178,7 @@ tests = [
 ]
 
 @pytest.mark.parametrize("mql_string, metrics_query", tests)
-def test_query(mql_string, metrics_query: MetricsQuery) -> None:
+def test_parse_mql(mql_string, metrics_query: MetricsQuery) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
 
