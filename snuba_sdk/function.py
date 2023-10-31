@@ -89,7 +89,7 @@ class CurriedFunction(Expression):
             for param in self.parameters:
                 if not isinstance(
                     param,
-                    (Column, CurriedFunction, Function, Identifier, Lambda, Expression),
+                    (Column, CurriedFunction, Function, Identifier, Lambda),
                 ) and not is_scalar(param):
                     assert not isinstance(param, bytes)  # mypy
                     raise InvalidFunctionError(

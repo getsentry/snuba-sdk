@@ -7,7 +7,6 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.expressions import (
-    Expression,
     InvalidExpressionError,
     _validate_int_literal,
     is_literal,
@@ -76,7 +75,7 @@ class Metric:
 
 
 @dataclass
-class Timeseries(Expression):
+class Timeseries:
     """
     A code representation of a single timeseries. This is the basic unit of a metrics query.
     A raw metric, aggregated by an aggregate function. It can be filtered by tag conditions.

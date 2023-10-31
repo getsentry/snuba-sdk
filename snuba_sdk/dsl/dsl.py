@@ -9,10 +9,9 @@ from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
-from snuba_sdk.arithmetic import ArithmeticFunction
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.formula import Formula
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
@@ -72,13 +71,13 @@ _ = ~r"\s*"
 )
 
 EXPRESSION_OPERATORS: Mapping[str, str] = {
-    "+": ArithmeticFunction.PLUS.value,
-    "-": ArithmeticFunction.MINUS.value,
+    "+": ArithmeticOperator.PLUS.value,
+    "-": ArithmeticOperator.MINUS.value,
 }
 
 TERM_OPERATORS: Mapping[str, str] = {
-    "*": ArithmeticFunction.MULTIPLY.value,
-    "/": ArithmeticFunction.DIVIDE.value,
+    "*": ArithmeticOperator.MULTIPLY.value,
+    "/": ArithmeticOperator.DIVIDE.value,
 }
 
 
@@ -117,7 +116,7 @@ class MQLlVisitor(NodeVisitor):
 
     def collapse_into_timeseries(self, formula: Formula) -> Timeseries:
         """
-        Collapses the filters and groupbys of a MetricsQuery into the Timeseries object
+        Collapses the filters and groupbys of a Formula object into the Timeseries object
         using the distributive property.
 
         For example:
@@ -159,8 +158,8 @@ class MQLlVisitor(NodeVisitor):
     def visit_term(self, node: Node, children: Sequence[Any]) -> Any:
         """
         Checks if the current node contains two term children, if so
-        then merge them into a single Function with the operator. If the
-        children are MetricQuery objects, then collapse them into a Timeseries first.
+        then merge them into a single Formula with the operator. If the
+        children are Formula objects, then collapse them into a Timeseries first.
         """
         term, zero_or_more_others = children
         if zero_or_more_others:
@@ -274,7 +273,7 @@ class MQLlVisitor(NodeVisitor):
 
     def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Any:
         """
-        Given a target (which is either a MetricsQuery or Timeseries object),
+        Given a target (which is either a Formula or Timeseries object),
         set the aggregate on it.
         """
         aggregate_name, zero_or_one = children
