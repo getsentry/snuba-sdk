@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.7
+-----
+- Introduce MQL grammar and parser
+- Add `Formula` class to support formula queries.
+- Removed `filters` and `groupby` in MetricsQuery class
+
+
 2.0.6
 -----
 - Make the `granularity` field optional in the Rollup, so that it can
