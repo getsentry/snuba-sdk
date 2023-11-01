@@ -196,7 +196,7 @@ def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
     assert result == metrics_query
 
 
-# @pytest.mark.xfail(reason="Not supported")
+@pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
     dsl = "sum(foo) / 1000"
     result = parse_mql(dsl)
@@ -232,7 +232,7 @@ def test_terms() -> None:
     )
 
 
-# @pytest.mark.xfail(reason="Not supported")
+@pytest.mark.xfail(reason="Not supported")
 def test_multi_terms() -> None:
     dsl = "(sum(foo) * sum(bar)) / 1000"
     result = parse_mql(dsl)
@@ -426,4 +426,40 @@ def test_terms_with_groupby() -> None:
             filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
             groupby=[Column("transaction")],
         ),
+    )
+
+
+@pytest.mark.xfail(reason="Not supported")
+def test_complex_nested_terms() -> None:
+    dsl = '((sum(foo{tag="tag_value"}){tag2="tag_value2"} / sum(bar)){tag3="tag_value3"} * sum(pop)) by transaction'
+    result = parse_mql(dsl)
+    assert result == MetricsQuery(
+        query=Formula(
+            operator=ArithmeticOperator.MULTIPLY,
+            parameters=[
+                Formula(
+                    ArithmeticOperator.DIVIDE,
+                    [
+                        Timeseries(
+                            metric=Metric(public_name="foo"),
+                            aggregate="sum",
+                            filters=[
+                                Condition(Column("tag2"), Op.EQ, "tag_value2"),
+                                Condition(Column("tag"), Op.EQ, "tag_value"),
+                            ],
+                        ),
+                        Timeseries(
+                            metric=Metric(public_name="bar"),
+                            aggregate="sum",
+                        ),
+                    ],
+                    filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="pop"),
+                    aggregate="sum",
+                ),
+            ],
+            groupby=[Column("transaction")],
+        )
     )

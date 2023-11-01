@@ -3,7 +3,7 @@ Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Any, List, Mapping, Sequence, Union
+from typing import Any, Mapping, Sequence, Union
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
@@ -11,7 +11,7 @@ from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.formula import ArithmeticOperator, Formula, FormulaParameterGroup
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
@@ -113,41 +113,6 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
         except Exception as e:
             raise e
 
-    def collapse_into_timeseries(self, formula: Formula) -> Formula:
-        """
-        Collapses the filters and groupbys of a Formula object into the Timeseries object
-        using the distributive property.
-
-        For example:
-        (sum(foo){tag="value"} / sum(bar){tag="value"}){tag2="value2"}
-        becomes ->
-        (sum(foo){tag="value", tag2="value2"} / sum(bar){tag="value", tag2="value2"})
-        """
-        formula_filters = formula.filters if formula.filters else []
-        formula_groupby = formula.groupby if formula.groupby else []
-        new_parameters: List[FormulaParameterGroup] = []
-        if formula.parameters:
-            for parameter in formula.parameters:
-                if isinstance(parameter, Formula):
-                    new_formula = self.collapse_into_timeseries(parameter)
-                    new_parameters.append(new_formula)
-                if isinstance(parameter, Timeseries):
-                    timeseries_filters = parameter.filters if parameter.filters else []
-                    timeseries_groupby = parameter.groupby if parameter.groupby else []
-                    combined_filters = formula_filters + timeseries_filters
-                    combined_groupby = formula_groupby + timeseries_groupby
-                    combined_filters = combined_filters if combined_filters else None
-                    combined_groupby = combined_groupby if combined_groupby else None
-                    new_timeseries = parameter.set_filters(
-                        combined_filters
-                    ).set_groupby(combined_groupby)
-                    new_parameters.append(new_timeseries)
-                else:
-                    assert isinstance(parameter, (float, int))
-                    new_parameters.append(parameter)
-            formula = formula.set_parameters(new_parameters)
-        return formula.set_filters(None).set_groupby(None)
-
     def visit_expression(
         self, node: Node, children: Sequence[Any]
     ) -> Union[Formula, Timeseries]:
@@ -159,7 +124,7 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
-        raise InvalidQueryError("Arithmetic function not supported yet")
+        # raise InvalidQueryError("Arithmetic function not supported yet")
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(
@@ -167,22 +132,17 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
     ) -> Union[Formula, Timeseries, float, int]:
         """
         Checks if the current node contains two term children, if so
-        then merge them into a single Formula with the operator. If the
-        children are Formula objects, then collapse them into a Timeseries first.
+        then merge them into a single Formula with the operator.
         """
         term, zero_or_more_others = children
         assert isinstance(term, (Formula, Timeseries, float, int))
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
-            if isinstance(term, Formula):
-                term = self.collapse_into_timeseries(term)
-            if isinstance(coefficient, Formula):
-                coefficient = self.collapse_into_timeseries(coefficient)
             return Formula(term_operator, [term, coefficient])
         return term
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
-        raise InvalidQueryError("Arithmetic function not supported yet")
+        # raise InvalidQueryError("Arithmetic function not supported yet")
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(
@@ -237,9 +197,7 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
             target = target.set_groupby(group_by)
         return target
 
-    def visit_group_by(
-        self, node: Node, children: Sequence[Any]
-    ) -> Union[Column, Sequence[Column]]:
+    def visit_group_by(self, node: Node, children: Sequence[Any]) -> Any:
         *_, group_by = children
         group_by_name = group_by[0]
         return group_by_name
@@ -252,7 +210,7 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
 
     def visit_tag_value(
         self, node: Node, children: Sequence[Union[str, Sequence[str]]]
-    ) -> str:
+    ) -> Any:
         tag_value = children[0]
         return tag_value
 
