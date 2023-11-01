@@ -120,7 +120,7 @@ class Timeseries:
             if not isinstance(self.filters, list):
                 raise InvalidTimeseriesError("filters must be a list")
             for f in self.filters:
-                if not isinstance(f, Condition):
+                if not isinstance(f, (Condition, BooleanCondition)):
                     raise InvalidTimeseriesError("filters must be a list of Conditions")
 
         # TODO: Can you group by meta information like project_id?
