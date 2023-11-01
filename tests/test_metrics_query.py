@@ -73,7 +73,10 @@ tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
-                filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo"), Condition(Column("tags[transaction]"), Op.EQ, "foo")],
+                filters=[
+                    Condition(Column("tags[referrer]"), Op.EQ, "foo"),
+                    Condition(Column("tags[transaction]"), Op.EQ, "foo"),
+                ],
                 groupby=[Column("tags[environment]"), Column("tags[status_code]")],
             ),
             start=NOW,
@@ -97,7 +100,10 @@ tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
-                filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo"), Condition(Column("tags[transaction]"), Op.EQ, "foo")],
+                filters=[
+                    Condition(Column("tags[referrer]"), Op.EQ, "foo"),
+                    Condition(Column("tags[transaction]"), Op.EQ, "foo"),
+                ],
                 groupby=[Column("tags[environment]"), Column("tags[status_code]")],
             ),
             start=NOW,

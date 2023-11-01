@@ -10,82 +10,92 @@ from snuba_sdk.timeseries import Timeseries, Metric
 
 tests = [
     pytest.param(
-        'sum(`d:transactions/duration@millisecond`)',
+        "sum(`d:transactions/duration@millisecond`)",
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="sum",
             )
         ),
-        id="test quoted mri name"
+        id="test quoted mri name",
     ),
     pytest.param(
-        'sum(d:transactions/duration@millisecond)',
+        "sum(d:transactions/duration@millisecond)",
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"), aggregate="sum"
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="sum",
             )
         ),
-        id="test unquoted mri name"
+        id="test unquoted mri name",
     ),
     pytest.param(
-        'sum(`transactions.duration`)',
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(public_name="transactions.duration"), aggregate="sum"
-            )
-        ),
-        id="test quoted public name 1"
-    ),
-    pytest.param(
-        'sum(`foo`)',
-        MetricsQuery(
-            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
-        ),
-        id="test quoted public name 2"
-    ),
-    pytest.param(
-        'sum(transactions.duration)',
+        "sum(`transactions.duration`)",
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="transactions.duration"), aggregate="sum"
             )
         ),
-        id="test unquoted public name 1"
+        id="test quoted public name 1",
     ),
     pytest.param(
-        'sum(foo)',
+        "sum(`foo`)",
         MetricsQuery(
             query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
         ),
-        id="test unquoted public name 1"
+        id="test quoted public name 2",
     ),
     pytest.param(
-        '(sum(foo))',
+        "sum(transactions.duration)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transactions.duration"), aggregate="sum"
+            )
+        ),
+        id="test unquoted public name 1",
+    ),
+    pytest.param(
+        "sum(foo)",
         MetricsQuery(
             query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
         ),
-        id="test nested expressions 1"
+        id="test unquoted public name 1",
     ),
     pytest.param(
-        '(sum(foo))',
+        "(sum(foo))",
         MetricsQuery(
             query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
         ),
-        id="test nested expressions 2"
+        id="test nested expressions 1",
+    ),
+    pytest.param(
+        "(sum(foo))",
+        MetricsQuery(
+            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum")
+        ),
+        id="test nested expressions 2",
     ),
     pytest.param(
         'sum(foo){bar="baz"}',
         MetricsQuery(
-            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.EQ, "baz")])
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+            )
         ),
-        id="test filter"
+        id="test filter",
     ),
     pytest.param(
         'sum(foo){bar IN ("baz", "bap")}',
         MetricsQuery(
-            query=Timeseries(metric=Metric(public_name="foo"), aggregate="sum", filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])])
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+            )
         ),
-        id="test in filter"
+        id="test in filter",
     ),
     pytest.param(
         'sum(foo{bar="baz"})',
@@ -96,7 +106,7 @@ tests = [
                 filters=[Condition(Column("bar"), Op.EQ, "baz")],
             )
         ),
-        id="test filter inside aggregate"
+        id="test filter inside aggregate",
     ),
     pytest.param(
         'sum(user{bar="baz", foo="foz"})',
@@ -110,7 +120,7 @@ tests = [
                 ],
             )
         ),
-        id="test multiple filters"
+        id="test multiple filters",
     ),
     pytest.param(
         'sum(`d:transactions/duration@millisecond`{foo="foz", hee="haw"}){bar="baz"}',
@@ -125,7 +135,7 @@ tests = [
                 ],
             ),
         ),
-        id="test multiple layer filters"
+        id="test multiple layer filters",
     ),
     pytest.param(
         'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction',
@@ -137,7 +147,7 @@ tests = [
                 groupby=[Column("transaction")],
             )
         ),
-        id="test group by 1"
+        id="test group by 1",
     ),
     pytest.param(
         'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)',
@@ -149,7 +159,7 @@ tests = [
                 groupby=[Column("transaction")],
             ),
         ),
-        id="test group by 2"
+        id="test group by 2",
     ),
     pytest.param(
         'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)',
@@ -161,7 +171,7 @@ tests = [
                 groupby=[Column("transaction")],
             ),
         ),
-        id="test group by 3"
+        id="test group by 3",
     ),
     pytest.param(
         'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)',
@@ -169,11 +179,14 @@ tests = [
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
                 aggregate="max",
-                filters=[Condition(Column("bar"), Op.EQ, "baz"), Condition(Column("foo"), Op.EQ, "foz")],
-                groupby=[Column("a"), Column("b")]
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+                groupby=[Column("a"), Column("b")],
             )
         ),
-        id="test group by 4"
+        id="test group by 4",
     ),
 ]
 

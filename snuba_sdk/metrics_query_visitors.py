@@ -148,7 +148,9 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         if isinstance(query, Formula):
-            raise InvalidMetricsQueryError("Serializing a Formula in MetricQuery.query is unsupported")
+            raise InvalidMetricsQueryError(
+                "Serializing a Formula in MetricQuery.query is unsupported"
+            )
         return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:

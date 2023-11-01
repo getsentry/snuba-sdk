@@ -136,13 +136,17 @@ class MQLlVisitor(NodeVisitor):
                     combined_groupby = formula_groupby + timeseries_groupby
                     combined_filters = combined_filters if combined_filters else None
                     combined_groupby = combined_groupby if combined_groupby else None
-                    new_timeseries = parameter.set_filters(combined_filters).set_groupby(combined_groupby)
+                    new_timeseries = parameter.set_filters(
+                        combined_filters
+                    ).set_groupby(combined_groupby)
                     new_parameters.append(new_timeseries)
                 else:
                     new_parameters.append(parameter)
             formula.parameters = new_parameters
 
-    def visit_expression(self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]) -> Union[Formula, Timeseries]:
+    def visit_expression(
+        self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]
+    ) -> Union[Formula, Timeseries]:
         """
         Top level node, simply returns the expression.
         """
@@ -153,7 +157,9 @@ class MQLlVisitor(NodeVisitor):
         raise InvalidQueryError("Arithmetic function not supported yet")
         return EXPRESSION_OPERATORS[node.text]
 
-    def visit_term(self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]) -> Union[Formula, Timeseries]:
+    def visit_term(
+        self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]
+    ) -> Union[Formula, Timeseries]:
         """
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator. If the
@@ -173,7 +179,9 @@ class MQLlVisitor(NodeVisitor):
         raise InvalidQueryError("Arithmetic function not supported yet")
         return TERM_OPERATORS[node.text]
 
-    def visit_coefficient(self, node: Node, children: Tuple[Union[Timeseries, int, float]]) -> Union[Timeseries, int, float]:
+    def visit_coefficient(
+        self, node: Node, children: Tuple[Union[Timeseries, int, float]]
+    ) -> Union[Timeseries, int, float]:
         return children[0]
 
     def visit_number(self, node: Node, children: Tuple[Any]) -> float:
@@ -202,11 +210,15 @@ class MQLlVisitor(NodeVisitor):
             target = target.set_groupby(group_by)
         return target
 
-    def visit_condition(self, node: Node, children: Tuple[Any, Any, Op, Any, Any]) -> Condition:
+    def visit_condition(
+        self, node: Node, children: Tuple[Any, Any, Op, Any, Any]
+    ) -> Condition:
         lhs, _, op, _, rhs = children
         return Condition(lhs[0], op, rhs)
 
-    def visit_function(self, node: Node, children: Tuple[Timeseries, Any]) -> Timeseries:
+    def visit_function(
+        self, node: Node, children: Tuple[Timeseries, Any]
+    ) -> Timeseries:
         """
         Given an Timeseries target, set its children groupbys.
         """
@@ -220,7 +232,9 @@ class MQLlVisitor(NodeVisitor):
             target = target.set_groupby(group_by)
         return target
 
-    def visit_group_by(self, node: Node, children: Tuple[Any, Any, Any, Tuple[Column]]) -> Column:
+    def visit_group_by(
+        self, node: Node, children: Tuple[Any, Any, Any, Tuple[Column]]
+    ) -> Column:
         *_, group_by = children
         return group_by[0]
 
@@ -230,24 +244,32 @@ class MQLlVisitor(NodeVisitor):
     def visit_tag_key(self, node: Node, children: Tuple[Any]) -> Column:
         return Column(node.text)
 
-    def visit_tag_value(self, node: Node, children: Tuple[Union[str, Tuple[str]]]) -> str:
+    def visit_tag_value(
+        self, node: Node, children: Tuple[Union[str, Tuple[str]]]
+    ) -> str:
         return children[0]
 
     def visit_quoted_string(self, node: Node, children: Tuple[Any]) -> str:
         return str(node.text[1:-1])
 
-    def visit_quoted_string_tuple(self, node: Node, children: Tuple[Any, Any, str, Tuple[Any], Any, Any]) -> Tuple[str]:
+    def visit_quoted_string_tuple(
+        self, node: Node, children: Tuple[Any, Any, str, Tuple[Any], Any, Any]
+    ) -> Tuple[str]:
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
     def visit_group_by_name(self, node: Node, children: Tuple[Any]) -> Column:
         return Column(node.text)
 
-    def visit_group_by_name_tuple(self, node: Node, children: Tuple[Any, Any, Column, Tuple[Any], Any, Any]) -> Tuple[str]:
+    def visit_group_by_name_tuple(
+        self, node: Node, children: Tuple[Any, Any, Column, Tuple[Any], Any, Any]
+    ) -> Tuple[str]:
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
-    def visit_target(self, node: Node, children: Tuple[Tuple[Metric, Timeseries]]) -> Timeseries:
+    def visit_target(
+        self, node: Node, children: Tuple[Tuple[Metric, Timeseries]]
+    ) -> Timeseries:
         """
         Given a target (which is a Metric object), create a Timeseries object and return it.
         """
@@ -264,7 +286,9 @@ class MQLlVisitor(NodeVisitor):
         raise InvalidQueryError("Variables are not supported yet")
         return None
 
-    def visit_nested_expression(self, node: Node, children: Tuple[Any, Any, Union[Timeseries, Formula]]) -> Union[Timeseries, Formula]:
+    def visit_nested_expression(
+        self, node: Node, children: Tuple[Any, Any, Union[Timeseries, Formula]]
+    ) -> Union[Timeseries, Formula]:
         return children[2]
 
     def visit_aggregate(self, node: Node, children: Tuple[str, Any]) -> Timeseries:

@@ -29,17 +29,15 @@ class ArithmeticOperator(Enum):
 @dataclass(frozen=True)
 class Formula:
     operator: ArithmeticOperator
-    parameters: Optional[
-        Sequence[
-            Union[Formula, Timeseries, float, int]
-        ]
-    ] = None
+    parameters: Optional[Sequence[Union[Formula, Timeseries, float, int]]] = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
 
     def validate(self) -> None:
         if not isinstance(self.operator, ArithmeticOperator):
-            raise InvalidFormulaError(f"formula '{self.operator}' must be a ArithmeticOperator")
+            raise InvalidFormulaError(
+                f"formula '{self.operator}' must be a ArithmeticOperator"
+            )
         if self.parameters is not None:
             if not isinstance(self.parameters, Sequence):
                 raise InvalidFormulaError(
@@ -62,9 +60,7 @@ class Formula:
             raise InvalidFormulaError("filters must be a list of Conditions")
         return self._replace("filters", filters)
 
-    def set_groupby(
-        self, groupby: list[Column | AliasedExpression] | None
-    ) -> Formula:
+    def set_groupby(self, groupby: list[Column | AliasedExpression] | None) -> Formula:
         if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
             raise InvalidFormulaError("groupby must be a list of Columns")
         return self._replace("groupby", groupby)
