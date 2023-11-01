@@ -4,11 +4,6 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
-from snuba_sdk.aliased_expression import AliasedExpression
-from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
-from snuba_sdk.expressions import list_type
-from snuba_sdk.function import Function
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
 from snuba_sdk.query import BaseQuery

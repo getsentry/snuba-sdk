@@ -3,7 +3,7 @@ Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Any, Mapping, Sequence, Union, Tuple
+from typing import Any, Mapping, Union, Tuple
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar

@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Generic, Mapping, Sequence, TypeVar
+from typing import Generic, Mapping, TypeVar
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 from snuba_sdk import metrics_query as main
-from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup, Op
-from snuba_sdk.expressions import list_type
+from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
     RollupSnQLPrinter,
