@@ -3,7 +3,7 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.dsl.dsl import parse_mql
-from snuba_sdk.formula import Formula
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.timeseries import Metric, Timeseries
 
@@ -191,18 +191,18 @@ tests = [
 
 
 @pytest.mark.parametrize("mql_string, metrics_query", tests)
-def test_parse_mql(mql_string, metrics_query: MetricsQuery) -> None:
+def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
 
 
-@pytest.mark.xfail(reason="Not supported")
+# @pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
     dsl = "sum(foo) / 1000"
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -217,7 +217,7 @@ def test_terms() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "multiply",
+            ArithmeticOperator.MULTIPLY,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -232,13 +232,40 @@ def test_terms() -> None:
     )
 
 
+# @pytest.mark.xfail(reason="Not supported")
+def test_multi_terms() -> None:
+    dsl = "(sum(foo) * sum(bar)) / 1000"
+    result = parse_mql(dsl)
+    assert result == MetricsQuery(
+        query=Formula(
+            ArithmeticOperator.DIVIDE,
+            [
+                Formula(
+                    ArithmeticOperator.MULTIPLY,
+                    [
+                        Timeseries(
+                            metric=Metric(public_name="foo"),
+                            aggregate="sum",
+                        ),
+                        Timeseries(
+                            metric=Metric(public_name="bar"),
+                            aggregate="sum",
+                        ),
+                    ],
+                ),
+                1000.0,
+            ],
+        )
+    )
+
+
 @pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -257,7 +284,7 @@ def test_terms_with_filters() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -280,7 +307,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -300,7 +327,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -320,7 +347,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -341,7 +368,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -363,7 +390,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),
@@ -385,7 +412,7 @@ def test_terms_with_groupby() -> None:
     result = parse_mql(dsl)
     assert result == MetricsQuery(
         query=Formula(
-            "divide",
+            ArithmeticOperator.DIVIDE,
             [
                 Timeseries(
                     metric=Metric(public_name="foo"),

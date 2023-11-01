@@ -3,7 +3,7 @@ Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Any, Mapping, Tuple, Union
+from typing import Any, List, Mapping, Sequence, Union
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
@@ -11,7 +11,7 @@ from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.formula import ArithmeticOperator, Formula
+from snuba_sdk.formula import ArithmeticOperator, Formula, FormulaParameterGroup
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
@@ -69,14 +69,14 @@ _ = ~r"\s*"
 """
 )
 
-EXPRESSION_OPERATORS: Mapping[str, str] = {
-    "+": ArithmeticOperator.PLUS.value,
-    "-": ArithmeticOperator.MINUS.value,
+EXPRESSION_OPERATORS: Mapping[str, ArithmeticOperator] = {
+    "+": ArithmeticOperator.PLUS,
+    "-": ArithmeticOperator.MINUS,
 }
 
-TERM_OPERATORS: Mapping[str, str] = {
-    "*": ArithmeticOperator.MULTIPLY.value,
-    "/": ArithmeticOperator.DIVIDE.value,
+TERM_OPERATORS: Mapping[str, ArithmeticOperator] = {
+    "*": ArithmeticOperator.MULTIPLY,
+    "/": ArithmeticOperator.DIVIDE,
 }
 
 
@@ -94,7 +94,7 @@ def parse_mql(mql: str) -> MetricsQuery:
     return metrics_query
 
 
-class MQLlVisitor(NodeVisitor):
+class MQLlVisitor(NodeVisitor):  # type: ignore
     def visit(self, node: Node) -> Any:
         """Walk a parse tree, transforming it into a MetricsQuery object.
 
@@ -113,7 +113,7 @@ class MQLlVisitor(NodeVisitor):
         except Exception as e:
             raise e
 
-    def collapse_into_timeseries(self, formula: Formula) -> Timeseries:
+    def collapse_into_timeseries(self, formula: Formula) -> Formula:
         """
         Collapses the filters and groupbys of a Formula object into the Timeseries object
         using the distributive property.
@@ -125,9 +125,12 @@ class MQLlVisitor(NodeVisitor):
         """
         formula_filters = formula.filters if formula.filters else []
         formula_groupby = formula.groupby if formula.groupby else []
-        new_parameters = []
+        new_parameters: List[FormulaParameterGroup] = []
         if formula.parameters:
             for parameter in formula.parameters:
+                if isinstance(parameter, Formula):
+                    new_formula = self.collapse_into_timeseries(parameter)
+                    new_parameters.append(new_formula)
                 if isinstance(parameter, Timeseries):
                     timeseries_filters = parameter.filters if parameter.filters else []
                     timeseries_groupby = parameter.groupby if parameter.groupby else []
@@ -140,31 +143,35 @@ class MQLlVisitor(NodeVisitor):
                     ).set_groupby(combined_groupby)
                     new_parameters.append(new_timeseries)
                 else:
+                    assert isinstance(parameter, (float, int))
                     new_parameters.append(parameter)
-            formula.parameters = new_parameters
+            formula = formula.set_parameters(new_parameters)
+        return formula.set_filters(None).set_groupby(None)
 
     def visit_expression(
-        self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]
+        self, node: Node, children: Sequence[Any]
     ) -> Union[Formula, Timeseries]:
         """
         Top level node, simply returns the expression.
         """
         expr, zero_or_more_others = children
+        assert isinstance(expr, (Formula, Timeseries))
         return expr
 
-    def visit_expr_op(self, node: Node, children: Tuple[Any]) -> Any:
+    def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Arithmetic function not supported yet")
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(
-        self, node: Node, children: Tuple[Union[Formula, Timeseries], Any]
-    ) -> Union[Formula, Timeseries]:
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Formula, Timeseries, float, int]:
         """
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator. If the
         children are Formula objects, then collapse them into a Timeseries first.
         """
         term, zero_or_more_others = children
+        assert isinstance(term, (Formula, Timeseries, float, int))
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
             if isinstance(term, Formula):
@@ -174,26 +181,28 @@ class MQLlVisitor(NodeVisitor):
             return Formula(term_operator, [term, coefficient])
         return term
 
-    def visit_term_op(self, node: Node, children: Tuple[Any]) -> Any:
+    def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Arithmetic function not supported yet")
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(
-        self, node: Node, children: Tuple[Union[Timeseries, int, float]]
+        self, node: Node, children: Sequence[Union[Timeseries, int, float]]
     ) -> Union[Timeseries, int, float]:
         return children[0]
 
-    def visit_number(self, node: Node, children: Tuple[Any]) -> float:
+    def visit_number(self, node: Node, children: Sequence[Any]) -> float:
         return float(node.text)
 
-    def visit_filter(self, node: Node, children: Tuple[Timeseries, Any]) -> Timeseries:
+    def visit_filter(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
         """
-        Given a Timeseries target, set its children filters and groupbys.
+        Given a Formula or Timeseries target, set its children filters and groupbys.
         """
         target, packed_filters, packed_groupbys, *_ = children
+        assert isinstance(target, Formula) or isinstance(target, Timeseries)
         if not packed_filters and not packed_groupbys:
             return target
-        assert isinstance(target, Formula) or isinstance(target, Timeseries)
         if packed_filters:
             _, _, first, zero_or_more_others, *_ = packed_filters[0]
             filters = [first, *(v for _, _, _, v in zero_or_more_others)]
@@ -209,19 +218,16 @@ class MQLlVisitor(NodeVisitor):
             target = target.set_groupby(group_by)
         return target
 
-    def visit_condition(
-        self, node: Node, children: Tuple[Any, Any, Op, Any, Any]
-    ) -> Condition:
+    def visit_condition(self, node: Node, children: Sequence[Any]) -> Condition:
         lhs, _, op, _, rhs = children
         return Condition(lhs[0], op, rhs)
 
-    def visit_function(
-        self, node: Node, children: Tuple[Timeseries, Any]
-    ) -> Timeseries:
+    def visit_function(self, node: Node, children: Sequence[Any]) -> Timeseries:
         """
         Given an Timeseries target, set its children groupbys.
         """
         target, packed_groupbys = children
+        assert isinstance(target, Timeseries)
         if packed_groupbys:
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
@@ -232,43 +238,45 @@ class MQLlVisitor(NodeVisitor):
         return target
 
     def visit_group_by(
-        self, node: Node, children: Tuple[Any, Any, Any, Tuple[Column]]
-    ) -> Column:
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Column, Sequence[Column]]:
         *_, group_by = children
-        return group_by[0]
+        group_by_name = group_by[0]
+        return group_by_name
 
-    def visit_condition_op(self, node: Node, children: Tuple[Any]) -> Op:
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
         return Op(node.text)
 
-    def visit_tag_key(self, node: Node, children: Tuple[Any]) -> Column:
+    def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
 
     def visit_tag_value(
-        self, node: Node, children: Tuple[Union[str, Tuple[str]]]
+        self, node: Node, children: Sequence[Union[str, Sequence[str]]]
     ) -> str:
-        return children[0]
+        tag_value = children[0]
+        return tag_value
 
-    def visit_quoted_string(self, node: Node, children: Tuple[Any]) -> str:
+    def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text[1:-1])
 
     def visit_quoted_string_tuple(
-        self, node: Node, children: Tuple[Any, Any, str, Tuple[Any], Any, Any]
-    ) -> Tuple[str]:
+        self, node: Node, children: Sequence[Any]
+    ) -> Sequence[str]:
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
-    def visit_group_by_name(self, node: Node, children: Tuple[Any]) -> Column:
+    def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
 
     def visit_group_by_name_tuple(
-        self, node: Node, children: Tuple[Any, Any, Column, Tuple[Any], Any, Any]
-    ) -> Tuple[str]:
+        self, node: Node, children: Sequence[Any]
+    ) -> Sequence[str]:
         _, _, first, zero_or_more_others, _, _ = children
         return [first, *(v for _, _, _, v in zero_or_more_others)]
 
     def visit_target(
-        self, node: Node, children: Tuple[Tuple[Metric, Timeseries]]
-    ) -> Timeseries:
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
         """
         Given a target (which is a Metric object), create a Timeseries object and return it.
         """
@@ -279,49 +287,47 @@ class MQLlVisitor(NodeVisitor):
             # it visit the aggregate name furthur down the tree, for now just set it to a placeholder.
             timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
             return timeseries
+        assert isinstance(target, (Timeseries, Formula))
         return target
 
-    def visit_variable(self, node: Node, children: Tuple[Any]) -> Any:
+    def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Variables are not supported yet")
         return None
 
     def visit_nested_expression(
-        self, node: Node, children: Tuple[Any, Any, Union[Timeseries, Formula]]
+        self, node: Node, children: Sequence[Any]
     ) -> Union[Timeseries, Formula]:
+        assert isinstance(children[2], (Timeseries, Formula))
         return children[2]
 
-    def visit_aggregate(self, node: Node, children: Tuple[str, Any]) -> Timeseries:
+    def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Timeseries:
         """
         Given a target (which is either a Formula or Timeseries object),
         set the aggregate on it.
         """
         aggregate_name, zero_or_one = children
         _, _, target, zero_or_more_others, *_ = zero_or_one
-        if isinstance(target, Timeseries):
-            return target.set_aggregate(aggregate_name)
-        if isinstance(target, MetricsQuery):
-            assert target.query is not None and isinstance(target.query, Timeseries)
-            return target.set_query(target.query.set_aggregate(aggregate_name))
-        return target
+        assert isinstance(target, Timeseries)
+        return target.set_aggregate(aggregate_name)
 
-    def visit_aggregate_name(self, node: Node, children: Tuple[Any]) -> str:
+    def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
-    def visit_quoted_mri(self, node: Node, children: Tuple[Any]) -> Metric:
+    def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text[1:-1]))
 
-    def visit_unquoted_mri(self, node: Node, children: Tuple[Any]) -> Metric:
+    def visit_unquoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text))
 
-    def visit_quoted_public_name(self, node: Node, children: Tuple[Any]) -> Metric:
+    def visit_quoted_public_name(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(public_name=str(node.text[1:-1]))
 
-    def visit_unquoted_public_name(self, node: Node, children: Tuple[Any]) -> Metric:
+    def visit_unquoted_public_name(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(public_name=str(node.text))
 
-    def visit_identifier(self, node: Node, children: Tuple[Any]) -> str:
+    def visit_identifier(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
-    def generic_visit(self, node: Node, children: Tuple[Any]) -> Any:
+    def generic_visit(self, node: Node, children: Sequence[Any]) -> Any:
         """The generic visit method."""
         return children

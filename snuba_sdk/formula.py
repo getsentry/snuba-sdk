@@ -29,7 +29,7 @@ class ArithmeticOperator(Enum):
 @dataclass(frozen=True)
 class Formula:
     operator: ArithmeticOperator
-    parameters: Optional[Sequence[Union[Formula, Timeseries, float, int]]] = None
+    parameters: Optional[Sequence[FormulaParameterGroup]] = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
 
@@ -53,6 +53,15 @@ class Formula:
         new = replace(self, **{field: value})
         return new
 
+    def set_parameters(self, parameters: Sequence[FormulaParameterGroup]) -> Formula:
+        if parameters is not None and not list_type(
+            parameters, (Formula, Timeseries, float, int)
+        ):
+            raise InvalidFormulaError(
+                "parameters must be a list of either Formulas, Timeseries, floats, or ints"
+            )
+        return self._replace("parameters", parameters)
+
     def set_filters(self, filters: ConditionGroup | None) -> Formula:
         if filters is not None and not list_type(
             filters, (BooleanCondition, Condition)
@@ -64,3 +73,6 @@ class Formula:
         if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
             raise InvalidFormulaError("groupby must be a list of Columns")
         return self._replace("groupby", groupby)
+
+
+FormulaParameterGroup = Union[Formula, Timeseries, float, int]
