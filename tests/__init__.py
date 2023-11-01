@@ -5,8 +5,8 @@ from typing import Any, Callable, Optional
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, Condition, Or
-from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.formula import Formula
+from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.timeseries import Timeseries
 
 

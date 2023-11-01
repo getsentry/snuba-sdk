@@ -3,7 +3,7 @@ Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Any, Mapping, Union, Tuple
+from typing import Any, Mapping, Tuple, Union
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
@@ -15,7 +15,6 @@ from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
-
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 METRIC_TYPE_REGEX = r"(c|s|d|g|e)"

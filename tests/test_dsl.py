@@ -5,8 +5,7 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query import MetricsQuery
-from snuba_sdk.timeseries import Timeseries, Metric
-
+from snuba_sdk.timeseries import Metric, Timeseries
 
 tests = [
     pytest.param(

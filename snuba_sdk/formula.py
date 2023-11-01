@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Optional, Sequence, Union, Any
+from typing import Any, Optional, Sequence, Union
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
