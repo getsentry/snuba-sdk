@@ -7,7 +7,7 @@ import pytest
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import Condition, Op, Or
 from snuba_sdk.metrics_visitors import MetricSnQLPrinter, TimeseriesSnQLPrinter
 from snuba_sdk.timeseries import InvalidTimeseriesError, Metric
 from tests import timeseries
@@ -202,6 +202,31 @@ timeseries_tests = [
         },
         None,
         id="filters",
+    ),
+    pytest.param(
+        timeseries(
+            Metric(id=123, entity="metrics_sets"),
+            "quantile",
+            [0.95],
+            [
+                Or(
+                    [
+                        Condition(Column("tags[release]"), Op.EQ, "1.2.3"),
+                        Condition(Column("tags[highway]"), Op.EQ, "401"),
+                    ]
+                )
+            ],
+            None,
+        ),
+        {
+            "entity": "metrics_sets",
+            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
+            "filters": "(tags[release] = '1.2.3' OR tags[highway] = '401')",
+            "groupby": "",
+            "metric_filter": "metric_id = 123",
+        },
+        None,
+        id="boolean condition filters",
     ),
     pytest.param(
         timeseries(
