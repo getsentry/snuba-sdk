@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping, Optional, Sequence, Union
+from typing import Sequence, Mapping, Optional, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.expressions import (

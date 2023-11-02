@@ -4,11 +4,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
-from snuba_sdk.aliased_expression import AliasedExpression
-from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
-from snuba_sdk.expressions import Limit, Offset, list_type
-from snuba_sdk.function import Function
+from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
 from snuba_sdk.query import BaseQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -28,11 +25,7 @@ class MetricsQuery(BaseQuery):
     a simpler syntax for writing timeseries queries, which have fewer available features.
     """
 
-    # TODO: This should support some kind of calculation. Simply using Function
-    # causes import loop problems.
-    query: Timeseries | None = None
-    filters: ConditionGroup | None = None
-    groupby: list[Column | AliasedExpression] | None = None
+    query: Timeseries | Formula | None = None
     start: datetime | None = None
     end: datetime | None = None
     rollup: Rollup | None = None
@@ -44,24 +37,10 @@ class MetricsQuery(BaseQuery):
         new = replace(self, **{field: value})
         return new
 
-    def set_query(self, query: Function | Timeseries) -> MetricsQuery:
-        if not isinstance(query, (Function, Timeseries)):
-            raise InvalidQueryError("query must be a Function or Timeseries")
+    def set_query(self, query: Formula | Timeseries) -> MetricsQuery:
+        if not isinstance(query, (Formula, Timeseries)):
+            raise InvalidQueryError("query must be a Formula or Timeseries")
         return self._replace("query", query)
-
-    def set_filters(self, filters: ConditionGroup | None) -> MetricsQuery:
-        if filters is not None and not list_type(
-            filters, (BooleanCondition, Condition)
-        ):
-            raise InvalidQueryError("filters must be a list of Conditions")
-        return self._replace("filters", filters)
-
-    def set_groupby(
-        self, groupby: list[Column | AliasedExpression] | None
-    ) -> MetricsQuery:
-        if groupby is not None and not list_type(groupby, (Column, AliasedExpression)):
-            raise InvalidQueryError("groupby must be a list of Columns")
-        return self._replace("groupby", groupby)
 
     def set_start(self, start: datetime) -> MetricsQuery:
         if not isinstance(start, datetime):

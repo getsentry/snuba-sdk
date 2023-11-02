@@ -34,7 +34,14 @@ class CurriedFunction(Expression):
     initializers: Optional[Sequence[Union[ScalarLiteralType, Column]]] = None
     parameters: Optional[
         Sequence[
-            Union[ScalarType, Column, CurriedFunction, Function, Identifier, Lambda]
+            Union[
+                ScalarType,
+                Column,
+                CurriedFunction,
+                Function,
+                Identifier,
+                Lambda,
+            ]
         ]
     ] = None
     alias: Optional[str] = None
@@ -81,7 +88,8 @@ class CurriedFunction(Expression):
                 )
             for param in self.parameters:
                 if not isinstance(
-                    param, (Column, CurriedFunction, Function, Identifier, Lambda)
+                    param,
+                    (Column, CurriedFunction, Function, Identifier, Lambda),
                 ) and not is_scalar(param):
                     assert not isinstance(param, bytes)  # mypy
                     raise InvalidFunctionError(

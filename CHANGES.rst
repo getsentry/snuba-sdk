@@ -1,11 +1,19 @@
 Changelog and versioning
 ==========================
 
-2.0.7
+2.0.8
 -----
+
 - Support the `limit` and `offset` field in the MetricsQuery
     - This will set the appropriate LIMIT and OFFSET clauses in the resulting SQL query,
     allowing for pagination
+
+
+2.0.7
+-----
+- Introduce MQL grammar and parser
+- Add `Formula` class to support formula queries.
+- Removed `filters` and `groupby` in MetricsQuery class
 
 
 2.0.6
