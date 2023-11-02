@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import copy
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Generic, Mapping, TypeVar
+from typing import Generic, Mapping, Union, TypeVar
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -10,8 +11,9 @@ from snuba_sdk import metrics_query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.expressions import Limit, Offset
-from snuba_sdk.formula import Formula
+from snuba_sdk.formula import Formula, FormulaSnQL
 from snuba_sdk.metrics_visitors import (
+    FormulaSnQLPrinter,
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
     TimeseriesSnQLPrinter,
@@ -77,19 +79,35 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
     def __init__(self, pretty: bool = False) -> None:
         self.pretty = pretty
         self.expression_visitor = Translation()
+        self.formula_visitor = FormulaSnQLPrinter(self.expression_visitor)
         self.timeseries_visitor = TimeseriesSnQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
-    ) -> str:
-        # If query is a Timeseries, simply return the appropriate SnQL query
-        # If query is a Formula, return FormulaSnQL object
-        snql_string = SnQLString(self.pretty)
+    ) -> Union[SnQLString, FormulaSnQL]:
         query_data = returns["query"]
         assert isinstance(query_data, dict)
+        if "operator" in query_data:
+            # it is a formula
+            formula_snql = FormulaSnQL()
+            formula_snql.operator = query_data["operator"]
+            params = []
+            for parameter in query_data["parameters"]:
+                if isinstance(parameter, dict):
+                    new_returns = copy.deepcopy(returns)
+                    new_returns["query"] = parameter
+                    params.append(self._combine(query, new_returns))
+                else:
+                    params.append(parameter)
+            formula_snql.parameters = params
+            return formula_snql
+        return self._build_snql_string(query, returns)
 
+    def _build_snql_string(self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]) -> SnQLString:
+        snql_string = SnQLString(self.pretty)
+        query_data = returns["query"]
         entity = query_data["entity"]
 
         select_columns = []
@@ -144,15 +162,13 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         snql_string.select_clause = snql_string.select_clause.format(select_columns=", ".join(select_columns))
         snql_string.where_clause = snql_string.where_clause.format(where_clauses=" AND ".join(where_clauses))
 
-        return snql_string.get_string()
+        return snql_string
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         if isinstance(query, Formula):
-            raise InvalidMetricsQueryError(
-                "Serializing a Formula in MetricQuery.query is unsupported"
-            )
+            return self.formula_visitor.visit(query)
         return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:

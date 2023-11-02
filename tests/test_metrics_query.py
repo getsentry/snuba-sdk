@@ -9,6 +9,7 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
@@ -253,6 +254,41 @@ tests = [
 def test_query(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
     assert query.serialize() == translated
+
+
+def test_formula_query() -> None:
+    metrics_query = MetricsQuery(
+        query=Formula(
+            operator=ArithmeticOperator.DIVIDE,
+            parameters=[
+                Timeseries(
+                    metric=Metric(
+                        "transaction.duration",
+                        "d:transactions/duration@millisecond",
+                        123,
+                        "metrics_sets",
+                    ),
+                    aggregate="quantiles",
+                    aggregate_params=[0.5, 0.99],
+                    groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")]
+                ),
+                1000.0
+            ],
+            groupby=[AliasedExpression(Column("tags[status_code]"), "status_code")]
+        ),
+        start=NOW,
+        end=NOW + timedelta(days=14),
+        rollup=Rollup(interval=60, granularity=60, totals=True),
+        scope=MetricsScope(
+            org_ids=[1],
+            project_ids=[11],
+            use_case_id="transactions",
+        ),
+        limit=Limit(100),
+        offset=Offset(100),
+    )
+    metrics_query.validate()
+    metrics_query.serialize()
 
 
 invalid_tests = [

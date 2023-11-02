@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Mapping, Sequence, TypeVar
+from typing import Any, Generic, Mapping, Sequence, Union, TypeVar
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, ConditionGroup, Op
@@ -61,29 +61,35 @@ class FormulaSnQLPrinter(FormulaVisitor[str]):
 
     def _combine(
         self,
-        timeseries: Timeseries,
+        formula: Formula,
         returns: Mapping[str, str | Mapping[str, str]],
     ) -> Mapping[str, str]:
-        metric_data = returns["metric"]
-        assert isinstance(metric_data, Mapping)  # mypy
+        # Collapse down the groupby and filters of formula to the timeseries
+        if 'parameters' in returns:
+            for parameter in returns['parameters']:
+                if isinstance(parameter, dict):
+                    # parameter is a timeseries
+                    if 'filters' in returns and returns["filters"] is not None and returns["filters"] != "":
+                        parameter["filters"] = " AND ".join([returns["filters"], parameter["filters"]])
+                        returns["filters"] = ""
+                    if 'groupby' in returns and returns["groupby"] is not None and returns["groupby"] != "":
+                        parameter["groupby"] = ", ".join([returns["groupby"], parameter["groupby"]])
+                        returns["groupby"] = ""
 
-        ret = {
-            "entity": metric_data["entity"],
-            "aggregate": str(returns["aggregate"]),
-            "metric_filter": metric_data["metric_filter"],
-        }
+        return returns
 
-        if returns["filters"] is not None:
-            ret["filters"] = str(returns["filters"])
+    def _visit_operator(self, operator: str) -> str:
+        return operator
 
-        if returns["groupby"] is not None:
-            ret["groupby"] = str(returns["groupby"])
-
-        if timeseries.groupby is not None:
-            ret[
-                "groupby"
-            ] = f"{', '.join(self.expression_visitor.visit(c) for c in timeseries.groupby)}"
-
+    def _visit_parameters(self, parameters: Sequence[FormulaParameterGroup] | None) -> Union[str, dict[str, Any]]:
+        ret = []
+        for parameter in parameters:
+            if isinstance(parameter, Formula):
+                ret.append(self.visit(parameter))
+            elif isinstance(parameter, Timeseries):
+                ret.append(self.timeseries_visitor.visit(parameter))
+            else:
+                ret.append(parameter)
         return ret
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:

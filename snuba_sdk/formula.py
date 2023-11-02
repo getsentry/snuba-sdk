@@ -83,11 +83,10 @@ class Formula:
 FormulaParameterGroup = Union[Formula, Timeseries, float, int]
 
 
-@dataclass(frozen=True)
 class FormulaSnQL:
     """
     Temporary class to represent a Formula in SnQL. This will be removed once
     we properly support formulas in Snuba API.
     """
-    operator: ArithmeticOperator
-    parameters: Optional[Sequence[Union[FormulaSnQL, SnQLString]]] = None
+    operator: Optional[ArithmeticOperator] = None
+    parameters: Optional[Sequence[Union[FormulaSnQL, SnQLString, int, float]]] = None
