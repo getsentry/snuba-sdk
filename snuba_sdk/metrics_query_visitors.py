@@ -16,6 +16,7 @@ from snuba_sdk.metrics_visitors import (
     ScopeSnQLPrinter,
     TimeseriesSnQLPrinter,
 )
+from snuba_sdk.query import SnQLString
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
 
@@ -79,25 +80,20 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         self.timeseries_visitor = TimeseriesSnQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
-        self.separator = "\n" if self.pretty else " "
-        self.match_clause = "MATCH ({entity})"
-        self.select_clause = "SELECT {select_columns}"
-        self.groupby_clause = "BY {groupby_columns}"
-        self.where_clause = "WHERE {where_clauses}"
-        self.orderby_clause = "ORDER BY {orderby_columns}"
-        self.limit_clause = "LIMIT {limit}"
-        self.offset_clause = "OFFSET {offset}"
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
     ) -> str:
-        timeseries_data = returns["query"]
-        assert isinstance(timeseries_data, dict)
+        # If query is a Timeseries, simply return the appropriate SnQL query
+        # If query is a Formula, return FormulaSnQL object
+        snql_string = SnQLString(self.pretty)
+        query_data = returns["query"]
+        assert isinstance(query_data, dict)
 
-        entity = timeseries_data["entity"]
+        entity = query_data["entity"]
 
         select_columns = []
-        select_columns.append(timeseries_data["aggregate"])
+        select_columns.append(query_data["aggregate"])
 
         rollup_data = returns["rollup"]
         assert isinstance(rollup_data, dict)
@@ -117,52 +113,38 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             orderby_columns.append(rollup_data["orderby"])
         where_clauses.append(rollup_data["filter"])
 
-        if timeseries_data["groupby"]:
-            groupby_columns.append(timeseries_data["groupby"])
+        if query_data["groupby"]:
+            groupby_columns.append(query_data["groupby"])
 
-        where_clauses.append(timeseries_data["metric_filter"])
-        if timeseries_data["filters"]:
-            where_clauses.append(timeseries_data["filters"])
+        where_clauses.append(query_data["metric_filter"])
+        if query_data["filters"]:
+            where_clauses.append(query_data["filters"])
 
         where_clauses.append(returns["scope"])
         where_clauses.append(returns["start"])
         where_clauses.append(returns["end"])
 
-        groupby_clause = (
-            self.groupby_clause.format(groupby_columns=", ".join(groupby_columns))
+        snql_string.groupby_clause = (
+            snql_string.groupby_clause.format(groupby_columns=", ".join(groupby_columns))
             if groupby_columns
             else ""
         )
-        orderby_clause = (
-            self.orderby_clause.format(orderby_columns=", ".join(orderby_columns))
+
+        snql_string.orderby_clause = (
+            snql_string.orderby_clause.format(orderby_columns=", ".join(orderby_columns))
             if orderby_columns
             else ""
         )
 
-        limit_clause = ""
-        if returns["limit"]:
-            limit_clause = self.limit_clause.format(limit=returns["limit"])
+        snql_string.limit_clause = snql_string.limit_clause.format(limit=returns["limit"]) if returns["limit"] else ""
+        snql_string.offset_clause = snql_string.offset_clause.format(offset=returns["offset"]) if returns["offset"] else ""
+        snql_string.totals_clause = rollup_data["with_totals"] if rollup_data["with_totals"] else ""
 
-        offset_clause = ""
-        if returns["offset"]:
-            offset_clause = self.offset_clause.format(offset=returns["offset"])
+        snql_string.match_clause = snql_string.match_clause.format(entity=entity)
+        snql_string.select_clause = snql_string.select_clause.format(select_columns=", ".join(select_columns))
+        snql_string.where_clause = snql_string.where_clause.format(where_clauses=" AND ".join(where_clauses))
 
-        totals_clause = ""
-        if rollup_data["with_totals"]:
-            totals_clause = rollup_data["with_totals"]
-
-        clauses = [
-            self.match_clause.format(entity=entity),
-            self.select_clause.format(select_columns=", ".join(select_columns)),
-            groupby_clause,
-            self.where_clause.format(where_clauses=" AND ".join(where_clauses)),
-            orderby_clause,
-            limit_clause,
-            offset_clause,
-            totals_clause,
-        ]
-
-        return self.separator.join(filter(lambda x: x != "", clauses)).strip()
+        return snql_string.get_string()
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:

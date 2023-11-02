@@ -172,3 +172,29 @@ class Query(BaseQuery):
     def print(self) -> str:
         self.validate()
         return PRETTY_PRINTER.visit(self)
+
+
+class SnQLString:
+    def __init__(self, pretty: bool = False) -> None:
+        self.pretty = pretty
+        self.separator = "\n" if self.pretty else " "
+        self.match_clause = "MATCH ({entity})"
+        self.select_clause = "SELECT {select_columns}"
+        self.groupby_clause = "BY {groupby_columns}"
+        self.where_clause = "WHERE {where_clauses}"
+        self.orderby_clause = "ORDER BY {orderby_columns}"
+        self.limit_clause = "LIMIT {limit}"
+        self.offset_clause = "OFFSET {offset}"
+        self.totals_clause = ""
+
+    def get_string(self) -> str:
+        return self.separator.join(filter(lambda x: x != "", [
+            self.match_clause,
+            self.select_clause,
+            self.groupby_clause,
+            self.where_clause,
+            self.orderby_clause,
+            self.limit_clause,
+            self.offset_clause,
+            self.totals_clause,
+        ])).strip()

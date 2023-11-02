@@ -1,17 +1,100 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Mapping, TypeVar
+from typing import Any, Generic, Mapping, Sequence, TypeVar
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, ConditionGroup, Op
 from snuba_sdk.expressions import InvalidExpressionError, Totals
+from snuba_sdk.formula import ArithmeticOperator, Formula, FormulaParameterGroup
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
 
 TVisited = TypeVar("TVisited")
+
+
+class FormulaVisitor(ABC, Generic[TVisited]):
+    def visit(self, formula: Formula) -> Mapping[str, TVisited]:
+        fields = formula.get_fields()
+        returns = {}
+        for field in fields:
+            returns[field] = getattr(self, f"_visit_{field}")(
+                getattr(formula, field)
+            )
+
+        return self._combine(formula, returns)
+
+    @abstractmethod
+    def _combine(
+        self,
+        formula: Formula,
+        returns: Mapping[str, TVisited | Mapping[str, TVisited]],
+    ) -> Mapping[str, TVisited]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_operator(self, operator: ArithmeticOperator) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_parameters(self, parameters: Sequence[FormulaParameterGroup]) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_filters(self, filters: ConditionGroup | None) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_groupby(self, groupby: list[Column] | None) -> TVisited:
+        raise NotImplementedError
+
+
+class FormulaSnQLPrinter(FormulaVisitor[str]):
+    def __init__(
+        self,
+        expression_visitor: Translation | None = None,
+    ) -> None:
+        self.expression_visitor = expression_visitor or Translation()
+        self.timeseries_visitor = TimeseriesSnQLPrinter(self.expression_visitor)
+
+    def _combine(
+        self,
+        timeseries: Timeseries,
+        returns: Mapping[str, str | Mapping[str, str]],
+    ) -> Mapping[str, str]:
+        metric_data = returns["metric"]
+        assert isinstance(metric_data, Mapping)  # mypy
+
+        ret = {
+            "entity": metric_data["entity"],
+            "aggregate": str(returns["aggregate"]),
+            "metric_filter": metric_data["metric_filter"],
+        }
+
+        if returns["filters"] is not None:
+            ret["filters"] = str(returns["filters"])
+
+        if returns["groupby"] is not None:
+            ret["groupby"] = str(returns["groupby"])
+
+        if timeseries.groupby is not None:
+            ret[
+                "groupby"
+            ] = f"{', '.join(self.expression_visitor.visit(c) for c in timeseries.groupby)}"
+
+        return ret
+
+    def _visit_filters(self, filters: ConditionGroup | None) -> str:
+        if filters is not None:
+            return " AND ".join(self.expression_visitor.visit(c) for c in filters)
+        return ""
+
+    def _visit_groupby(self, groupby: list[Column] | None) -> str:
+        if groupby is not None:
+            return ", ".join(self.expression_visitor.visit(c) for c in groupby)
+        return ""
 
 
 class TimeseriesVisitor(ABC, Generic[TVisited]):

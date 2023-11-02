@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from enum import Enum
 from typing import Any, Optional, Sequence, Union
 
@@ -8,6 +8,7 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.expressions import InvalidExpressionError, list_type
+from snuba_sdk.query import SnQLString
 from snuba_sdk.timeseries import Timeseries
 
 
@@ -32,6 +33,10 @@ class Formula:
     parameters: Optional[Sequence[FormulaParameterGroup]] = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
+
+    def get_fields(self) -> Sequence[str]:
+        self_fields = fields(self)  # Verified the order in the Python source
+        return tuple(f.name for f in self_fields)
 
     def validate(self) -> None:
         if not isinstance(self.operator, ArithmeticOperator):
@@ -76,3 +81,13 @@ class Formula:
 
 
 FormulaParameterGroup = Union[Formula, Timeseries, float, int]
+
+
+@dataclass(frozen=True)
+class FormulaSnQL:
+    """
+    Temporary class to represent a Formula in SnQL. This will be removed once
+    we properly support formulas in Snuba API.
+    """
+    operator: ArithmeticOperator
+    parameters: Optional[Sequence[Union[FormulaSnQL, SnQLString]]] = None
