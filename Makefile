@@ -18,6 +18,12 @@ help:
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
+
+make install-dev: .venv
+	$(VENV_PATH)/bin/pip install -r test-requirements.txt
+	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
+
+
 setup-git:
 	pip install 'pre-commit==2.16.0'
 	pre-commit install --install-hooks
