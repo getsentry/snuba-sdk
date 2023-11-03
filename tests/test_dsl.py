@@ -196,7 +196,6 @@ def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
     assert result == metrics_query
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
     dsl = "sum(foo) / 1000"
     result = parse_mql(dsl)
@@ -232,7 +231,6 @@ def test_terms() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_multi_terms() -> None:
     dsl = "(sum(foo) * sum(bar)) / 1000"
     result = parse_mql(dsl)
@@ -259,7 +257,6 @@ def test_multi_terms() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
     result = parse_mql(dsl)
@@ -301,7 +298,6 @@ def test_terms_with_filters() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_groupby() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
     result = parse_mql(dsl)
@@ -429,7 +425,6 @@ def test_terms_with_groupby() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_complex_nested_terms() -> None:
     dsl = '((sum(foo{tag="tag_value"}){tag2="tag_value2"} / sum(bar)){tag3="tag_value3"} * sum(pop)) by transaction'
     result = parse_mql(dsl)

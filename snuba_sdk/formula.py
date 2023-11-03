@@ -101,3 +101,6 @@ class FormulaSnQL:
             else:
                 formatted.append(p)
         return formatted
+
+    def __str__(self) -> str:
+        return str(self.format())
