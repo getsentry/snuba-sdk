@@ -187,7 +187,7 @@ class SnQLString:
         self.offset_clause = "OFFSET {offset}"
         self.totals_clause = ""
 
-    def get_string(self) -> str:
+    def __str__(self) -> str:
         return self.separator.join(filter(lambda x: x != "", [
             self.match_clause,
             self.select_clause,

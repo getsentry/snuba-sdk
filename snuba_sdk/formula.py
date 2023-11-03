@@ -90,3 +90,14 @@ class FormulaSnQL:
     """
     operator: Optional[ArithmeticOperator] = None
     parameters: Optional[Sequence[Union[FormulaSnQL, SnQLString, int, float]]] = None
+
+    def format(self) -> list[ArithmeticOperator, Any]:
+        formatted = [self.operator]
+        for p in self.parameters:
+            if isinstance(p, FormulaSnQL):
+                formatted.append(p.format())
+            elif isinstance(p, SnQLString):
+                formatted.append(str(p))
+            else:
+                formatted.append(p)
+        return formatted

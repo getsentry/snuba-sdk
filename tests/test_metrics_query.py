@@ -15,7 +15,7 @@ from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2023, 1, 2, 3, 4, 5, 0, timezone.utc)
-tests = [
+timseries_tests = [
     pytest.param(
         MetricsQuery(
             query=Timeseries(
@@ -250,45 +250,105 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("query, translated", tests)
-def test_query(query: MetricsQuery, translated: str | None) -> None:
+@pytest.mark.parametrize("query, translated", timseries_tests)
+def test_timeseries_query(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
-    assert query.serialize() == translated
+    assert str(query.serialize()) == translated
 
 
-def test_formula_query() -> None:
-    metrics_query = MetricsQuery(
-        query=Formula(
-            operator=ArithmeticOperator.DIVIDE,
-            parameters=[
-                Timeseries(
-                    metric=Metric(
-                        "transaction.duration",
-                        "d:transactions/duration@millisecond",
-                        123,
-                        "metrics_sets",
+formula_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                operator=ArithmeticOperator.DIVIDE,
+                parameters=[
+                    Timeseries(
+                        metric=Metric(
+                            "transaction.duration",
+                            "d:transactions/duration@millisecond",
+                            123,
+                            "metrics_sets",
+                        ),
+                        aggregate="quantiles",
+                        aggregate_params=[0.5, 0.99],
+                        groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")]
                     ),
-                    aggregate="quantiles",
-                    aggregate_params=[0.5, 0.99],
-                    groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")]
-                ),
-                1000.0
-            ],
-            groupby=[AliasedExpression(Column("tags[status_code]"), "status_code")]
+                    1000.0
+                ],
+                groupby=[AliasedExpression(Column("tags[status_code]"), "status_code")]
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=60, granularity=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+            limit=Limit(100),
+            offset=Offset(100),
         ),
-        start=NOW,
-        end=NOW + timedelta(days=14),
-        rollup=Rollup(interval=60, granularity=60, totals=True),
-        scope=MetricsScope(
-            org_ids=[1],
-            project_ids=[11],
-            use_case_id="transactions",
+        [ArithmeticOperator.DIVIDE, "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[status_code] AS `status_code`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC LIMIT 100 OFFSET 100 TOTALS True", 1000.0],
+        id="basic formula query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                operator=ArithmeticOperator.MULTIPLY,
+                parameters=[
+                    Formula(
+                        operator=ArithmeticOperator.DIVIDE,
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(
+                                    "transaction.duration",
+                                    "d:transactions/duration@millisecond",
+                                    123,
+                                    "metrics_sets",
+                                ),
+                                aggregate="quantiles",
+                                aggregate_params=[0.5, 0.99],
+                                filters=[Condition(Column("tags[transaction]"), Op.EQ, "foo")],
+                                groupby=[AliasedExpression(Column("tags[transaction]"), "transaction")]
+                            ),
+                            Timeseries(
+                                metric=Metric(
+                                    "transaction.duration",
+                                    "d:transactions/duration@millisecond",
+                                    123,
+                                    "metrics_sets",
+                                ),
+                                aggregate="quantiles",
+                                aggregate_params=[0.5, 0.99],
+                            ),
+                        ],
+                        filters=[Condition(Column("tags[transaction]"), Op.EQ, "bar")],
+                        groupby=[AliasedExpression(Column("tags[status_code]"), "status_code")]
+                    ),
+                    1000.0
+                ]
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=60, granularity=60, totals=True),
+            scope=MetricsScope(
+                org_ids=[1],
+                project_ids=[11],
+                use_case_id="transactions",
+            ),
+            limit=Limit(100),
+            offset=Offset(100),
         ),
-        limit=Limit(100),
-        offset=Offset(100),
-    )
-    metrics_query.validate()
-    metrics_query.serialize()
+        [ArithmeticOperator.MULTIPLY, [ArithmeticOperator.DIVIDE, "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[status_code] AS `status_code`, tags[transaction] AS `transaction` WHERE granularity = 60 AND metric_id = 123 AND tags[transaction] = 'bar' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC LIMIT 100 OFFSET 100 TOTALS True", "MATCH (metrics_sets) SELECT quantiles(0.5, 0.99)(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`, tags[status_code] AS `status_code` WHERE granularity = 60 AND metric_id = 123 AND tags[transaction] = 'bar' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC LIMIT 100 OFFSET 100 TOTALS True"], 1000.0],
+        id="complex query",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, translated", formula_tests)
+def test_formula_query(query: MetricsQuery, translated: str | None) -> None:
+    query.validate()
+    assert query.serialize().format() == translated
 
 
 invalid_tests = [

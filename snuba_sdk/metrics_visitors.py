@@ -65,17 +65,14 @@ class FormulaSnQLPrinter(FormulaVisitor[str]):
         returns: Mapping[str, str | Mapping[str, str]],
     ) -> Mapping[str, str]:
         # Collapse down the groupby and filters of formula to the timeseries
-        if 'parameters' in returns:
-            for parameter in returns['parameters']:
-                if isinstance(parameter, dict):
-                    # parameter is a timeseries
-                    if 'filters' in returns and returns["filters"] is not None and returns["filters"] != "":
-                        parameter["filters"] = " AND ".join([returns["filters"], parameter["filters"]])
-                        returns["filters"] = ""
-                    if 'groupby' in returns and returns["groupby"] is not None and returns["groupby"] != "":
-                        parameter["groupby"] = ", ".join([returns["groupby"], parameter["groupby"]])
-                        returns["groupby"] = ""
-
+        for parameter in returns['parameters']:
+            if isinstance(parameter, dict):
+                if returns["filters"] != "":
+                    parameter["filters"] = " AND ".join(filter(None, [returns["filters"], parameter["filters"]]))
+                if returns["groupby"] != "":
+                    parameter["groupby"] = ", ".join(filter(None, [returns["groupby"], parameter["groupby"]]))
+        returns["filters"] = ""
+        returns["groupby"] = ""
         return returns
 
     def _visit_operator(self, operator: str) -> str:

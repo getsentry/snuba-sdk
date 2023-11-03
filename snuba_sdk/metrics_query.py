@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any
+from typing import Any, Union
 
 from snuba_sdk.expressions import Limit, Offset
-from snuba_sdk.formula import Formula
+from snuba_sdk.formula import Formula, FormulaSnQL
 from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
-from snuba_sdk.query import BaseQuery
+from snuba_sdk.query import BaseQuery, SnQLString
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 
@@ -74,7 +74,7 @@ class MetricsQuery(BaseQuery):
     def __str__(self) -> str:
         return PRETTY_PRINTER.visit(self)
 
-    def serialize(self) -> str:
+    def serialize(self) -> Union[SnQLString, FormulaSnQL]:
         self.validate()
         return SNQL_PRINTER.visit(self)
 

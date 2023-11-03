@@ -90,12 +90,14 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         query_data = returns["query"]
         assert isinstance(query_data, dict)
         if "operator" in query_data:
-            # it is a formula
+            # MetricsQuery.query is a formula
             formula_snql = FormulaSnQL()
             formula_snql.operator = query_data["operator"]
             params = []
             for parameter in query_data["parameters"]:
+                # Recursively traverse into formula until we get to a Timeseries or scalar
                 if isinstance(parameter, dict):
+                    # Copy the top-level returns so we can push context down
                     new_returns = copy.deepcopy(returns)
                     new_returns["query"] = parameter
                     params.append(self._combine(query, new_returns))
