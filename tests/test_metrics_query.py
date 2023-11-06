@@ -462,7 +462,9 @@ invalid_metrics_query_to_snql_tests = [
 
 
 @pytest.mark.parametrize("query, exception", invalid_metrics_query_to_snql_tests)
-def test_invalid_metrics_query_to_snql_tests(query: MetricsQuery, exception: Exception) -> None:
+def test_invalid_metrics_query_to_snql_tests(
+    query: MetricsQuery, exception: Exception
+) -> None:
     with pytest.raises(type(exception), match=re.escape(str(exception))):
         query.validate()
 
@@ -600,6 +602,8 @@ invalid_metrics_query_to_mql_tests = [
 
 
 @pytest.mark.parametrize("query, exception", invalid_metrics_query_to_mql_tests)
-def test_invalid_metrics_query_to_mql_tests(query: MetricsQuery, exception: Exception) -> None:
+def test_invalid_metrics_query_to_mql_tests(
+    query: MetricsQuery, exception: Exception
+) -> None:
     with pytest.raises(type(exception), match=re.escape(str(exception))):
         query.validate()
