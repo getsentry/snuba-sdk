@@ -14,6 +14,7 @@ from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
+    TimeseriesMQLPrinter,
     TimeseriesSnQLPrinter,
 )
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
@@ -209,6 +210,63 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             return self.expression_visitor.visit(offset)
         return ""
 
+
+class MQLPrinter(MetricsQueryVisitor[str]):
+    def __init__(self) -> None:
+        self.expression_visitor = Translation()
+        self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
+        self.mql_string = ""
+
+    def _combine(
+        self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
+    ) -> str:
+        return returns["query"]
+
+    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
+        if query is None:
+            raise InvalidMetricsQueryError("MetricQuery.query must not be None")
+        if isinstance(query, Formula):
+            raise InvalidMetricsQueryError(
+                "Serializing a Formula in MetricQuery.query is unsupported"
+            )
+        self.mql_string = self.timeseries_visitor.visit(query)
+        return self.mql_string
+
+    def _visit_start(self, start: datetime | None) -> str:
+        if start is None:
+            raise InvalidMetricsQueryError("MetricQuery.start must not be None")
+
+        condition = Condition(Column("timestamp"), Op.GTE, start)
+        return self.expression_visitor.visit(condition)
+
+    def _visit_end(self, end: datetime | None) -> str:
+        if end is None:
+            raise InvalidMetricsQueryError("MetricQuery.end must not be None")
+
+        condition = Condition(Column("timestamp"), Op.LT, end)
+        return self.expression_visitor.visit(condition)
+
+    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, str]:
+        if rollup is None:
+            raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
+
+        return self.rollup_visitor.visit(rollup)
+
+    def _visit_scope(self, scope: MetricsScope | None) -> str:
+        if scope is None:
+            raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
+
+        return self.scope_visitor.visit(scope)
+
+    def _visit_limit(self, limit: Limit | None) -> str:
+        if limit is not None:
+            return self.expression_visitor.visit(limit)
+        return ""
+
+    def _visit_offset(self, offset: Offset | None) -> str:
+        if offset is not None:
+            return self.expression_visitor.visit(offset)
+        return ""
 
 class Validator(MetricsQueryVisitor[None]):
     def _combine(

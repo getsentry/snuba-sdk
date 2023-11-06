@@ -6,7 +6,7 @@ from typing import Any
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
-from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
+from snuba_sdk.metrics_query_visitors import MQLPrinter, SnQLPrinter, Validator
 from snuba_sdk.query import BaseQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
@@ -82,7 +82,12 @@ class MetricsQuery(BaseQuery):
         self.validate()
         return PRETTY_PRINTER.visit(self)
 
+    def to_mql(self) -> str:
+        self.validate()
+        return MQL_PRINTER.visit(self)
+
 
 SNQL_PRINTER = SnQLPrinter()
 PRETTY_PRINTER = SnQLPrinter(pretty=True)
+MQL_PRINTER = MQLPrinter()
 VALIDATOR = Validator()
