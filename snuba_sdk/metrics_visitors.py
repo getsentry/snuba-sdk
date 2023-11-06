@@ -143,7 +143,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
 
         if returns["filters"]:
             filters = str(returns["filters"])
-            mql_string += f"{{{filters}}}"
+            mql_string += f"{filters}"
 
         if returns["groupby"]:
             groupby = str(returns["groupby"])
@@ -162,7 +162,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         if filters is not None:
-            return "{ , }".join(self.expression_visitor.visit(c) for c in filters)
+            return "{" + ", ".join(self.expression_visitor.visit(c) for c in filters) + "}"
         return ""
 
     def _visit_groupby(self, groupby: list[Column] | None) -> str:

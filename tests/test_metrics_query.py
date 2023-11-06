@@ -520,6 +520,51 @@ metrics_query_to_mql_tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond){bar IN ('baz', 'bap')}",
+        id="in filter inquery",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond){bar = 'baz', foo = 'foz'}",
+        id="multiple filters query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
                 filters=[Condition(Column("bar"), Op.EQ, "baz")],
                 groupby=None,
             ),
