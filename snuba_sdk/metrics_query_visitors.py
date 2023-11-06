@@ -217,12 +217,37 @@ class MQLPrinter(MetricsQueryVisitor[str]):
         self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
-        self.mql_string = ""
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
     ) -> str:
-        return returns["query"]
+        """
+        TODO: This printer only supports Timeseries queries for now. We will need to extend this
+        for Formula queries. For now, this will return the following format:
+
+        {
+            'mql_string': 'max(d:transactions/duration@millisecond)',
+            'start': "timestamp >= toDateTime('2023-01-02T03:04:05')",
+            'end': "timestamp < toDateTime('2023-01-16T03:04:05')",
+            'rollup': {
+                orderby': 'time ASC',
+                'filter': 'granularity = 3600',
+                'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`",
+                'with_totals': ''
+            },
+            'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')",
+            'limit': '',
+            'offset': ''}
+        """
+        return {
+            "mql_string": returns["query"],
+            "start": returns["start"],
+            "end": returns["end"],
+            "rollup": returns["rollup"],
+            "scope": returns["scope"],
+            "limit": returns["limit"],
+            "offset": returns["offset"],
+        }
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:
@@ -231,8 +256,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
             raise InvalidMetricsQueryError(
                 "Serializing a Formula in MetricQuery.query is unsupported"
             )
-        self.mql_string = self.timeseries_visitor.visit(query)
-        return self.mql_string
+        return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:
         if start is None:

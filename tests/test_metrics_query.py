@@ -579,7 +579,7 @@ metrics_query_to_mql_tests = [
 @pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
 def test_metrics_query_to_mql(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
-    assert query.to_mql() == translated
+    assert query.to_mql()["mql_string"] == translated
 
 
 invalid_metrics_query_to_mql_tests = [
