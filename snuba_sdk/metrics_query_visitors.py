@@ -215,6 +215,8 @@ class MQLPrinter(MetricsQueryVisitor[str]):
     def __init__(self) -> None:
         self.expression_visitor = Translation()
         self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
+        self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
+        self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
         self.mql_string = ""
 
     def _combine(
@@ -267,6 +269,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
         if offset is not None:
             return self.expression_visitor.visit(offset)
         return ""
+
 
 class Validator(MetricsQueryVisitor[None]):
     def _combine(

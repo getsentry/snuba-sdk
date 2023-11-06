@@ -88,13 +88,13 @@ def parse_mql(mql: str) -> MetricsQuery:
         tree = GRAMMAR.parse(mql.strip())
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
-    result = MQLlVisitor().visit(tree)
+    result = MQLVisitor().visit(tree)
     assert isinstance(result, (Timeseries, Formula))
     metrics_query = MetricsQuery(query=result)
     return metrics_query
 
 
-class MQLlVisitor(NodeVisitor):  # type: ignore
+class MQLVisitor(NodeVisitor):  # type: ignore
     def visit(self, node: Node) -> Any:
         """Walk a parse tree, transforming it into a MetricsQuery object.
 

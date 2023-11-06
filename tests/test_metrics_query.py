@@ -14,7 +14,7 @@ from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2023, 1, 2, 3, 4, 5, 0, timezone.utc)
-tests = [
+metrics_query_to_snql_tests = [
     pytest.param(
         MetricsQuery(
             query=Timeseries(
@@ -249,13 +249,13 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("query, translated", tests)
-def test_query(query: MetricsQuery, translated: str | None) -> None:
+@pytest.mark.parametrize("query, translated", metrics_query_to_snql_tests)
+def test_metrics_query_to_snql(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
     assert query.serialize() == translated
 
 
-invalid_tests = [
+invalid_metrics_query_to_snql_tests = [
     pytest.param(
         MetricsQuery(
             query=None,
@@ -461,7 +461,145 @@ invalid_tests = [
 ]
 
 
-@pytest.mark.parametrize("query, exception", invalid_tests)
-def test_invalid_query(query: MetricsQuery, exception: Exception) -> None:
+@pytest.mark.parametrize("query, exception", invalid_metrics_query_to_snql_tests)
+def test_invalid_metrics_query_to_snql_tests(query: MetricsQuery, exception: Exception) -> None:
+    with pytest.raises(type(exception), match=re.escape(str(exception))):
+        query.validate()
+
+
+metrics_query_to_mql_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond)",
+        id="basic mri query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    public_name="transactions.duration",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(transactions.duration)",
+        id="basic public name query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond){bar = 'baz'}",
+        id="filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond) by (transaction)",
+        id="groupby query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond){bar = 'baz'} by (transaction)",
+        id="complex single timeseries query",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
+def test_metrics_query_to_mql(query: MetricsQuery, translated: str | None) -> None:
+    query.validate()
+    assert query.to_mql() == translated
+
+
+invalid_metrics_query_to_mql_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=None,
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        InvalidMetricsQueryError("query is required for a metrics query"),
+        id="missing query",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, exception", invalid_metrics_query_to_mql_tests)
+def test_invalid_metrics_query_to_mql_tests(query: MetricsQuery, exception: Exception) -> None:
     with pytest.raises(type(exception), match=re.escape(str(exception))):
         query.validate()

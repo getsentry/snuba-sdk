@@ -148,7 +148,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
 
         if returns["groupby"]:
             groupby = str(returns["groupby"])
-            mql_string += f"{{{groupby}}}"
+            mql_string += f"{groupby}"
 
         return mql_string
 
