@@ -552,7 +552,7 @@ metrics_query_to_mql_tests = [
             ),
         ),
         "max(d:transactions/duration@millisecond){bar IN ('baz', 'bap')}",
-        id="in filter inquery",
+        id="in filter query",
     ),
     pytest.param(
         MetricsQuery(

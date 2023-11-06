@@ -162,7 +162,15 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         if filters is not None:
-            return "{" + ", ".join(self.expression_visitor.visit(c) for c in filters) + "}"
+            # In order to reuse the expression visitor, we need to do some cleanup after
+            # and remove typing information (e.g. array('a', 'b') -> ('a', 'b'))
+            string_filters = [
+                self.expression_visitor.visit(c)
+                .replace("array", "")
+                .replace("tuple", "")
+                for c in filters
+            ]
+            return "{" + ", ".join(string_filters) + "}"
         return ""
 
     def _visit_groupby(self, groupby: list[Column] | None) -> str:
