@@ -520,6 +520,27 @@ metrics_query_to_mql_tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond){bar = 'baz'}",
+        id="filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
                 filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
                 groupby=None,
             ),
@@ -565,27 +586,6 @@ metrics_query_to_mql_tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
-                filters=[Condition(Column("bar"), Op.EQ, "baz")],
-                groupby=None,
-            ),
-            start=NOW,
-            end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None, granularity=3600),
-            scope=MetricsScope(
-                org_ids=[1], project_ids=[11], use_case_id="transactions"
-            ),
-        ),
-        "max(d:transactions/duration@millisecond){bar = 'baz'}",
-        id="filter query",
-    ),
-    pytest.param(
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(
-                    mri="d:transactions/duration@millisecond",
-                ),
-                aggregate="max",
-                aggregate_params=None,
                 filters=None,
                 groupby=[Column("transaction")],
             ),
@@ -598,6 +598,27 @@ metrics_query_to_mql_tests = [
         ),
         "max(d:transactions/duration@millisecond) by (transaction)",
         id="groupby query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=[Column("a"), Column("b")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        "max(d:transactions/duration@millisecond) by (a, b)",
+        id="multiple groupby query",
     ),
     pytest.param(
         MetricsQuery(
