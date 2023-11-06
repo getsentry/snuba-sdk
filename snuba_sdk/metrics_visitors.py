@@ -41,7 +41,7 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_metric(self, metric: Metric) -> Mapping[str, TVisited]:
+    def _visit_metric(self, metric: Metric) -> str | Mapping[str, TVisited]:
         raise NotImplementedError
 
     @abstractmethod
@@ -125,7 +125,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
     def __init__(
         self,
         expression_visitor: Translation | None = None,
-        metrics_visitor: MetricSnQLPrinter | None = None,
+        metrics_visitor: MetricMQLPrinter | None = None,
     ) -> None:
         self.expression_visitor = expression_visitor or Translation()
         self.metrics_visitor = metrics_visitor or MetricMQLPrinter()
@@ -135,8 +135,10 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         timeseries: Timeseries,
         returns: Mapping[str, str | Mapping[str, str]],
     ) -> Mapping[str, str]:
-        metric_name = returns["metric"]
-        mql_string = metric_name
+        metric_data = returns["metric"]
+        assert isinstance(metric_data, Mapping)
+        mql_string = metric_data["metric_name"]
+        assert isinstance(mql_string, str)
         if returns["aggregate"]:
             aggregate = returns["aggregate"]
             mql_string = f"{aggregate}({mql_string})"
@@ -211,15 +213,15 @@ class MetricSnQLPrinter(MetricVisitor[Mapping[str, str]]):
 
 
 class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
-    def visit(self, metric: Metric) -> str:
+    def visit(self, metric: Metric) -> Mapping[str, str]:
         if metric.mri is None and metric.public_name is None:
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"
             )
         if metric.mri:
-            return metric.mri
+            return {"metric_name": metric.mri}
         assert metric.public_name is not None
-        return metric.public_name
+        return {"metric_name": metric.public_name}
 
 
 class RollupVisitor(ABC, Generic[TVisited]):
