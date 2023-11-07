@@ -1,7 +1,7 @@
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op, Or
+from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
