@@ -213,7 +213,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         group_by_name = group_by[0]
         return group_by_name
 
-    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
     def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
