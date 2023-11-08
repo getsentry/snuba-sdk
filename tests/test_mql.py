@@ -75,7 +75,7 @@ tests = [
         id="test nested expressions 2",
     ),
     pytest.param(
-        'sum(foo){bar="baz"}',
+        'sum(foo){bar:"baz"}',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="foo"),
@@ -86,7 +86,18 @@ tests = [
         id="test filter",
     ),
     pytest.param(
-        'sum(foo){bar IN ("baz", "bap")}',
+        'sum(foo){!bar:"baz"}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.NEQ, "baz")],
+            )
+        ),
+        id="test not filter",
+    ),
+    pytest.param(
+        'sum(foo){bar:["baz", "bap"]}',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="foo"),
@@ -97,7 +108,18 @@ tests = [
         id="test in filter",
     ),
     pytest.param(
-        'sum(foo{bar="baz"})',
+        'sum(foo){!bar:["baz", "bap"]}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.NOT_IN, ["baz", "bap"])],
+            )
+        ),
+        id="test not in filter",
+    ),
+    pytest.param(
+        'sum(foo{bar:"baz"})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="foo"),
@@ -108,7 +130,7 @@ tests = [
         id="test filter inside aggregate",
     ),
     pytest.param(
-        'sum(user{bar="baz", foo="foz"})',
+        'sum(user{bar:"baz", foo:"foz"})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
@@ -122,7 +144,7 @@ tests = [
         id="test multiple filters",
     ),
     pytest.param(
-        'sum(`d:transactions/duration@millisecond`{foo="foz", hee="haw"}){bar="baz"}',
+        'sum(`d:transactions/duration@millisecond`{foo:"foz", hee:"haw"}){bar:"baz"}',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -137,7 +159,7 @@ tests = [
         id="test multiple layer filters",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo="foz"}) by transaction',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"}) by transaction',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -149,7 +171,7 @@ tests = [
         id="test group by 1",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo="foz"} by transaction)',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"} by transaction)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -161,7 +183,7 @@ tests = [
         id="test group by 2",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo="foz"}) by (transaction)',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"}) by (transaction)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -173,7 +195,7 @@ tests = [
         id="test group by 3",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo="foz"}){bar="baz"} by (a, b)',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:"baz"} by (a, b)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),

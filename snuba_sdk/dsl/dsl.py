@@ -33,13 +33,13 @@ coefficient = number / filter
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
 filter = target (open_brace _ condition (_ comma _ condition)* _ close_brace)? (group_by)?
 
-condition = (variable / tag_key) _ condition_op _ tag_value
-condition_op = "=" / "!=" / "~" / "!~" / "IN" / "NOT IN"
+condition = condition_op? (variable / tag_key) _ colon _ tag_value
+condition_op = "!"
 tag_key = ~"[a-zA-Z0-9_]+"
 tag_value = quoted_string / quoted_string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-quoted_string_tuple = open_paren _ quoted_string (_ comma _ quoted_string)* _ close_paren
+quoted_string_tuple = open_square_bracket _ quoted_string (_ comma _ quoted_string)* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
 variable = "$" ~"[a-zA-Z0-9_]+"
@@ -61,10 +61,13 @@ unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
 
 open_paren = "("
 close_paren = ")"
+open_square_bracket = "["
+close_square_bracket = "]"
 open_brace = "{{"
 close_brace = "}}"
 comma = ","
 backtick = "`"
+colon = ":"
 _ = ~r"\s*"
 """
 )
@@ -179,7 +182,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return target
 
     def visit_condition(self, node: Node, children: Sequence[Any]) -> Condition:
-        lhs, _, op, _, rhs = children
+        condition_op, lhs, _, _, _, rhs = children
+        op = Op.EQ
+        if not condition_op and isinstance(rhs, list):
+            op = Op.IN
+        elif len(condition_op) == 1 and condition_op[0] == "!":
+            if isinstance(rhs, str):
+                op = Op.NEQ
+            elif isinstance(rhs, list):
+                op = Op.NOT_IN
         return Condition(lhs[0], op, rhs)
 
     def visit_function(self, node: Node, children: Sequence[Any]) -> Timeseries:
@@ -202,8 +213,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         group_by_name = group_by[0]
         return group_by_name
 
-    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
-        return Op(node.text)
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
 
     def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)

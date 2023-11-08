@@ -7,6 +7,7 @@ Changelog and versioning
 - Support the `limit` and `offset` field in the MetricsQuery
     - This will set the appropriate LIMIT and OFFSET clauses in the resulting SQL query,
     allowing for pagination
+- Align MQL filters grammar with Discover filters grammar.
 
 
 2.0.7
