@@ -21,7 +21,7 @@ METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
 NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
 MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
 UNIT_REGEX = r"([\w.]*)"
-GRAMMAR = Grammar(
+MQL_GRAMMAR = Grammar(
     rf"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
@@ -88,7 +88,7 @@ def parse_mql(mql: str) -> MetricsQuery:
     Parse a MQL string into a MetricsQuery object.
     """
     try:
-        tree = GRAMMAR.parse(mql.strip())
+        tree = MQL_GRAMMAR.parse(mql.strip())
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
     result = MQLVisitor().visit(tree)
