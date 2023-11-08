@@ -323,7 +323,13 @@ class TranslationMQL(ExpressionVisitor[str]):
 
     def _visit_condition(self, cond: Condition) -> str:
         rhs = None
-        if isinstance(cond.rhs, Column):
+        if is_unary(cond.op):
+            rhs = ""
+        elif isinstance(cond.rhs, (CurriedFunction, Function)):
+            raise InvalidExpressionError(
+                "CurriedFunction and Function are supported in conditions in MQL"
+            )
+        elif isinstance(cond.rhs, Column):
             rhs = f"{self.visit(cond.rhs)}"
         elif is_scalar(cond.rhs):
             rhs = f"{self._stringify_scalar(cond.rhs)}"
@@ -345,7 +351,6 @@ class TranslationMQL(ExpressionVisitor[str]):
 
     def _visit_totals(self, totals: bool) -> str:
         raise NotImplementedError
-
 
 
 @contextmanager
