@@ -43,11 +43,34 @@ class Formula:
                 raise InvalidFormulaError(
                     f"parameters of formula {self.operator.value} must be a Sequence"
                 )
+
+            # - Must have the same entities, and must have an entity (no formulas on just literals)
+            # - Must have the same groupbys
+            entity = None
+            groupby = None
             for param in self.parameters:
-                if not isinstance(param, (Formula, Timeseries, float, int)):
+                if not isinstance(param, (Timeseries, float, int)):
                     raise InvalidFormulaError(
                         f"parameter '{param}' of formula {self.operator.value} is an invalid type"
                     )
+
+                if isinstance(param, Timeseries):
+                    if entity is None:
+                        entity = param.metric.entity
+                    elif entity != param.metric.entity:
+                        raise InvalidFormulaError(
+                            "Formulas can only operate on a single entity"
+                        )
+
+                    if groupby is None:
+                        groupby = param.groupby
+                    elif groupby != param.groupby:
+                        raise InvalidFormulaError(
+                            "Formula parameters must group by the same columns"
+                        )
+
+            if not entity:
+                raise InvalidFormulaError("Formulas must have an an entity")
 
     def _replace(self, field: str, value: Any) -> Formula:
         new = replace(self, **{field: value})
@@ -58,7 +81,7 @@ class Formula:
             parameters, (Formula, Timeseries, float, int)
         ):
             raise InvalidFormulaError(
-                "parameters must be a list of either Formulas, Timeseries, floats, or ints"
+                "parameters must be a list of either Timeseries, floats, or ints"
             )
         return self._replace("parameters", parameters)
 
@@ -75,4 +98,4 @@ class Formula:
         return self._replace("groupby", groupby)
 
 
-FormulaParameterGroup = Union[Formula, Timeseries, float, int]
+FormulaParameterGroup = Union[Timeseries, float, int]
