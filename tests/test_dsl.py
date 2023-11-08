@@ -240,7 +240,7 @@ def test_multi_terms() -> None:
         query=Formula(
             ArithmeticOperator.DIVIDE,
             [
-                Formula(
+                Formula(  # type: ignore
                     ArithmeticOperator.MULTIPLY,
                     [
                         Timeseries(
@@ -437,7 +437,7 @@ def test_complex_nested_terms() -> None:
         query=Formula(
             operator=ArithmeticOperator.MULTIPLY,
             parameters=[
-                Formula(
+                Formula(  # type: ignore
                     ArithmeticOperator.DIVIDE,
                     [
                         Timeseries(

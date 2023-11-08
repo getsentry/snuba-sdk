@@ -135,7 +135,7 @@ class MQLlVisitor(NodeVisitor):  # type: ignore
         then merge them into a single Formula with the operator.
         """
         term, zero_or_more_others = children
-        assert isinstance(term, (Formula, Timeseries, float, int))
+        assert isinstance(term, (Timeseries, float, int))
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
             return Formula(term_operator, [term, coefficient])
