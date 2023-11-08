@@ -7,7 +7,7 @@ from typing import Any, Generator, Generic, Set, TypeVar
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, is_unary
+from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Expression,
@@ -262,6 +262,90 @@ class Translation(ExpressionVisitor[str]):
 
     def _visit_totals(self, totals: bool) -> str:
         return f"{totals}"
+
+
+class TranslationMQL(ExpressionVisitor[str]):
+    def __init__(self, use_entity_aliases: bool = False):
+        self.use_entity_aliases = use_entity_aliases
+
+    def _stringify_scalar(self, value: ScalarType) -> str:
+        if value is None:
+            return "NULL"
+        elif isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        if isinstance(value, (str, bytes)):
+            if isinstance(value, bytes):
+                decoded = value.decode()
+            else:
+                decoded = value
+            decoded = (
+                decoded.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+            )
+            return f"'{decoded}'"
+        elif isinstance(value, (int, float)):
+            return f"{value}"
+        elif isinstance(value, (list, tuple)):
+            is_scalar(value)  # Throws on an invalid array
+            return f"[{', '.join([self._stringify_scalar(v) for v in value])}]"
+
+        raise InvalidExpressionError(f"'{value}' is not a valid scalar type for MQL")
+
+    def _visit_aliased_expression(self, aliased: AliasedExpression) -> str:
+        raise NotImplementedError
+
+    def _visit_column(self, column: Column) -> str:
+        entity_alias_clause = ""
+        if column.entity is not None and self.use_entity_aliases:
+            entity_alias_clause = f"{column.entity.alias}."
+
+        return f"{entity_alias_clause}{column.name}"
+
+    def _visit_curried_function(self, func: CurriedFunction) -> str:
+        raise NotImplementedError
+
+    def _visit_identifier(self, ident: Identifier) -> str:
+        raise NotImplementedError
+
+    def _visit_lambda(self, lambda_fn: Lambda) -> str:
+        raise NotImplementedError
+
+    def _visit_int_literal(self, literal: int) -> str:
+        raise NotImplementedError
+
+    def _visit_entity(self, entity: Entity) -> str:
+        raise NotImplementedError
+
+    def _visit_relationship(self, relationship: Relationship) -> str:
+        raise NotImplementedError
+
+    def _visit_join(self, join: Join) -> str:
+        raise NotImplementedError
+
+    def _visit_condition(self, cond: Condition) -> str:
+        rhs = None
+        if isinstance(cond.rhs, Column):
+            rhs = f"{self.visit(cond.rhs)}"
+        elif is_scalar(cond.rhs):
+            rhs = f"{self._stringify_scalar(cond.rhs)}"
+
+        assert rhs is not None
+        op = ""
+        if cond.op == Op.NEQ or cond.op == Op.NOT_IN:
+            op = "!"
+        return f"{op}{self.visit(cond.lhs)}:{rhs}"
+
+    def _visit_boolean_condition(self, cond: BooleanCondition) -> str:
+        raise NotImplementedError
+
+    def _visit_orderby(self, orderby: OrderBy) -> str:
+        raise NotImplementedError
+
+    def _visit_limitby(self, limitby: LimitBy) -> str:
+        raise NotImplementedError
+
+    def _visit_totals(self, totals: bool) -> str:
+        raise NotImplementedError
+
 
 
 @contextmanager

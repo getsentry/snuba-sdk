@@ -31,6 +31,7 @@ class Op(Enum):
     NOT_LIKE = "NOT LIKE"
     IS_NULL = "IS NULL"
     IS_NOT_NULL = "IS NOT NULL"
+    NOT = "!"
 
 
 class ConditionFunction(Enum):

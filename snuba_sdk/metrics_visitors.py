@@ -9,7 +9,7 @@ from snuba_sdk.expressions import InvalidExpressionError, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
-from snuba_sdk.visitors import Translation
+from snuba_sdk.visitors import Translation, TranslationMQL
 
 TVisited = TypeVar("TVisited")
 
@@ -124,10 +124,10 @@ class TimeseriesSnQLPrinter(TimeseriesVisitor[str]):
 class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
     def __init__(
         self,
-        expression_visitor: Translation | None = None,
+        expression_mql_visitor: TranslationMQL | None = None,
         metrics_visitor: MetricMQLPrinter | None = None,
     ) -> None:
-        self.expression_visitor = expression_visitor or Translation()
+        self.expression_mql_visitor = expression_mql_visitor or TranslationMQL()
         self.metrics_visitor = metrics_visitor or MetricMQLPrinter()
 
     def _combine(
@@ -164,22 +164,14 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         if filters is not None:
-            # In order to reuse the expression visitor, we need to do some cleanup after
-            # and remove typing information (e.g. array('a', 'b') -> ('a', 'b'))
-            string_filters = [
-                self.expression_visitor.visit(c)
-                .replace("array", "")
-                .replace("tuple", "")
-                for c in filters
-            ]
-            return "{" + ", ".join(string_filters) + "}"
+            return "{" + ", ".join(self.expression_mql_visitor.visit(c) for c in filters) + "}"
         return ""
 
     def _visit_groupby(self, groupby: list[Column] | None) -> str:
         if groupby is not None:
             return (
                 " by ("
-                + ", ".join(self.expression_visitor.visit(c) for c in groupby)
+                + ", ".join(self.expression_mql_visitor.visit(c) for c in groupby)
                 + ")"
             )
         return ""

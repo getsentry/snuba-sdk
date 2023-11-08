@@ -530,7 +530,7 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar = 'baz'}",
+        "max(d:transactions/duration@millisecond){bar:'baz'}",
         id="filter query",
     ),
     pytest.param(
@@ -551,7 +551,7 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar IN ('baz', 'bap')}",
+        "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
         id="in filter query",
     ),
     pytest.param(
@@ -575,7 +575,7 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar = 'baz', foo = 'foz'}",
+        "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
         id="multiple filters query",
     ),
     pytest.param(
@@ -638,7 +638,7 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar = 'baz'} by (transaction)",
+        "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
         id="complex single timeseries query",
     ),
 ]

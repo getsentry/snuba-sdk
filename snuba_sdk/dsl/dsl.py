@@ -186,7 +186,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         op = Op.EQ
         if not condition_op and isinstance(rhs, list):
             op = Op.IN
-        elif len(condition_op) == 1 and condition_op[0] == "!":
+        elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
             if isinstance(rhs, str):
                 op = Op.NEQ
             elif isinstance(rhs, list):
@@ -213,8 +213,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         group_by_name = group_by[0]
         return group_by_name
 
-    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> str:
-        return node.text
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
+        return Op(node.text)
 
     def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
