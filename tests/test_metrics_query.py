@@ -488,7 +488,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond)",
+        {
+            "mql": "max(d:transactions/duration@millisecond)",
+            "mql_context": {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="basic mri query",
     ),
     pytest.param(
@@ -509,7 +512,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(transactions.duration)",
+        {
+            'mql': 'max(transactions.duration)',
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="basic public name query",
     ),
     pytest.param(
@@ -530,7 +536,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar:'baz'}",
+        {
+            'mql': "max(d:transactions/duration@millisecond){bar:'baz'}",
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="filter query",
     ),
     pytest.param(
@@ -551,7 +560,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
+        {
+            'mql': "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="in filter query",
     ),
     pytest.param(
@@ -575,7 +587,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
+        {
+            'mql': "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="multiple filters query",
     ),
     pytest.param(
@@ -596,7 +611,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond) by (transaction)",
+        {
+            'mql': 'max(d:transactions/duration@millisecond) by (transaction)',
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="groupby query",
     ),
     pytest.param(
@@ -617,7 +635,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond) by (a, b)",
+        {
+            'mql': 'max(d:transactions/duration@millisecond) by (a, b)',
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="multiple groupby query",
     ),
     pytest.param(
@@ -638,7 +659,10 @@ metrics_query_to_mql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+        {
+            'mql': "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+            'mql_context': {'start': "timestamp >= toDateTime('2023-01-02T03:04:05')", 'end': "timestamp < toDateTime('2023-01-16T03:04:05')", 'rollup': {'orderby': 'time ASC', 'filter': 'granularity = 3600', 'interval': "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`", 'with_totals': ''}, 'scope': "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')", 'limit': '', 'offset': ''}
+        },
         id="complex single timeseries query",
     ),
 ]
@@ -647,7 +671,8 @@ metrics_query_to_mql_tests = [
 @pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
 def test_metrics_query_to_mql(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
-    assert query.to_mql() == translated
+    assert query.serialize_to_mql()["mql"] == translated["mql"]
+    assert query.serialize_to_mql()["mql_context"] == translated["mql_context"]
 
 
 invalid_metrics_query_to_mql_tests = [

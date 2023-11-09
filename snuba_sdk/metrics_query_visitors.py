@@ -226,7 +226,17 @@ class MQLPrinter(MetricsQueryVisitor[str]):
         for Formula queries. For now, this only returns the MQL string.
         """
         assert isinstance(returns["query"], Mapping)  # mypy
-        return returns["query"]["mql_string"]
+        return {
+            "mql": returns["query"]["mql_string"],
+            "mql_context": {
+                "start": returns["start"],
+                "end": returns["end"],
+                "rollup": returns["rollup"],
+                "scope": returns["scope"],
+                "limit": returns["limit"],
+                "offset": returns["offset"],
+            }
+        }
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:
