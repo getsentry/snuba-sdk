@@ -62,9 +62,10 @@ class Formula:
                             "Formulas can only operate on a single entity"
                         )
 
+                    to_check = set(param.groupby) if param.groupby is not None else None
                     if groupby is None:
-                        groupby = param.groupby
-                    elif groupby != param.groupby:
+                        groupby = to_check
+                    elif groupby != to_check:
                         raise InvalidFormulaError(
                             "Formula parameters must group by the same columns"
                         )
