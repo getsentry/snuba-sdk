@@ -18,7 +18,7 @@ from snuba_sdk.metrics_visitors import (
     TimeseriesSnQLPrinter,
 )
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
-from snuba_sdk.visitors import Translation, TranslationMQL
+from snuba_sdk.visitors import Translation
 
 
 class InvalidMetricsQueryError(Exception):
@@ -214,8 +214,7 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
 class MQLPrinter(MetricsQueryVisitor[str]):
     def __init__(self) -> None:
         self.expression_visitor = Translation()
-        self.expression_mql_visitor = TranslationMQL()
-        self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_mql_visitor)
+        self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
 

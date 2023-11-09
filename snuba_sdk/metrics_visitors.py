@@ -9,7 +9,7 @@ from snuba_sdk.expressions import InvalidExpressionError, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
-from snuba_sdk.visitors import Translation, TranslationMQL
+from snuba_sdk.visitors import Translation
 
 TVisited = TypeVar("TVisited")
 
@@ -124,10 +124,10 @@ class TimeseriesSnQLPrinter(TimeseriesVisitor[str]):
 class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
     def __init__(
         self,
-        expression_mql_visitor: TranslationMQL | None = None,
+        expression_visitor: Translation | None = None,
         metrics_visitor: MetricMQLPrinter | None = None,
     ) -> None:
-        self.expression_mql_visitor = expression_mql_visitor or TranslationMQL()
+        self.expression_visitor = expression_visitor or Translation()
         self.metrics_visitor = metrics_visitor or MetricMQLPrinter()
 
     def _combine(
@@ -163,19 +163,19 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         return aggregate
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
+        conditions = []
         if filters is not None:
-            return (
-                "{"
-                + ", ".join(self.expression_mql_visitor.visit(c) for c in filters)
-                + "}"
-            )
+            for c in filters:
+                assert isinstance(c, Condition)
+                conditions.append(self.expression_visitor._visit_condition_mql(c))
+            return "{" + ", ".join(conditions) + "}"
         return ""
 
     def _visit_groupby(self, groupby: list[Column] | None) -> str:
         if groupby is not None:
             return (
                 " by ("
-                + ", ".join(self.expression_mql_visitor.visit(c) for c in groupby)
+                + ", ".join(self.expression_visitor.visit(c) for c in groupby)
                 + ")"
             )
         return ""
