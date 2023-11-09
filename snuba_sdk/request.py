@@ -16,7 +16,6 @@ class InvalidFlagError(Exception):
     pass
 
 
-
 @dataclass
 class Flags:
     totals: bool | None = None
