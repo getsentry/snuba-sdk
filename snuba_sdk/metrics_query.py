@@ -72,21 +72,28 @@ class MetricsQuery(BaseQuery):
         Validator().visit(self)
 
     def __str__(self) -> str:
-        return PRETTY_PRINTER.visit(self)
+        result = PRETTY_PRINTER.visit(self)
+        assert isinstance(result, str)
+        return result
 
     def serialize(self) -> str:
         self.validate()
-        return SNQL_PRINTER.visit(self)
+        result = SNQL_PRINTER.visit(self)
+        assert isinstance(result, str)
+        return result
 
     def print(self) -> str:
         self.validate()
-        return PRETTY_PRINTER.visit(self)
+        result = PRETTY_PRINTER.visit(self)
+        assert isinstance(result, str)
+        return result
 
     def serialize_to_mql(self) -> Mapping[str, str]:
         # TODO: when the new MQL snuba endpoint is ready, this method will replace .serialize()
         self.validate()
-        print(MQL_PRINTER.visit(self))
-        return MQL_PRINTER.visit(self)
+        result = MQL_PRINTER.visit(self)
+        assert isinstance(result, dict)
+        return result
 
 
 SNQL_PRINTER = SnQLPrinter()

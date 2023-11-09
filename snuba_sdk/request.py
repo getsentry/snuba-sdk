@@ -3,10 +3,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Mapping, Union
+from typing import Any, Mapping
 
-from snuba_sdk.metrics_query import MetricsQuery
-from snuba_sdk.query import BaseQuery, Query
+from snuba_sdk.query import BaseQuery
 
 
 class InvalidRequestError(Exception):
@@ -16,8 +15,6 @@ class InvalidRequestError(Exception):
 class InvalidFlagError(Exception):
     pass
 
-
-StringDict = Union[str, Mapping[str, 'StringDict']]
 
 
 @dataclass
@@ -50,10 +47,10 @@ class Request:
     dataset: str
     app_id: str
     query: BaseQuery
-    mql_context: dict[str, StringDict] | None = None
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
     tenant_ids: dict[str, str | int] = field(default_factory=dict)
+    mql_context: dict[str, Mapping[str, Any]] | None = None
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):

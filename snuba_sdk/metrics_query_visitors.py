@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Generic, Mapping, TypeVar
+from typing import Any, Generic, Mapping, TypeVar
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -29,7 +29,7 @@ QVisited = TypeVar("QVisited")
 
 
 class MetricsQueryVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: main.MetricsQuery) -> QVisited:
+    def visit(self, query: main.MetricsQuery) -> QVisited | Mapping[str, QVisited]:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -42,7 +42,7 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
         self,
         query: main.MetricsQuery,
         returns: Mapping[str, QVisited | Mapping[str, QVisited]],
-    ) -> QVisited:
+    ) -> QVisited | Mapping[str, QVisited]:
         raise NotImplementedError
 
     @abstractmethod
@@ -220,7 +220,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
-    ) -> str:
+    ) -> Mapping[str, Any]:
         """
         TODO: This printer only supports Timeseries queries for now. We will need to extend this
         for Formula queries. For now, this only returns the MQL string.
@@ -235,7 +235,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
                 "scope": returns["scope"],
                 "limit": returns["limit"],
                 "offset": returns["offset"],
-            }
+            },
         }
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
