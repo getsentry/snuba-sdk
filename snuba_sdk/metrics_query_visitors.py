@@ -13,6 +13,7 @@ from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
     AGGREGATE_ALIAS,
+    FormulaSnQLVisitor,
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
     TimeseriesMQLPrinter,
@@ -85,6 +86,7 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         self.timeseries_visitor = TimeseriesSnQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
+        self.formula_visitor = FormulaSnQLVisitor()
         self.separator = "\n" if self.pretty else " "
         self.match_clause = "MATCH ({entity})"
         self.select_clause = "SELECT {select_columns}"
@@ -97,13 +99,13 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
     ) -> str:
-        timeseries_data = returns["query"]
-        assert isinstance(timeseries_data, dict)
+        query_data = returns["query"]
+        assert isinstance(query_data, dict)
 
-        entity = timeseries_data["entity"]
+        entity = query_data["entity"]
 
         select_columns = []
-        select_columns.append(timeseries_data["aggregate"])
+        select_columns.append(query_data["aggregate"])
 
         rollup_data = returns["rollup"]
         assert isinstance(rollup_data, dict)
@@ -123,12 +125,13 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             orderby_columns.append(rollup_data["orderby"])
         where_clauses.append(rollup_data["filter"])
 
-        if timeseries_data["groupby"]:
-            groupby_columns.append(timeseries_data["groupby"])
+        if query_data["groupby"]:
+            groupby_columns.append(query_data["groupby"])
 
-        where_clauses.append(timeseries_data["metric_filter"])
-        if timeseries_data["filters"]:
-            where_clauses.append(timeseries_data["filters"])
+        if "metric_filter" in query_data:
+            where_clauses.append(query_data["metric_filter"])
+        if "filters" in query_data and query_data["filters"]:
+            where_clauses.append(query_data["filters"])
 
         where_clauses.append(returns["scope"])
         where_clauses.append(returns["start"])
@@ -174,9 +177,8 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         if isinstance(query, Formula):
-            raise InvalidMetricsQueryError(
-                "Serializing a Formula in MetricQuery.query is unsupported"
-            )
+            return self.formula_visitor.visit(query)
+
         return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:

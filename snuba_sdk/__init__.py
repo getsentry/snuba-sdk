@@ -7,6 +7,7 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
@@ -18,6 +19,7 @@ from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 __all__ = [
     "AliasedExpression",
     "And",
+    "ArithmeticOperator",
     "BooleanCondition",
     "BooleanOp",
     "Column",
@@ -26,6 +28,7 @@ __all__ = [
     "Direction",
     "Entity",
     "Flags",
+    "Formula",
     "Function",
     "Granularity",
     "Identifier",
