@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.9
+-----
+
+- Add a basic version of Formula SnQL translator
+    - This translator is not meant to be permanent, it should be replaced with a MQL translator
+
+
 2.0.8
 -----
 
