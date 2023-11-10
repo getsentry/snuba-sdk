@@ -6,6 +6,7 @@ Changelog and versioning
 
 - Add a basic version of Formula SnQL translator
     - This translator is not meant to be permanent, it should be replaced with a MQL translator
+- Add MetricsQuery to MQL string encoder
 
 
 2.0.8
