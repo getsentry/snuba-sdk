@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import pytest
 
@@ -14,7 +15,7 @@ from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2023, 1, 2, 3, 4, 5, 0, timezone.utc)
-tests = [
+metrics_query_to_snql_tests = [
     pytest.param(
         MetricsQuery(
             query=Timeseries(
@@ -249,13 +250,13 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("query, translated", tests)
-def test_query(query: MetricsQuery, translated: str | None) -> None:
+@pytest.mark.parametrize("query, translated", metrics_query_to_snql_tests)
+def test_metrics_query_to_snql(query: MetricsQuery, translated: str | None) -> None:
     query.validate()
     assert query.serialize() == translated
 
 
-invalid_tests = [
+invalid_metrics_query_to_snql_tests = [
     pytest.param(
         MetricsQuery(
             query=None,
@@ -461,7 +462,368 @@ invalid_tests = [
 ]
 
 
-@pytest.mark.parametrize("query, exception", invalid_tests)
-def test_invalid_query(query: MetricsQuery, exception: Exception) -> None:
+@pytest.mark.parametrize("query, exception", invalid_metrics_query_to_snql_tests)
+def test_invalid_metrics_query_to_snql_tests(
+    query: MetricsQuery, exception: Exception
+) -> None:
+    with pytest.raises(type(exception), match=re.escape(str(exception))):
+        query.validate()
+
+
+metrics_query_to_mql_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond)",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="basic mri query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    public_name="transactions.duration",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(transactions.duration)",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="basic public name query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond){bar:'baz'}",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="in filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="multiple filters query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond) by (transaction)",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="groupby query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=None,
+                groupby=[Column("a"), Column("b")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond) by (a, b)",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="multiple groupby query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        {
+            "mql": "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": {"column_name": "time", "direction": "ASC"},
+                    "granularity": "3600",
+                    "interval": "3600",
+                    "with_totals": "",
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": "",
+                "offset": "",
+            },
+        },
+        id="complex single timeseries query",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
+def test_metrics_query_to_mql(query: MetricsQuery, translated: dict[str, Any]) -> None:
+    query.validate()
+    assert query.serialize_to_mql()["mql"] == translated["mql"]
+    assert query.serialize_to_mql()["mql_context"] == translated["mql_context"]
+
+
+invalid_metrics_query_to_mql_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=None,
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+        ),
+        InvalidMetricsQueryError("query is required for a metrics query"),
+        id="missing query",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, exception", invalid_metrics_query_to_mql_tests)
+def test_invalid_metrics_query_to_mql_tests(
+    query: MetricsQuery, exception: Exception
+) -> None:
     with pytest.raises(type(exception), match=re.escape(str(exception))):
         query.validate()

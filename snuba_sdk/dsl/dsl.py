@@ -21,7 +21,7 @@ METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
 NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
 MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
 UNIT_REGEX = r"([\w.]*)"
-GRAMMAR = Grammar(
+MQL_GRAMMAR = Grammar(
     rf"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
@@ -88,7 +88,7 @@ def parse_mql(mql: str) -> MetricsQuery:
     Parse a MQL string into a MetricsQuery object.
     """
     try:
-        tree = GRAMMAR.parse(mql.strip())
+        tree = MQL_GRAMMAR.parse(mql.strip())
     except ParseError as e:
         raise InvalidQueryError("Invalid metrics syntax") from e
     result = MQLVisitor().visit(tree)
@@ -186,7 +186,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         op = Op.EQ
         if not condition_op and isinstance(rhs, list):
             op = Op.IN
-        elif len(condition_op) == 1 and condition_op[0] == "!":
+        elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
             if isinstance(rhs, str):
                 op = Op.NEQ
             elif isinstance(rhs, list):
@@ -213,8 +213,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         group_by_name = group_by[0]
         return group_by_name
 
-    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> str:
-        return node.text
+    def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
+        return Op(node.text)
 
     def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)

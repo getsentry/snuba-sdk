@@ -48,7 +48,7 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_metric(self, metric: Metric) -> Mapping[str, TVisited]:
+    def _visit_metric(self, metric: Metric) -> str | Mapping[str, TVisited]:
         raise NotImplementedError
 
     @abstractmethod
@@ -128,6 +128,66 @@ class TimeseriesSnQLPrinter(TimeseriesVisitor[str]):
         return ""
 
 
+class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
+    def __init__(
+        self,
+        expression_visitor: Translation | None = None,
+        metrics_visitor: MetricMQLPrinter | None = None,
+    ) -> None:
+        self.expression_visitor = expression_visitor or Translation()
+        self.metrics_visitor = metrics_visitor or MetricMQLPrinter()
+
+    def _combine(
+        self,
+        timeseries: Timeseries,
+        returns: Mapping[str, str | Mapping[str, str]],
+    ) -> Mapping[str, str]:
+        metric_data = returns["metric"]
+        assert isinstance(metric_data, Mapping)
+        mql_string = metric_data["metric_name"]
+        assert isinstance(mql_string, str)
+        if returns["aggregate"]:
+            aggregate = returns["aggregate"]
+            mql_string = f"{aggregate}({mql_string})"
+
+        if returns["filters"]:
+            filters = str(returns["filters"])
+            mql_string += f"{filters}"
+
+        if returns["groupby"]:
+            groupby = str(returns["groupby"])
+            mql_string += f"{groupby}"
+
+        return {"mql_string": mql_string}
+
+    def _visit_metric(self, metric: Metric) -> Mapping[str, str]:
+        return self.metrics_visitor.visit(metric)
+
+    def _visit_aggregate(
+        self, aggregate: str, aggregate_params: list[Any] | None
+    ) -> str:
+        # TODO: support aggregate_params in MQL
+        return aggregate
+
+    def _visit_filters(self, filters: ConditionGroup | None) -> str:
+        conditions = []
+        if filters is not None:
+            for c in filters:
+                assert isinstance(c, Condition)
+                conditions.append(self.expression_visitor._visit_condition_mql(c))
+            return "{" + ", ".join(conditions) + "}"
+        return ""
+
+    def _visit_groupby(self, groupby: list[Column] | None) -> str:
+        if groupby is not None:
+            return (
+                " by ("
+                + ", ".join(self.expression_visitor.visit(c) for c in groupby)
+                + ")"
+            )
+        return ""
+
+
 class MetricVisitor(ABC, Generic[TVisited]):
     @abstractmethod
     def visit(self, metric: Metric) -> TVisited:
@@ -153,6 +213,18 @@ class MetricSnQLPrinter(MetricVisitor[Mapping[str, str]]):
             "entity": metric.entity,
             "metric_filter": self.translator.visit(metric_filter),
         }
+
+
+class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
+    def visit(self, metric: Metric) -> Mapping[str, str]:
+        if metric.mri is None and metric.public_name is None:
+            raise InvalidExpressionError(
+                "metric.mri or metric.public is required for serialization"
+            )
+        if metric.mri:
+            return {"metric_name": metric.mri}
+        assert metric.public_name is not None
+        return {"metric_name": metric.public_name}
 
 
 class RollupVisitor(ABC, Generic[TVisited]):

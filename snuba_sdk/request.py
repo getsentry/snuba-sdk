@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
+from typing import Any, Mapping
 
 from snuba_sdk.query import BaseQuery
 
@@ -48,6 +49,7 @@ class Request:
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
     tenant_ids: dict[str, str | int] = field(default_factory=dict)
+    mql_context: dict[str, Mapping[str, Any]] | None = None
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
@@ -73,6 +75,26 @@ class Request:
     def to_dict(self) -> dict[str, str | bool | dict[str, str | int]]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
+
+        # TODO: Uncomment when we fully support MQL snuba endpoint.
+        # if isinstance(self.query, MetricsQuery):
+        #     serialized_mql = self.query.serialize_mql()
+        #     mql_context = serialized_mql["mql_context"]
+        #     if self.mql_context:
+        #         if "indexer_mappings" in self.mql_context:
+        #             mql_context["indexer_mappings"] = self.mql_context["indexer_mappings"]
+        #         if "entity" in self.mql_context:
+        #             mql_context["entity"] = self.mql_context["entity"]
+        #         self.mql_context = mql_context
+        #     return {
+        #         **flags,
+        #         "query": serialized_mql["mql"],
+        #         "mql_context": mql_context,
+        #         "dataset": self.dataset,
+        #         "app_id": self.app_id,
+        #         "tenant_ids": self.tenant_ids,
+        #         "parent_api": self.parent_api,
+        #     }
         return {
             **flags,
             "query": self.query.serialize(),

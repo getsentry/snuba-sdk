@@ -151,10 +151,10 @@ def test_request(
 
 def test_request_set_methods() -> None:
     request = Request(
-        "events",
-        "default",
-        BASIC_QUERY,
-        Flags(consistent=True),
+        dataset="events",
+        app_id="default",
+        query=BASIC_QUERY,
+        flags=Flags(consistent=True),
     )
     request.flags = Flags(consistent=False)
     request.query = BASIC_QUERY.set_select([Column("trace_id")])
