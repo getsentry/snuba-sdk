@@ -12,6 +12,7 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
+    AGGREGATE_ALIAS,
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
     TimeseriesMQLPrinter,
@@ -245,42 +246,65 @@ class MQLPrinter(MetricsQueryVisitor[str]):
             raise InvalidMetricsQueryError(
                 "Serializing a Formula in MetricQuery.query is unsupported"
             )
+
         return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:
         if start is None:
             raise InvalidMetricsQueryError("MetricQuery.start must not be None")
 
-        condition = Condition(Column("timestamp"), Op.GTE, start)
-        return self.expression_visitor.visit(condition)
+        return start.isoformat()
 
     def _visit_end(self, end: datetime | None) -> str:
         if end is None:
             raise InvalidMetricsQueryError("MetricQuery.end must not be None")
 
-        condition = Condition(Column("timestamp"), Op.LT, end)
-        return self.expression_visitor.visit(condition)
+        return end.isoformat()
 
     def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, str]:
         if rollup is None:
             raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
 
-        return self.rollup_visitor.visit(rollup)
+        granularity = ""
+        if rollup.granularity is not None:
+            granularity = str(rollup.granularity)
+
+        interval = ""
+        orderby = ""
+        with_totals = ""
+        if rollup.interval:
+            interval = str(rollup.interval)
+            orderby = {"column_name": "time", "direction": "ASC"}
+            if rollup.totals:
+                with_totals = "{rollup.totals}"
+        elif rollup.orderby is not None:
+            orderby = {"column_name": AGGREGATE_ALIAS, "direction": rollup.orderby.value}
+
+        return {
+            "orderby": orderby,
+            "granularity": granularity,
+            "interval": interval,
+            "with_totals": with_totals,
+        }
 
     def _visit_scope(self, scope: MetricsScope | None) -> str:
         if scope is None:
             raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
 
-        return self.scope_visitor.visit(scope)
+        return {
+            "org_ids": scope.org_ids,
+            "project_ids":  scope.project_ids,
+            "use_case_id": scope.use_case_id,
+        }
 
     def _visit_limit(self, limit: Limit | None) -> str:
         if limit is not None:
-            return self.expression_visitor.visit(limit)
+            return str(limit.limit)
         return ""
 
     def _visit_offset(self, offset: Offset | None) -> str:
         if offset is not None:
-            return self.expression_visitor.visit(offset)
+            return str(offset.offset)
         return ""
 
 

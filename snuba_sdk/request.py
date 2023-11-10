@@ -82,6 +82,7 @@ class Request:
         #     mql_context = serialized_mql["mql_context"]
         #     if self.mql_context and "indexer_mappings" in self.mql_context:
         #         mql_context["indexer_mappings"] = self.mql_context["indexer_mappings"]
+        #         self.mql_context = mql_context
         #     return {
         #         **flags,
         #         "query": serialized_mql["mql"],
