@@ -263,7 +263,7 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
 
         return {
             "orderby": orderby,
-            "granularity": self.translator.visit(condition) if condition else "",
+            "filter": self.translator.visit(condition) if condition else "",
             "interval": interval,
             "with_totals": with_totals,
         }

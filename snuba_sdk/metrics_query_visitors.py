@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Generic, Mapping, TypeVar
+from typing import Any, Generic, Mapping, Optional, TypeVar, Union
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -59,11 +59,15 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, QVisited]:
+    def _visit_rollup(
+        self, rollup: Rollup | None
+    ) -> Mapping[str, QVisited | Mapping[str, QVisited]]:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_scope(self, scope: MetricsScope | None) -> QVisited:
+    def _visit_scope(
+        self, scope: MetricsScope | None
+    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -195,7 +199,7 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
 
         return self.rollup_visitor.visit(rollup)
 
-    def _visit_scope(self, scope: MetricsScope | None) -> str:
+    def _visit_scope(self, scope: MetricsScope | None) -> str | Mapping[str, str]:
         if scope is None:
             raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
 
@@ -261,7 +265,9 @@ class MQLPrinter(MetricsQueryVisitor[str]):
 
         return end.isoformat()
 
-    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, str]:
+    def _visit_rollup(
+        self, rollup: Rollup | None
+    ) -> Mapping[str, str | Mapping[str, str]]:
         if rollup is None:
             raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
 
@@ -270,7 +276,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
             granularity = str(rollup.granularity)
 
         interval = ""
-        orderby = ""
+        orderby = {"column_name": "", "direction": ""}
         with_totals = ""
         if rollup.interval:
             interval = str(rollup.interval)
@@ -278,7 +284,10 @@ class MQLPrinter(MetricsQueryVisitor[str]):
             if rollup.totals:
                 with_totals = "{rollup.totals}"
         elif rollup.orderby is not None:
-            orderby = {"column_name": AGGREGATE_ALIAS, "direction": rollup.orderby.value}
+            orderby = {
+                "column_name": AGGREGATE_ALIAS,
+                "direction": rollup.orderby.value,
+            }
 
         return {
             "orderby": orderby,
@@ -287,13 +296,15 @@ class MQLPrinter(MetricsQueryVisitor[str]):
             "with_totals": with_totals,
         }
 
-    def _visit_scope(self, scope: MetricsScope | None) -> str:
+    def _visit_scope(
+        self, scope: MetricsScope | None
+    ) -> Mapping[str, Union[list[int], str, Optional[str]]]:
         if scope is None:
             raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
 
         return {
             "org_ids": scope.org_ids,
-            "project_ids":  scope.project_ids,
+            "project_ids": scope.project_ids,
             "use_case_id": scope.use_case_id,
         }
 
