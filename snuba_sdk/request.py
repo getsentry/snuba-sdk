@@ -80,8 +80,11 @@ class Request:
         # if isinstance(self.query, MetricsQuery):
         #     serialized_mql = self.query.serialize_mql()
         #     mql_context = serialized_mql["mql_context"]
-        #     if self.mql_context and "indexer_mappings" in self.mql_context:
-        #         mql_context["indexer_mappings"] = self.mql_context["indexer_mappings"]
+        #     if self.mql_context:
+        #         if "indexer_mappings" in self.mql_context:
+        #             mql_context["indexer_mappings"] = self.mql_context["indexer_mappings"]
+        #         if "entity" in self.mql_context:
+        #             mql_context["entity"] = self.mql_context["entity"]
         #         self.mql_context = mql_context
         #     return {
         #         **flags,
