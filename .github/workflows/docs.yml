@@ -25,7 +25,7 @@ jobs:
         name: Publish to GitHub Pages
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_html/snuba_sdk
+          publish_dir: docs/_html
           force_orphan: true
 
       - name: Archive Docs
