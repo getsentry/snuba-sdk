@@ -72,4 +72,4 @@ apidocs-hotfix: apidocs
 
 make generate-pdocs: .venv
 	$(VENV_PATH)/bin/pip install -U -r ./docs-requirements.txt
-	$(VENV_PATH)/bin/pdoc --html --output-dir docs/_html --template-dir docs/_templates snuba_sdk
+	$(VENV_PATH)/bin/pdoc -o docs/_html --search --logo "https://sentry-brand.storage.googleapis.com/sentry-wordmark-dark-280x84.png" snuba_sdk
