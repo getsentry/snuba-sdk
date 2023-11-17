@@ -1,2 +1,2 @@
-include LICENSE
+include LICENSE.md
 include snuba_sdk/py.typed

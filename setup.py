@@ -36,13 +36,13 @@ setup(
     # PEP 561
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
-    license="MIT",
+    license="FSL-1.0-Apache-2.0",
     install_requires=[],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
+        "License :: Other/Proprietary License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
