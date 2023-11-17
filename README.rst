@@ -111,4 +111,4 @@ Please refer to `CONTRIBUTING.rst <https://github.com/getsentry/snuba-sdk/blob/m
 License
 =========
 
-Licensed under MIT, see `LICENSE <https://github.com/getsentry/snuba-sdk/blob/master/LICENSE>`_.
+Licensed under FSL-1.0-Apache-2.0, see `LICENSE.md <https://github.com/getsentry/snuba-sdk/blob/master/LICENSE.md>`_.

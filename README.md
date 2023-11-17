@@ -108,5 +108,5 @@ Please refer to
 
 # License
 
-Licensed under MIT, see
-[LICENSE](https://github.com/getsentry/snuba-sdk/blob/master/LICENSE).
+Licensed under FSL-1.0-Apache-2.0, see
+[LICENSE](https://github.com/getsentry/snuba-sdk/blob/master/LICENSE.md).
