@@ -31,26 +31,31 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target (open_brace _ condition (_ comma _ condition)* _ close_brace)? (group_by)?
+filter = target (open_brace _ or_filter_condition _ close_brace)? (group_by)?
 
-condition = condition_op? (variable / tag_key) _ colon _ tag_value
+or_filter_condition = and_filter_condition (_ or _ and_filter_condition)*
+and_filter_condition = condition (_ and _ condition)*
+nested_filter_condition = open_paren _ or_filter_condition _ close_paren
+
+condition = (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_filter_condition
 condition_op = "!"
-tag_key = ~"[a-zA-Z0-9_]+"
-tag_value = quoted_string / quoted_string_tuple / variable
+tag_key = ~r"[a-zA-Z0-9_]+"
+tag_value = quoted_string / unquoted_string / quoted_string_tuple / variable
 
-quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
+quoted_string = quote unquoted_string quote
+unquoted_string = ~r'([^"\\]*(?:\\.[^"\\]*)*)'
 quoted_string_tuple = open_square_bracket _ quoted_string (_ comma _ quoted_string)* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
-variable = "$" ~"[a-zA-Z0-9_]+"
+variable = "$" ~r"[a-zA-Z0-9_]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = aggregate (group_by)?
 aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
-aggregate_name = ~"[a-zA-Z0-9_]+"
+aggregate_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
-group_by_name = ~"[a-zA-Z0-9_]+"
+group_by_name = ~r"[a-zA-Z0-9_]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
@@ -68,6 +73,9 @@ close_brace = "}}"
 comma = ","
 backtick = "`"
 colon = ":"
+quote = "\""
+or = "OR"
+and = "AND"
 _ = ~r"\s*"
 """
 )

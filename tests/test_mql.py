@@ -280,7 +280,6 @@ def test_multi_terms() -> None:
         )
     )
 
-
 @pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
     dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
