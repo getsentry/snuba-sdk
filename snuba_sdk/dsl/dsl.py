@@ -40,11 +40,12 @@ nested_filter_condition = open_paren _ or_filter_condition _ close_paren
 condition = (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_filter_condition
 condition_op = "!"
 tag_key = ~r"[a-zA-Z0-9_]+"
-tag_value = quoted_string / unquoted_string / quoted_string_tuple / variable
+tag_value = quoted_string / unquoted_string / quoted_string_tuple / unquoted_string_tuple / variable
 
 quoted_string = quote unquoted_string quote
-unquoted_string = ~r'([^"\\]*(?:\\.[^"\\]*)*)'
+unquoted_string = ~r"([^\"\\]*(?:\\.[^\"\\]*)*)"
 quoted_string_tuple = open_square_bracket _ quoted_string (_ comma _ quoted_string)* _ close_square_bracket
+unquoted_string_tuple = open_square_bracket _ unquoted_string (_ comma _ unquoted_string)* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_]+"
@@ -60,9 +61,9 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r'{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
+unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
 quoted_public_name = backtick unquoted_public_name backtick
-unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
+unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
 open_paren = "("
 close_paren = ")"
