@@ -31,7 +31,7 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target (open_brace _ condition (_ comma _ condition)* _ close_brace)? (group_by)?
+filter = target (open_brace _ condition (_ comma? _ condition)* _ close_brace)? (group_by)?
 
 condition = condition_op? (variable / tag_key) _ colon _ tag_value
 condition_op = "!"

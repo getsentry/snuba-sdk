@@ -221,6 +221,35 @@ tests = [
         id="test multiple filters",
     ),
     pytest.param(
+        'sum(user{bar:"baz" foo:"foz"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters with space delimiter",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz" foo:"foz", hee:"haw"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("hee"), Op.EQ, "haw"),
+                ],
+            )
+        ),
+        id="test multiple filters with space and comma delimiter",
+    ),
+    pytest.param(
         "sum(user{bar:baz, foo:foz})",
         MetricsQuery(
             query=Timeseries(
@@ -235,6 +264,35 @@ tests = [
         id="test multiple filters with unquoted values",
     ),
     pytest.param(
+        "sum(user{bar:baz foo:foz})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters with unquoted values with space delimiter",
+    ),
+    pytest.param(
+        "sum(user{bar:baz foo:foz, hee:haw})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("hee"), Op.EQ, "haw"),
+                ],
+            )
+        ),
+        id="test multiple filters with unquoted values with space and comma delimiter",
+    ),
+    pytest.param(
         'sum(user{bar:"baz", foo:foz})',
         MetricsQuery(
             query=Timeseries(
@@ -247,6 +305,50 @@ tests = [
             )
         ),
         id="test multiple filters with quoted and unquoted values",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz" foo:foz})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters with quoted and unquoted values with space delimiter",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz" foo:foz, hee:"haw"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("hee"), Op.EQ, "haw"),
+                ],
+            )
+        ),
+        id="test multiple filters with quoted and unquoted values with space and comma delimiter",
+    ),
+    pytest.param(
+        'sum(user{bar:baz foo:"foz", !hee:["haw", hoo]})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("hee"), Op.NOT_IN, ["haw", "hoo"]),
+                ],
+            )
+        ),
+        id="test complex filters",
     ),
     pytest.param(
         'sum(`d:transactions/duration@millisecond`{foo:"foz", hee:"haw"}){bar:"baz"}',
@@ -276,7 +378,7 @@ tests = [
         id="test group by 1",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo:"foz"} by transaction)',
+        "max(`d:transactions/duration@millisecond`{foo:foz} by transaction)",
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -300,7 +402,7 @@ tests = [
         id="test group by 3",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:"baz"} by (a, b)',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -319,7 +421,6 @@ tests = [
 
 @pytest.mark.parametrize("mql_string, metrics_query", tests)
 def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
-    print(mql_string)
     result = parse_mql(mql_string)
     assert result == metrics_query
 
