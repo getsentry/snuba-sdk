@@ -86,6 +86,17 @@ tests = [
         id="test filter",
     ),
     pytest.param(
+        "sum(foo){bar:baz}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+            )
+        ),
+        id="test filter with unquoted value",
+    ),
+    pytest.param(
         'sum(foo){!bar:"baz"}',
         MetricsQuery(
             query=Timeseries(
@@ -95,6 +106,17 @@ tests = [
             )
         ),
         id="test not filter",
+    ),
+    pytest.param(
+        "sum(foo){!bar:baz}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.NEQ, "baz")],
+            )
+        ),
+        id="test not filter with unquoted value",
     ),
     pytest.param(
         'sum(foo){bar:["baz", "bap"]}',
@@ -108,6 +130,28 @@ tests = [
         id="test in filter",
     ),
     pytest.param(
+        'sum(foo){bar:["baz", bap]}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+            )
+        ),
+        id="test in filter with unquoted values",
+    ),
+    pytest.param(
+        "sum(foo){bar:[baz, bap]}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.IN, ["baz", "bap"])],
+            )
+        ),
+        id="test in filter with quoted and unquoted values",
+    ),
+    pytest.param(
         'sum(foo){!bar:["baz", "bap"]}',
         MetricsQuery(
             query=Timeseries(
@@ -119,6 +163,28 @@ tests = [
         id="test not in filter",
     ),
     pytest.param(
+        "sum(foo){!bar:[baz, bap]}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.NOT_IN, ["baz", "bap"])],
+            )
+        ),
+        id="test not in filter with unquoted values",
+    ),
+    pytest.param(
+        'sum(foo){!bar:["baz", bap]}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.NOT_IN, ["baz", "bap"])],
+            )
+        ),
+        id="test not in filter with quoted and unquoted values",
+    ),
+    pytest.param(
         'sum(foo{bar:"baz"})',
         MetricsQuery(
             query=Timeseries(
@@ -128,6 +194,17 @@ tests = [
             )
         ),
         id="test filter inside aggregate",
+    ),
+    pytest.param(
+        "sum(foo{bar:baz})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+            )
+        ),
+        id="test filter inside aggregate with unquoted value",
     ),
     pytest.param(
         'sum(user{bar:"baz", foo:"foz"})',
@@ -142,6 +219,34 @@ tests = [
             )
         ),
         id="test multiple filters",
+    ),
+    pytest.param(
+        "sum(user{bar:baz, foo:foz})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters with unquoted values",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz", foo:foz})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+            )
+        ),
+        id="test multiple filters with quoted and unquoted values",
     ),
     pytest.param(
         'sum(`d:transactions/duration@millisecond`{foo:"foz", hee:"haw"}){bar:"baz"}',
@@ -214,6 +319,7 @@ tests = [
 
 @pytest.mark.parametrize("mql_string, metrics_query", tests)
 def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
+    print(mql_string)
     result = parse_mql(mql_string)
     assert result == metrics_query
 
