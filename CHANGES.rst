@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.10
+-----
+
+- Extend the MQL grammar to support unquoted tag values and the usage of spaces as delimiters
+  in the filter string
+
+
 2.0.9
 -----
 
