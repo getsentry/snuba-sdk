@@ -228,11 +228,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return tag_value
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
-        print("visited unquoted string")
         return str(node.text)
 
     def visit_test_string(self, node: Node, children: Sequence[Any]) -> str:
-        print("visited test string")
         return str(node.text)
 
     def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> str:
