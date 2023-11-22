@@ -31,33 +31,34 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target (open_brace _ condition (_ comma _ condition)* _ close_brace)? (group_by)?
+filter = target (open_brace _ condition (_ comma? _ condition)* _ close_brace)? (group_by)?
 
 condition = condition_op? (variable / tag_key) _ colon _ tag_value
 condition_op = "!"
-tag_key = ~"[a-zA-Z0-9_]+"
-tag_value = quoted_string / quoted_string_tuple / variable
+tag_key = ~r"[a-zA-Z0-9_]+"
+tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-quoted_string_tuple = open_square_bracket _ quoted_string (_ comma _ quoted_string)* _ close_square_bracket
+unquoted_string = ~r'[^,\[\]\"}}{{\s]+'
+string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
-variable = "$" ~"[a-zA-Z0-9_]+"
+variable = "$" ~r"[a-zA-Z0-9_]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = aggregate (group_by)?
 aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
-aggregate_name = ~"[a-zA-Z0-9_]+"
+aggregate_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
-group_by_name = ~"[a-zA-Z0-9_]+"
+group_by_name = ~r"[a-zA-Z0-9_]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r'{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}'
+unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
 quoted_public_name = backtick unquoted_public_name backtick
-unquoted_public_name = ~r'([a-z_]+(?:\.[a-z_]+)*)'
+unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
 open_paren = "("
 close_paren = ")"
@@ -68,6 +69,7 @@ close_brace = "}}"
 comma = ","
 backtick = "`"
 colon = ":"
+quote = "\""
 _ = ~r"\s*"
 """
 )
@@ -225,14 +227,18 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         tag_value = children[0]
         return tag_value
 
+    def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
+        return str(node.text)
+
+    def visit_test_string(self, node: Node, children: Sequence[Any]) -> str:
+        return str(node.text)
+
     def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text[1:-1])
 
-    def visit_quoted_string_tuple(
-        self, node: Node, children: Sequence[Any]
-    ) -> Sequence[str]:
+    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
         _, _, first, zero_or_more_others, _, _ = children
-        return [first, *(v for _, _, _, v in zero_or_more_others)]
+        return [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
