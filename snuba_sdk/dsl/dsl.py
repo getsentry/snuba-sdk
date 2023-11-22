@@ -38,8 +38,8 @@ condition_op = "!"
 tag_key = ~r"[a-zA-Z0-9_]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
-quoted_string = quote unquoted_string quote
-unquoted_string = ~r"[a-zA-Z0-9_]+"
+quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
+unquoted_string = ~r'[^,\[\]\"}}{{\s]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
@@ -228,6 +228,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return tag_value
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
+        print("visited unquoted string")
+        return str(node.text)
+
+    def visit_test_string(self, node: Node, children: Sequence[Any]) -> str:
+        print("visited test string")
         return str(node.text)
 
     def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> str:

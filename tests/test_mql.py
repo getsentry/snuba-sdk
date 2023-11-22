@@ -97,6 +97,28 @@ tests = [
         id="test filter with unquoted value",
     ),
     pytest.param(
+        'sum(foo){bar:"2023-01-03T10:00:00"}',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "2023-01-03T10:00:00")],
+            )
+        ),
+        id="test filter with quoted value with special characters",
+    ),
+    pytest.param(
+        "sum(foo){bar:2023-01-03T10:00:00}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+                filters=[Condition(Column("bar"), Op.EQ, "2023-01-03T10:00:00")],
+            )
+        ),
+        id="test filter with unquoted value with special characters",
+    ),
+    pytest.param(
         'sum(foo){!bar:"baz"}',
         MetricsQuery(
             query=Timeseries(
