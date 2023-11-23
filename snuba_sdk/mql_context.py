@@ -11,7 +11,11 @@ from snuba_sdk.timeseries import MetricsScope, Rollup
 
 @dataclass
 class MQLContext:
-    """ """
+    """
+    The MQL string alone is not enough to fully describe a query.
+    This class contains all of the additional information needed to
+    execute a metrics query in snuba.
+    """
 
     entity: str | None = None
     start: datetime | None = None
@@ -23,10 +27,16 @@ class MQLContext:
     indexer_mappings: dict[str, Any] | None = None
 
     def get_fields(self) -> Sequence[str]:
-        self_fields = fields(self)  # Verified the order in the Python source
+        self_fields = fields(self)
         return tuple(f.name for f in self_fields)
 
     def validate(self) -> None:
+        # For now, we cannot validate entity because it unknown when
+        # we converting MetricsQuery to MQL. In that specific case, we
+        # need to set the entity on the requesst after serialization.
+
+        # In the future, we should be able to remove entity from this class
+        # entirely when we join entities together.
         Validator().visit(self)
 
     def serialize(self) -> dict[str, Any]:
