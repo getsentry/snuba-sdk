@@ -153,7 +153,6 @@ class MQLContextPrinter(MQLContextVisitor[str]):
         return ""
 
     def _visit_indexer_mappings(self, indexer_mappings: dict[str, Any] | None) -> str:
-        print(indexer_mappings)
         if not indexer_mappings:
             return {}
         return indexer_mappings
