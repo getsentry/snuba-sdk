@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.mql_context_visitors import MQLContextPrinter, Validator
@@ -39,7 +39,7 @@ class MQLContext:
         # entirely when we join entities together.
         Validator().visit(self)
 
-    def serialize(self) -> dict[str, Any]:
+    def serialize(self) -> Mapping[str, Any]:
         self.validate()
         result = MQL_CONTEXT_PRINTER.visit(self)
         return result

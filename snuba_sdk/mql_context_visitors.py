@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Generic, Mapping, Optional, TypeVar
 
-from snuba_sdk import metrics_query as main
+from snuba_sdk import mql_context as main
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.metrics_visitors import AGGREGATE_ALIAS
 from snuba_sdk.timeseries import MetricsScope, Rollup
@@ -18,7 +18,7 @@ QVisited = TypeVar("QVisited")
 
 
 class MQLContextVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: main.MQLContext) -> QVisited | Mapping[str, QVisited]:
+    def visit(self, query: main.MQLContext) -> Mapping[str, QVisited]:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -33,7 +33,7 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
         self,
         query: main.MQLContext,
         returns: Mapping[str, QVisited | Mapping[str, QVisited]],
-    ) -> QVisited | Mapping[str, QVisited]:
+    ) -> Mapping[str, QVisited]:
         raise NotImplementedError
 
     @abstractmethod
@@ -67,14 +67,14 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
     @abstractmethod
     def _visit_indexer_mappings(
         self, indexer_mappings: dict[str, Any] | None
-    ) -> QVisited:
+    ) -> Mapping[str, QVisited]:
         raise NotImplementedError
 
 
 class MQLContextPrinter(MQLContextVisitor[str]):
     def _combine(
         self, query: main.MQLContext, returns: Mapping[str, str | Mapping[str, str]]
-    ) -> str:
+    ) -> Mapping[str, Any]:
         return {
             "start": returns["start"],
             "end": returns["end"],
@@ -85,7 +85,7 @@ class MQLContextPrinter(MQLContextVisitor[str]):
             "indexer_mappings": returns["indexer_mappings"],
         }
 
-    def _visit_entity(self, entity: str | None) -> Mapping[str, str]:
+    def _visit_entity(self, entity: str | None) -> str:
         if entity is None:
             raise InvalidMQLContextError("MetricQuery.query must not be None")
 
@@ -103,7 +103,7 @@ class MQLContextPrinter(MQLContextVisitor[str]):
 
         return end.isoformat()
 
-    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, str]:
+    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, Any]:
         if rollup is None:
             raise InvalidMQLContextError("MetricQuery.rollup must not be None")
 
@@ -132,7 +132,7 @@ class MQLContextPrinter(MQLContextVisitor[str]):
             "with_totals": with_totals,
         }
 
-    def _visit_scope(self, scope: MetricsScope | None) -> str | Mapping[str, str]:
+    def _visit_scope(self, scope: MetricsScope | None) -> str | Mapping[str, Any]:
         if scope is None:
             raise InvalidMQLContextError("MetricQuery.scope must not be None")
 
@@ -152,7 +152,9 @@ class MQLContextPrinter(MQLContextVisitor[str]):
             return str(offset.offset)
         return ""
 
-    def _visit_indexer_mappings(self, indexer_mappings: dict[str, Any] | None) -> str:
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, Any] | None
+    ) -> dict[str, Any]:
         if not indexer_mappings:
             return {}
         return indexer_mappings
@@ -160,9 +162,9 @@ class MQLContextPrinter(MQLContextVisitor[str]):
 
 class Validator(MQLContextVisitor[None]):
     def _combine(
-        self, query: main.MetricsQuery, returns: Mapping[str, None | Mapping[str, None]]
-    ) -> None:
-        pass
+        self, query: main.MQLContext, returns: Mapping[str, None | Mapping[str, None]]
+    ) -> Mapping[str, Any]:
+        return {}
 
     def _visit_start(self, start: datetime | None) -> None:
         if start is None:
@@ -213,8 +215,11 @@ class Validator(MQLContextVisitor[None]):
 
         offset.validate()
 
-    def _visit_indexer_mappings(self, indexer_mapping: dict[str, Any] | None) -> None:
+    def _visit_indexer_mappings(
+        self, indexer_mapping: Mapping[str, Any] | None
+    ) -> Mapping[str, Any]:
         if indexer_mapping is None:
-            return
+            return {}
         if not isinstance(indexer_mapping, dict):
             raise InvalidMQLContextError("indexer_mapping must be a dictionary")
+        return {}

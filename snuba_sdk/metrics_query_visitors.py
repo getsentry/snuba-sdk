@@ -52,30 +52,30 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_start(self, start: datetime | None) -> QVisited:
+    def _visit_start(self, start: datetime | None) -> QVisited | datetime:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_end(self, end: datetime | None) -> QVisited:
+    def _visit_end(self, end: datetime | None) -> QVisited | datetime:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_rollup(
         self, rollup: Rollup | None
-    ) -> Mapping[str, QVisited | Mapping[str, QVisited]]:
+    ) -> Mapping[str, QVisited | Mapping[str, QVisited]] | Rollup:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_scope(
         self, scope: MetricsScope | None
-    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]]:
+    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]] | MetricsScope:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_limit(self, limit: Limit | None) -> QVisited:
+    def _visit_limit(self, limit: Limit | None) -> QVisited | Limit | None:
         raise NotImplementedError
 
-    def _visit_offset(self, offset: Offset | None) -> QVisited:
+    def _visit_offset(self, offset: Offset | None) -> QVisited | Offset | None:
         raise NotImplementedError
 
 
@@ -226,7 +226,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
         self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
 
     def _combine(
-        self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
+        self, query: main.MetricsQuery, returns: Mapping[str, Any]
     ) -> Mapping[str, Any]:
         """
         TODO: This printer only supports Timeseries queries for now. We will need to extend this
@@ -263,7 +263,7 @@ class MQLPrinter(MetricsQueryVisitor[str]):
 
         return start
 
-    def _visit_end(self, end: datetime) -> datetime:
+    def _visit_end(self, end: datetime | None) -> datetime:
         if end is None:
             raise InvalidMetricsQueryError("MetricQuery.end must not be None")
 
