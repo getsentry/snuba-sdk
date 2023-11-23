@@ -39,6 +39,7 @@ __all__ = [
     "Metric",
     "MetricsQuery",
     "MetricsScope",
+    "MQLContext",
     "Offset",
     "Op",
     "Or",

@@ -78,7 +78,7 @@ class Request:
 
         # TODO: Uncomment when we fully support MQL snuba endpoint.
         # if isinstance(self.query, MetricsQuery):
-        #     serialized_mql = self.query.serialize_mql()
+        #     serialized_mql = self.query.serialize_to_mql()
         #     mql_context = serialized_mql["mql_context"]
         #     if self.mql_context:
         #         if "indexer_mappings" in self.mql_context:
