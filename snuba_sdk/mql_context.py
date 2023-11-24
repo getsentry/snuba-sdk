@@ -37,7 +37,7 @@ class MQLContext:
 
         # In the future, we should be able to remove entity from this class
         # entirely when we join entities together.
-        Validator().visit(self)
+        VALIDATOR.visit(self)
 
     def serialize(self) -> Mapping[str, Any]:
         self.validate()
@@ -46,3 +46,4 @@ class MQLContext:
 
 
 MQL_CONTEXT_PRINTER = MQLContextPrinter()
+VALIDATOR = Validator()

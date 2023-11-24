@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Generic, Mapping, Optional, TypeVar
+from typing import Generic, Mapping, Optional, TypeVar
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -15,10 +15,8 @@ from snuba_sdk.metrics_visitors import (
     FormulaSnQLVisitor,
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
-    TimeseriesMQLPrinter,
     TimeseriesSnQLPrinter,
 )
-from snuba_sdk.mql_context import MQLContext
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
 
@@ -52,30 +50,30 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_start(self, start: datetime | None) -> QVisited | datetime:
+    def _visit_start(self, start: datetime | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_end(self, end: datetime | None) -> QVisited | datetime:
+    def _visit_end(self, end: datetime | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_rollup(
         self, rollup: Rollup | None
-    ) -> Mapping[str, QVisited | Mapping[str, QVisited]] | Rollup:
+    ) -> Mapping[str, QVisited | Mapping[str, QVisited]]:
         raise NotImplementedError
 
     @abstractmethod
     def _visit_scope(
         self, scope: MetricsScope | None
-    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]] | MetricsScope:
+    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]]:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_limit(self, limit: Limit | None) -> QVisited | Limit | None:
+    def _visit_limit(self, limit: Limit | None) -> QVisited:
         raise NotImplementedError
 
-    def _visit_offset(self, offset: Offset | None) -> QVisited | Offset | None:
+    def _visit_offset(self, offset: Offset | None) -> QVisited:
         raise NotImplementedError
 
 
@@ -216,76 +214,6 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
         if offset is not None:
             return self.expression_visitor.visit(offset)
         return ""
-
-
-class MQLPrinter(MetricsQueryVisitor[str]):
-    def __init__(self) -> None:
-        self.expression_visitor = Translation()
-        self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
-        self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
-        self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
-
-    def _combine(
-        self, query: main.MetricsQuery, returns: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
-        """
-        TODO: This printer only supports Timeseries queries for now. We will need to extend this
-        for Formula queries. For now, this only returns the MQL string.
-        """
-        assert isinstance(returns["query"], Mapping)  # mypy
-        mql_string = returns["query"]["mql_string"]
-        mql_context = MQLContext(
-            start=returns["start"],
-            end=returns["end"],
-            rollup=returns["rollup"],
-            scope=returns["scope"],
-            limit=returns["limit"],
-            offset=returns["offset"],
-        )
-        return {
-            "mql": mql_string,
-            "mql_context": mql_context.serialize(),
-        }
-
-    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
-        if query is None:
-            raise InvalidMetricsQueryError("MetricQuery.query must not be None")
-        if isinstance(query, Formula):
-            raise InvalidMetricsQueryError(
-                "Serializing a Formula in MetricQuery.query is unsupported"
-            )
-
-        return self.timeseries_visitor.visit(query)
-
-    def _visit_start(self, start: datetime | None) -> datetime:
-        if start is None:
-            raise InvalidMetricsQueryError("MetricQuery.start must not be None")
-
-        return start
-
-    def _visit_end(self, end: datetime | None) -> datetime:
-        if end is None:
-            raise InvalidMetricsQueryError("MetricQuery.end must not be None")
-
-        return end
-
-    def _visit_rollup(self, rollup: Rollup | None) -> Rollup:
-        if rollup is None:
-            raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
-
-        return rollup
-
-    def _visit_scope(self, scope: MetricsScope | None) -> MetricsScope:
-        if scope is None:
-            raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
-
-        return scope
-
-    def _visit_limit(self, limit: Limit | None) -> Limit | None:
-        return limit
-
-    def _visit_offset(self, offset: Offset | None) -> Offset | None:
-        return offset
 
 
 class Validator(MetricsQueryVisitor[None]):
