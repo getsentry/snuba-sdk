@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Generic, Mapping, Optional, TypeVar, Union
+from typing import Generic, Mapping, Optional, TypeVar
 
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
@@ -12,11 +12,9 @@ from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_visitors import (
-    AGGREGATE_ALIAS,
     FormulaSnQLVisitor,
     RollupSnQLPrinter,
     ScopeSnQLPrinter,
-    TimeseriesMQLPrinter,
     TimeseriesSnQLPrinter,
 )
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
@@ -215,109 +213,6 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
     def _visit_offset(self, offset: Offset | None) -> str:
         if offset is not None:
             return self.expression_visitor.visit(offset)
-        return ""
-
-
-class MQLPrinter(MetricsQueryVisitor[str]):
-    def __init__(self) -> None:
-        self.expression_visitor = Translation()
-        self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
-        self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
-        self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
-
-    def _combine(
-        self, query: main.MetricsQuery, returns: Mapping[str, str | Mapping[str, str]]
-    ) -> Mapping[str, Any]:
-        """
-        TODO: This printer only supports Timeseries queries for now. We will need to extend this
-        for Formula queries. For now, this only returns the MQL string.
-        """
-        assert isinstance(returns["query"], Mapping)  # mypy
-        return {
-            "mql": returns["query"]["mql_string"],
-            "mql_context": {
-                "start": returns["start"],
-                "end": returns["end"],
-                "rollup": returns["rollup"],
-                "scope": returns["scope"],
-                "limit": returns["limit"],
-                "offset": returns["offset"],
-            },
-        }
-
-    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
-        if query is None:
-            raise InvalidMetricsQueryError("MetricQuery.query must not be None")
-        if isinstance(query, Formula):
-            raise InvalidMetricsQueryError(
-                "Serializing a Formula in MetricQuery.query is unsupported"
-            )
-
-        return self.timeseries_visitor.visit(query)
-
-    def _visit_start(self, start: datetime | None) -> str:
-        if start is None:
-            raise InvalidMetricsQueryError("MetricQuery.start must not be None")
-
-        return start.isoformat()
-
-    def _visit_end(self, end: datetime | None) -> str:
-        if end is None:
-            raise InvalidMetricsQueryError("MetricQuery.end must not be None")
-
-        return end.isoformat()
-
-    def _visit_rollup(
-        self, rollup: Rollup | None
-    ) -> Mapping[str, str | Mapping[str, str]]:
-        if rollup is None:
-            raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
-
-        granularity = ""
-        if rollup.granularity is not None:
-            granularity = str(rollup.granularity)
-
-        interval = ""
-        orderby = {"column_name": "", "direction": ""}
-        with_totals = ""
-        if rollup.interval:
-            interval = str(rollup.interval)
-            orderby = {"column_name": "time", "direction": "ASC"}
-            if rollup.totals:
-                with_totals = "{rollup.totals}"
-        elif rollup.orderby is not None:
-            orderby = {
-                "column_name": AGGREGATE_ALIAS,
-                "direction": rollup.orderby.value,
-            }
-
-        return {
-            "orderby": orderby,
-            "granularity": granularity,
-            "interval": interval,
-            "with_totals": with_totals,
-        }
-
-    def _visit_scope(
-        self, scope: MetricsScope | None
-    ) -> Mapping[str, Union[list[int], str, Optional[str]]]:
-        if scope is None:
-            raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
-
-        return {
-            "org_ids": scope.org_ids,
-            "project_ids": scope.project_ids,
-            "use_case_id": scope.use_case_id,
-        }
-
-    def _visit_limit(self, limit: Limit | None) -> str:
-        if limit is not None:
-            return str(limit.limit)
-        return ""
-
-    def _visit_offset(self, offset: Offset | None) -> str:
-        if offset is not None:
-            return str(offset.offset)
         return ""
 
 
