@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+2.0.12
+-----
+
+- Support curried functions in the MQL grammar
+
+
 2.0.11
 -----
 
