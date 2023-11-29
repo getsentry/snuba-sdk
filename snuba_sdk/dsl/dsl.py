@@ -10,7 +10,7 @@ from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import And, BooleanCondition, Condition, Op, Or
+from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -191,8 +191,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             target = target.set_groupby(group_by)
         return target
 
-    def visit_filter_expr(
-        self, node: Node, children: Sequence[Any]
+    def _filter(
+        self, children: Sequence[Any], operator: BooleanOp
     ) -> Union[Condition, BooleanCondition]:
         first, zero_or_more_others, *_ = children
         filters: Sequence[Union[Condition, BooleanCondition]] = [
@@ -202,22 +202,23 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if len(filters) == 1:
             return filters[0]
         else:
-            # We flatten all filters into a single or since Snuba supports it.
-            return Or(conditions=filters)
+            # We flatten all filters into a single condition since Snuba supports it.
+            if operator == BooleanOp.AND:
+                return And(conditions=filters)
+            elif operator == BooleanOp.OR:
+                return Or(conditions=filters)
+            else:
+                return BooleanCondition(op=operator, conditions=filters)
+
+    def visit_filter_expr(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Condition, BooleanCondition]:
+        return self._filter(children, BooleanOp.OR)
 
     def visit_filter_term(
         self, node: Node, children: Sequence[Any]
     ) -> Union[Condition, BooleanCondition]:
-        first, zero_or_more_others, *_ = children
-        filters: Sequence[Union[Condition, BooleanCondition]] = [
-            first,
-            *(v for _, _, _, v in zero_or_more_others),
-        ]
-        if len(filters) == 1:
-            return filters[0]
-        else:
-            # We flatten all filters into a single and since Snuba supports it.
-            return And(conditions=filters)
+        return self._filter(children, BooleanOp.AND)
 
     def visit_filter_factor(
         self, node: Node, children: Sequence[Any]
