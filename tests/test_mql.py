@@ -1,7 +1,7 @@
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op, And
+from snuba_sdk.conditions import Condition, Op, And, Or
 from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
@@ -275,6 +275,52 @@ tests = [
             )
         ),
         id="test multiple filters with AND operator",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz" OR foo:"foz" AND hee:"haw"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    Or(
+                        conditions=[
+                            Condition(Column("bar"), Op.EQ, "baz"),
+And(
+                        conditions=[
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                        ])
+                        ],
+                    ),
+
+                ],
+            )
+        ),
+        id="test multiple filters with AND and OR operators and no parentheses",
+    ),
+    pytest.param(
+        'sum(user{(bar:"baz" OR foo:"foz") AND hee:"haw"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    And(
+                        conditions=[
+Or(
+                        conditions=[
+                            Condition(Column("bar"), Op.EQ, "baz"),
+Condition(Column("foo"), Op.EQ, "foz"),],
+                    ),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                        ])
+
+
+                ],
+            )
+        ),
+        id="test multiple filters with AND and OR operators",
     ),
     pytest.param(
         'sum(user{bar:"baz" foo:"foz", hee:"haw" AND key:"value"})',
