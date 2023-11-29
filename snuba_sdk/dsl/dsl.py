@@ -10,7 +10,7 @@ from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import Condition, Op, BooleanCondition, And, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -31,10 +31,16 @@ term_op = "*" / "/"
 coefficient = number / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target (open_brace _ condition (_ comma? _ condition)* _ close_brace)? (group_by)?
+filter = target (open_brace _ filter_expr _ close_brace)? (group_by)?
 
-condition = condition_op? (variable / tag_key) _ colon _ tag_value
+filter_expr = filter_term (_ or _ filter_term)*
+filter_term = filter_factor (_ joint_operator? _ filter_factor)*
+filter_factor = (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_expr
+nested_expr = open_paren _ filter_expr _ close_paren
 condition_op = "!"
+
+joint_operator = comma / and
+
 tag_key = ~r"[a-zA-Z0-9_]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
@@ -69,6 +75,8 @@ close_brace = "}}"
 comma = ","
 backtick = "`"
 colon = ":"
+and = "AND"
+or = "OR"
 quote = "\""
 _ = ~r"\s*"
 """
@@ -169,9 +177,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if not packed_filters and not packed_groupbys:
             return target
         if packed_filters:
-            _, _, first, zero_or_more_others, *_ = packed_filters[0]
-            filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+            _, _, filter_condition, *_ = packed_filters[0]
             current_filters = target.filters if target.filters else []
+            filters = [filter_condition]
             filters.extend(current_filters)
             target = target.set_filters(filters)
         if packed_groupbys:
@@ -183,17 +191,43 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             target = target.set_groupby(group_by)
         return target
 
-    def visit_condition(self, node: Node, children: Sequence[Any]) -> Condition:
-        condition_op, lhs, _, _, _, rhs = children
-        op = Op.EQ
-        if not condition_op and isinstance(rhs, list):
-            op = Op.IN
-        elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
-            if isinstance(rhs, str):
-                op = Op.NEQ
-            elif isinstance(rhs, list):
-                op = Op.NOT_IN
-        return Condition(lhs[0], op, rhs)
+    def visit_filter_expr(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+        first, zero_or_more_others, *_ = children
+        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+        if len(filters) == 1:
+            return filters[0]
+        else:
+            # We flatten all filters into a single or since Snuba supports it.
+            return Or(conditions=filters)
+
+    def visit_filter_term(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+        first, zero_or_more_others, *_ = children
+        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+        if len(filters) == 1:
+            return filters[0]
+        else:
+            # We flatten all filters into a single and since Snuba supports it.
+            return And(conditions=filters)
+
+    def visit_filter_factor(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+        child = children[0]
+        if isinstance(child, BooleanCondition):
+            return child
+        else:
+            condition_op, lhs, _, _, _, rhs = child
+            op = Op.EQ
+            if not condition_op and isinstance(rhs, list):
+                op = Op.IN
+            elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
+                if isinstance(rhs, str):
+                    op = Op.NEQ
+                elif isinstance(rhs, list):
+                    op = Op.NOT_IN
+            return Condition(lhs[0], op, rhs)
+
+    def visit_nested_expr(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+        _, _, filter_expr, *_ = children
+        return filter_expr
 
     def visit_function(self, node: Node, children: Sequence[Any]) -> Timeseries:
         """

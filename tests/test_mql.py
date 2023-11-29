@@ -1,7 +1,7 @@
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import Condition, Op, And
 from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
@@ -235,8 +235,10 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    And(
+                        conditions=[Condition(Column("bar"), Op.EQ, "baz"),
+                        Condition(Column("foo"), Op.EQ, "foz")],
+                    )
                 ],
             )
         ),
@@ -249,23 +251,44 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),])
                 ],
             )
         ),
         id="test multiple filters with space delimiter",
     ),
     pytest.param(
-        'sum(user{bar:"baz" foo:"foz", hee:"haw"})',
+        'sum(user{bar:"baz" AND foo:"foz"})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"), ])
+                ],
+            )
+        ),
+        id="test multiple filters with AND operator",
+    ),
+    pytest.param(
+        'sum(user{bar:"baz" foo:"foz", hee:"haw" AND key:"value"})',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="user"),
+                aggregate="sum",
+                filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
                     Condition(Column("hee"), Op.EQ, "haw"),
+                            Condition(Column("key"), Op.EQ, "value"),  ])
                 ],
             )
         ),
@@ -278,8 +301,11 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),]
+                    )
                 ],
             )
         ),
@@ -292,8 +318,11 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),]
+                    )
                 ],
             )
         ),
@@ -306,9 +335,11 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),
+                    Condition(Column("hee"), Op.EQ, "haw"),])
                 ],
             )
         ),
@@ -321,8 +352,10 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),])
                 ],
             )
         ),
@@ -335,8 +368,10 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    And(
+                        conditions=[
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),])
                 ],
             )
         ),
@@ -349,9 +384,11 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),
+                    Condition(Column("hee"), Op.EQ, "haw"),])
                 ],
             )
         ),
@@ -364,9 +401,11 @@ tests = [
                 metric=Metric(public_name="user"),
                 aggregate="sum",
                 filters=[
+                    And(
+                        conditions=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.NOT_IN, ["haw", "hoo"]),
+                    Condition(Column("hee"), Op.NOT_IN, ["haw", "hoo"]),])
                 ],
             )
         ),
@@ -380,8 +419,10 @@ tests = [
                 aggregate="sum",
                 filters=[
                     Condition(Column("bar"), Op.EQ, "baz"),
+                    And(
+                        conditions=[
                     Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),
+                    Condition(Column("hee"), Op.EQ, "haw"),])
                 ],
             ),
         ),
