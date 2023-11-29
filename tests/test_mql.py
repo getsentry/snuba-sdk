@@ -1,7 +1,7 @@
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op, And, Or
+from snuba_sdk.conditions import And, Condition, Op, Or
 from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
@@ -236,8 +236,10 @@ tests = [
                 aggregate="sum",
                 filters=[
                     And(
-                        conditions=[Condition(Column("bar"), Op.EQ, "baz"),
-                        Condition(Column("foo"), Op.EQ, "foz")],
+                        conditions=[
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ],
                     )
                 ],
             )
@@ -253,8 +255,10 @@ tests = [
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -270,7 +274,9 @@ tests = [
                     And(
                         conditions=[
                             Condition(Column("bar"), Op.EQ, "baz"),
-                            Condition(Column("foo"), Op.EQ, "foz"), ])
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -286,14 +292,14 @@ tests = [
                     Or(
                         conditions=[
                             Condition(Column("bar"), Op.EQ, "baz"),
-And(
-                        conditions=[
-                            Condition(Column("foo"), Op.EQ, "foz"),
-                            Condition(Column("hee"), Op.EQ, "haw"),
-                        ])
+                            And(
+                                conditions=[
+                                    Condition(Column("foo"), Op.EQ, "foz"),
+                                    Condition(Column("hee"), Op.EQ, "haw"),
+                                ]
+                            ),
                         ],
                     ),
-
                 ],
             )
         ),
@@ -308,15 +314,15 @@ And(
                 filters=[
                     And(
                         conditions=[
-Or(
-                        conditions=[
-                            Condition(Column("bar"), Op.EQ, "baz"),
-Condition(Column("foo"), Op.EQ, "foz"),],
-                    ),
+                            Or(
+                                conditions=[
+                                    Condition(Column("bar"), Op.EQ, "baz"),
+                                    Condition(Column("foo"), Op.EQ, "foz"),
+                                ],
+                            ),
                             Condition(Column("hee"), Op.EQ, "haw"),
-                        ])
-
-
+                        ]
+                    )
                 ],
             )
         ),
@@ -331,10 +337,12 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),
-                            Condition(Column("key"), Op.EQ, "value"),  ])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                            Condition(Column("key"), Op.EQ, "value"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -349,8 +357,9 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),]
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
                     )
                 ],
             )
@@ -366,8 +375,9 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),]
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
                     )
                 ],
             )
@@ -383,9 +393,11 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -400,8 +412,10 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -417,7 +431,9 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                     And(
                         conditions=[
                             Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),])
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -432,9 +448,11 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                        ]
+                    )
                 ],
             )
         ),
@@ -449,9 +467,11 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                 filters=[
                     And(
                         conditions=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.NOT_IN, ["haw", "hoo"]),])
+                            Condition(Column("bar"), Op.EQ, "baz"),
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.NOT_IN, ["haw", "hoo"]),
+                        ]
+                    )
                 ],
             )
         ),
@@ -467,8 +487,10 @@ Condition(Column("foo"), Op.EQ, "foz"),],
                     Condition(Column("bar"), Op.EQ, "baz"),
                     And(
                         conditions=[
-                    Condition(Column("foo"), Op.EQ, "foz"),
-                    Condition(Column("hee"), Op.EQ, "haw"),])
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "haw"),
+                        ]
+                    ),
                 ],
             ),
         ),

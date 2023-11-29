@@ -3,14 +3,14 @@ Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
 
-from typing import Any, Mapping, Sequence, Union
+from typing import Any, Mapping, Sequence, Union, cast
 
 from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op, BooleanCondition, And, Or
+from snuba_sdk.conditions import And, BooleanCondition, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -191,30 +191,43 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             target = target.set_groupby(group_by)
         return target
 
-    def visit_filter_expr(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+    def visit_filter_expr(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Condition, BooleanCondition]:
         first, zero_or_more_others, *_ = children
-        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+        filters: Sequence[Union[Condition, BooleanCondition]] = [
+            first,
+            *(v for _, _, _, v in zero_or_more_others),
+        ]
         if len(filters) == 1:
             return filters[0]
         else:
             # We flatten all filters into a single or since Snuba supports it.
             return Or(conditions=filters)
 
-    def visit_filter_term(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+    def visit_filter_term(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Condition, BooleanCondition]:
         first, zero_or_more_others, *_ = children
-        filters = [first, *(v for _, _, _, v in zero_or_more_others)]
+        filters: Sequence[Union[Condition, BooleanCondition]] = [
+            first,
+            *(v for _, _, _, v in zero_or_more_others),
+        ]
         if len(filters) == 1:
             return filters[0]
         else:
             # We flatten all filters into a single and since Snuba supports it.
             return And(conditions=filters)
 
-    def visit_filter_factor(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
-        child = children[0]
-        if isinstance(child, BooleanCondition):
-            return child
+    def visit_filter_factor(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Condition, BooleanCondition]:
+        factor, *_ = children
+        if isinstance(factor, BooleanCondition):
+            # If we have a parenthesized expression, we just return it.
+            return factor
         else:
-            condition_op, lhs, _, _, _, rhs = child
+            condition_op, lhs, _, _, _, rhs = factor
             op = Op.EQ
             if not condition_op and isinstance(rhs, list):
                 op = Op.IN
@@ -225,9 +238,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
                     op = Op.NOT_IN
             return Condition(lhs[0], op, rhs)
 
-    def visit_nested_expr(self, node: Node, children: Sequence[Any]) -> Union[Condition, BooleanCondition]:
+    def visit_nested_expr(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Condition, BooleanCondition]:
         _, _, filter_expr, *_ = children
-        return filter_expr
+        return cast(Union[Condition, BooleanCondition], filter_expr)
 
     def visit_function(self, node: Node, children: Sequence[Any]) -> Timeseries:
         """
