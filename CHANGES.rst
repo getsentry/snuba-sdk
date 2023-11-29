@@ -1,17 +1,12 @@
 Changelog and versioning
 ==========================
 
-2.0.12
------
-
-- Support curried functions in the MQL grammar
-
-
 2.0.11
 -----
 
 - Add MQLContext to capture addition query information that cannot be expressed in MQL string
     - Add visitors to support MQLContext serialization
+- Support curried functions in the MQL grammar
 
 
 2.0.10
