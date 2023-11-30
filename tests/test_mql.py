@@ -2,9 +2,9 @@ import pytest
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, Op, Or
-from snuba_sdk.dsl.dsl import parse_mql
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
+from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.timeseries import Metric, Timeseries
 
 tests = [
@@ -547,6 +547,66 @@ tests = [
         ),
         id="test group by 4",
     ),
+    pytest.param(
+        "quantiles(0.5)(`d:transactions/duration@millisecond`)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="quantiles",
+                aggregate_params=[0.5],
+            )
+        ),
+        id="test curried functions",
+    ),
+    pytest.param(
+        "quantiles(0.5, 0.95)(`d:transactions/duration@millisecond`)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="quantiles",
+                aggregate_params=[0.5, 0.95],
+            )
+        ),
+        id="test curried functions with multiple params",
+    ),
+    pytest.param(
+        "topK()(`d:transactions/duration@millisecond`)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="topK",
+                aggregate_params=[],
+            )
+        ),
+        id="test curried functions with no params",
+    ),
+    pytest.param(
+        'test(0.5, "random", other, 9)(`d:transactions/duration@millisecond`)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="test",
+                aggregate_params=[0.5, "random", "other", 9],
+            )
+        ),
+        id="test curried functions with random params",
+    ),
+    pytest.param(
+        'quantiles(0.5)(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="quantiles",
+                aggregate_params=[0.5],
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    Condition(Column("foo"), Op.EQ, "foz"),
+                ],
+                groupby=[Column("a"), Column("b")],
+            )
+        ),
+        id="test curried functions with filters and group by",
+    ),
 ]
 
 
@@ -558,8 +618,8 @@ def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
 
 @pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
-    dsl = "sum(foo) / 1000"
-    result = parse_mql(dsl)
+    mql = "sum(foo) / 1000"
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -573,8 +633,8 @@ def test_terms() -> None:
         )
     )
 
-    dsl = "sum(foo) * sum(bar)"
-    result = parse_mql(dsl)
+    mql = "sum(foo) * sum(bar)"
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.MULTIPLY,
@@ -594,8 +654,8 @@ def test_terms() -> None:
 
 @pytest.mark.xfail(reason="Not supported")
 def test_multi_terms() -> None:
-    dsl = "(sum(foo) * sum(bar)) / 1000"
-    result = parse_mql(dsl)
+    mql = "(sum(foo) * sum(bar)) / 1000"
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -621,8 +681,8 @@ def test_multi_terms() -> None:
 
 @pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
-    dsl = '(sum(foo) / sum(bar)){tag="tag_value"}'
-    result = parse_mql(dsl)
+    mql = '(sum(foo) / sum(bar)){tag="tag_value"}'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -640,8 +700,8 @@ def test_terms_with_filters() -> None:
         ),
     )
 
-    dsl = 'sum(foo{tag="tag_value"}) / sum(bar{tag="tag_value"})'
-    result = parse_mql(dsl)
+    mql = 'sum(foo{tag="tag_value"}) / sum(bar{tag="tag_value"})'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -663,8 +723,8 @@ def test_terms_with_filters() -> None:
 
 @pytest.mark.xfail(reason="Not supported")
 def test_terms_with_groupby() -> None:
-    dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
-    result = parse_mql(dsl)
+    mql = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -683,8 +743,8 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    dsl = "(sum(foo) by transaction / sum(bar) by transaction)"
-    result = parse_mql(dsl)
+    mql = "(sum(foo) by transaction / sum(bar) by transaction)"
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -703,8 +763,8 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    dsl = '(sum(foo) by transaction / sum(bar) by transaction){tag="tag_value"}'
-    result = parse_mql(dsl)
+    mql = '(sum(foo) by transaction / sum(bar) by transaction){tag="tag_value"}'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -724,8 +784,8 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    dsl = '(sum(foo{tag="tag_value"}) by transaction) / (sum(bar{tag="tag_value"}) by transaction)'
-    result = parse_mql(dsl)
+    mql = '(sum(foo{tag="tag_value"}) by transaction) / (sum(bar{tag="tag_value"}) by transaction)'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -746,8 +806,8 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    dsl = '(sum(foo){tag="tag_value"}) by transaction / (sum(bar){tag="tag_value"}) by transaction'
-    result = parse_mql(dsl)
+    mql = '(sum(foo){tag="tag_value"}) by transaction / (sum(bar){tag="tag_value"}) by transaction'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -768,8 +828,8 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    dsl = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
-    result = parse_mql(dsl)
+    mql = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             ArithmeticOperator.DIVIDE,
@@ -791,8 +851,8 @@ def test_terms_with_groupby() -> None:
 
 @pytest.mark.xfail(reason="Not supported")
 def test_complex_nested_terms() -> None:
-    dsl = '((sum(foo{tag="tag_value"}){tag2="tag_value2"} / sum(bar)){tag3="tag_value3"} * sum(pop)) by transaction'
-    result = parse_mql(dsl)
+    mql = '((sum(foo{tag="tag_value"}){tag2="tag_value2"} / sum(bar)){tag3="tag_value3"} * sum(pop)) by transaction'
+    result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             operator=ArithmeticOperator.MULTIPLY,

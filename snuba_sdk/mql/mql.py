@@ -2,6 +2,7 @@
 Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
+from __future__ import annotations
 
 from typing import Any, Mapping, Sequence, Union, cast
 
@@ -45,15 +46,19 @@ tag_key = ~r"[a-zA-Z0-9_]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-unquoted_string = ~r'[^,\[\]\"}}{{\s]+'
+unquoted_string = ~r'[^,\[\]\"}}{{\(\)\s]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = aggregate (group_by)?
+function = (curried_aggregate / aggregate) (group_by)?
 aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
+curried_aggregate = aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+aggregate_list = param* (param_expression)
+param = param_expression _ comma _
+param_expression = number / quoted_string / unquoted_string
 aggregate_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
@@ -249,7 +254,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Given an Timeseries target, set its children groupbys.
         """
-        target, packed_groupbys = children
+        targets, packed_groupbys = children
+        target = targets[0]
         assert isinstance(target, Timeseries)
         if packed_groupbys:
             group_by = packed_groupbys[0]
@@ -317,7 +323,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
         raise InvalidQueryError("Variables are not supported yet")
-        return None
 
     def visit_nested_expression(
         self, node: Node, children: Sequence[Any]
@@ -334,6 +339,47 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         _, _, target, zero_or_more_others, *_ = zero_or_one
         assert isinstance(target, Timeseries)
         return target.set_aggregate(aggregate_name)
+
+    def visit_curried_aggregate(
+        self, node: Node, children: Sequence[Any]
+    ) -> Timeseries:
+        """
+        Given a target (which is either a Formula or Timeseries object),
+        set the aggregate and aggregate params on it.
+        """
+        aggregate_name, agg_params, zero_or_one = children
+        _, _, target, _, *_ = zero_or_one
+        _, _, agg_param_list, *_ = agg_params
+        aggregate_params = agg_param_list[0] if agg_param_list else []
+        assert isinstance(target, Timeseries)
+        return target.set_aggregate(aggregate_name, aggregate_params)
+
+    def visit_param(self, node: Node, children: Sequence[Any]) -> str | int | float:
+        """
+        Discard the comma and return the aggregate param for the curried aggregate function.
+        """
+        param, *_ = children
+        assert isinstance(param, (str, int, float))
+        return param
+
+    def visit_param_expression(
+        self, node: Node, children: Sequence[Any]
+    ) -> str | int | float:
+        """
+        Return the aggregate param for the curried aggregate function.
+        """
+        (param,) = children
+        assert isinstance(param, (str, int, float))
+        return param
+
+    def visit_aggregate_list(
+        self, node: Node, children: Sequence[Any]
+    ) -> list[str | int | float]:
+        agg_params, param = children
+        if param is not None:
+            agg_params.append(param)
+        assert isinstance(agg_params, list)
+        return agg_params
 
     def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
