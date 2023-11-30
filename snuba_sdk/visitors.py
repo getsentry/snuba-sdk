@@ -3,11 +3,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import date, datetime
-from typing import Any, Generator, Generic, Set, TypeVar, Union
+from typing import Any, Generator, Generic, Set, TypeVar
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary, BooleanOp
+from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Expression,

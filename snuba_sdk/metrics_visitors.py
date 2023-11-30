@@ -7,9 +7,10 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
     OPERATOR_TO_FUNCTION,
     And,
+    BooleanCondition,
     Condition,
     ConditionGroup,
-    Op, BooleanCondition,
+    Op,
 )
 from snuba_sdk.expressions import InvalidExpressionError, Totals
 from snuba_sdk.formula import Formula
@@ -176,7 +177,9 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
                 if isinstance(c, Condition):
                     conditions.append(self.expression_visitor._visit_condition_mql(c))
                 elif isinstance(c, BooleanCondition):
-                    conditions.append(self.expression_visitor._visit_boolean_condition_mql(c))
+                    conditions.append(
+                        self.expression_visitor._visit_boolean_condition_mql(c)
+                    )
             # We use by default the `AND` operator as joint operator for printing top level conditions.
             return "{" + " AND ".join(conditions) + "}"
         return ""
