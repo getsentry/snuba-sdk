@@ -8,7 +8,7 @@ import pytest
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
@@ -78,6 +78,20 @@ metrics_query_to_snql_tests = [
                 filters=[
                     Condition(Column("tags[referrer]"), Op.EQ, "foo"),
                     Condition(Column("tags[transaction]"), Op.EQ, "foo"),
+                    BooleanCondition(
+                        op=BooleanOp.OR,
+                        conditions=[
+                            Condition(Column("tags[environment]"), Op.EQ, "prod"),
+                            Condition(Column("tags[environment]"), Op.EQ, "dev"),
+                            BooleanCondition(
+                                op=BooleanOp.AND,
+                                conditions=[
+                                    Condition(Column("tags[platform]"), Op.EQ, "ios"),
+                                    Condition(Column("tags[device]"), Op.EQ, "iphone"),
+                                ],
+                            ),
+                        ],
+                    ),
                 ],
                 groupby=[Column("tags[environment]"), Column("tags[status_code]")],
             ),
@@ -88,7 +102,7 @@ metrics_query_to_snql_tests = [
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
         ),
-        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[environment], tags[status_code] WHERE granularity = 3600 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
+        "MATCH (metrics_sets) SELECT max(value) AS `aggregate_value` BY toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`, tags[environment], tags[status_code] WHERE granularity = 3600 AND metric_id = 123 AND tags[referrer] = 'foo' AND tags[transaction] = 'foo' AND (tags[environment] = 'prod' OR tags[environment] = 'dev' OR (tags[platform] = 'ios' AND tags[device] = 'iphone')) AND (org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions') AND timestamp >= toDateTime('2023-01-02T03:04:05') AND timestamp < toDateTime('2023-01-16T03:04:05') ORDER BY time ASC",
         id="top level filters/group by with low level filters",
     ),
     pytest.param(
@@ -646,6 +660,20 @@ metrics_query_to_mql_tests = [
                 filters=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
+                    BooleanCondition(
+                        op=BooleanOp.OR,
+                        conditions=[
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "hez"),
+                            # We test with both `BooleanCondition` and `And` to make sure the variants all work.
+                            And(
+                                conditions=[
+                                    Condition(Column("foo"), Op.EQ, "foz"),
+                                    Condition(Column("hee"), Op.EQ, "hez"),
+                                ],
+                            ),
+                        ],
+                    ),
                 ],
                 groupby=None,
             ),
@@ -657,7 +685,7 @@ metrics_query_to_mql_tests = [
             ),
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
+            "mql": "max(d:transactions/duration@millisecond){bar:'baz' AND foo:'foz' AND (foo:'foz' OR hee:'hez' OR (foo:'foz' AND hee:'hez'))}",
             "mql_context": {
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
@@ -677,7 +705,7 @@ metrics_query_to_mql_tests = [
                 "indexer_mappings": {},
             },
         },
-        id="multiple filters query",
+        id="multiple nested filters query",
     ),
     pytest.param(
         MetricsQuery(

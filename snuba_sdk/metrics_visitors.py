@@ -7,6 +7,7 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
     OPERATOR_TO_FUNCTION,
     And,
+    BooleanCondition,
     Condition,
     ConditionGroup,
     Op,
@@ -173,9 +174,14 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         conditions = []
         if filters is not None:
             for c in filters:
-                assert isinstance(c, Condition)
-                conditions.append(self.expression_visitor._visit_condition_mql(c))
-            return "{" + ", ".join(conditions) + "}"
+                if isinstance(c, Condition):
+                    conditions.append(self.expression_visitor._visit_condition_mql(c))
+                elif isinstance(c, BooleanCondition):
+                    conditions.append(
+                        self.expression_visitor._visit_boolean_condition_mql(c)
+                    )
+            # We use by default the `AND` operator as joint operator for printing top level conditions.
+            return "{" + " AND ".join(conditions) + "}"
         return ""
 
     def _visit_groupby(self, groupby: list[Column] | None) -> str:

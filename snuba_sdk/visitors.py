@@ -271,6 +271,17 @@ class Translation(ExpressionVisitor[str]):
         assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value}{rhs}"
 
+    def _visit_boolean_condition_mql(self, cond: BooleanCondition) -> str:
+        conditions = []
+        for c in cond.conditions:
+            if isinstance(c, Condition):
+                conditions.append(self._visit_condition_mql(c))
+            elif isinstance(c, BooleanCondition):
+                conditions.append(self._visit_boolean_condition_mql(c))
+        op = cond.op.value
+        conditions_with_op = f" {op} ".join(conditions)
+        return f"({conditions_with_op})"
+
     def _visit_condition_mql(self, cond: Condition) -> str:
         rhs = None
         if is_unary(cond.op):
