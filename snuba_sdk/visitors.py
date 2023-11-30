@@ -3,11 +3,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import date, datetime
-from typing import Any, Generator, Generic, Set, TypeVar
+from typing import Any, Generator, Generic, Set, TypeVar, Union
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary
+from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary, BooleanOp
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import (
     Expression,
@@ -270,6 +270,17 @@ class Translation(ExpressionVisitor[str]):
 
         assert rhs is not None
         return f"{self.visit(cond.lhs)} {cond.op.value}{rhs}"
+
+    def _visit_boolean_condition_mql(self, cond: BooleanCondition) -> str:
+        conditions = []
+        for c in cond.conditions:
+            if isinstance(c, Condition):
+                conditions.append(self._visit_condition_mql(c))
+            elif isinstance(c, BooleanCondition):
+                conditions.append(self._visit_boolean_condition_mql(c))
+        op = cond.op.value
+        conditions_with_op = f" {op} ".join(conditions)
+        return f"({conditions_with_op})"
 
     def _visit_condition_mql(self, cond: Condition) -> str:
         rhs = None

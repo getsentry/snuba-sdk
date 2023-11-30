@@ -8,7 +8,7 @@ import pytest
 
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import Condition, Op, BooleanCondition, BooleanOp
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
@@ -646,6 +646,20 @@ metrics_query_to_mql_tests = [
                 filters=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
+                    BooleanCondition(
+                        op=BooleanOp.OR,
+                        conditions=[
+                            Condition(Column("foo"), Op.EQ, "foz"),
+                            Condition(Column("hee"), Op.EQ, "hez"),
+                            BooleanCondition(
+                                op=BooleanOp.AND,
+                                conditions=[
+                                    Condition(Column("foo"), Op.EQ, "foz"),
+                                    Condition(Column("hee"), Op.EQ, "hez"),
+                                ],
+                            ),
+                        ],
+                    ),
                 ],
                 groupby=None,
             ),
@@ -657,7 +671,7 @@ metrics_query_to_mql_tests = [
             ),
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:'baz', foo:'foz'}",
+            "mql": "max(d:transactions/duration@millisecond){bar:'baz' AND foo:'foz' AND (foo:'foz' OR hee:'hez' OR (foo:'foz' AND hee:'hez'))}",
             "mql_context": {
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
@@ -677,7 +691,7 @@ metrics_query_to_mql_tests = [
                 "indexer_mappings": {},
             },
         },
-        id="multiple filters query",
+        id="multiple nested filters query",
     ),
     pytest.param(
         MetricsQuery(
