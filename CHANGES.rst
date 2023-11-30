@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+2.0.12
+-----
+
+- Extend MQL grammar to support OR filters and parentheses
+
+
 2.0.11
 -----
 
