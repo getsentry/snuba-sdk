@@ -229,7 +229,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         self, node: Node, children: Sequence[Any]
     ) -> Union[Condition, BooleanCondition]:
         factor, *_ = children
-        # A nested filter can be both a boolean condition but also a single condition, since we allow (condition).
+        # A nested filter can be both a boolean condition but also a single condition, since we allow `(condition)`.
         if isinstance(factor, BooleanCondition) or isinstance(factor, Condition):
             # If we have a parenthesized expression, we just return it.
             return factor
