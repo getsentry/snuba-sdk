@@ -283,7 +283,7 @@ tests = [
         id="test multiple filters with AND operator",
     ),
     pytest.param(
-        'sum(user{bar:"baz" OR foo:"foz" AND hee:"haw"})',
+        'sum(user{bar:"baz" OR foo:"foz" AND (hee:"haw")})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
