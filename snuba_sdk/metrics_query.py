@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any, Mapping
+from typing import Any
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
@@ -89,7 +89,7 @@ class MetricsQuery(BaseQuery):
         assert isinstance(result, str)
         return result
 
-    def serialize_to_mql(self) -> Mapping[str, str]:
+    def serialize_to_mql(self) -> dict[str, str | dict[str, Any]]:
         # TODO: when the new MQL snuba endpoint is ready, this method will replace .serialize()
         self.validate()
         result = MQL_PRINTER.visit(self)

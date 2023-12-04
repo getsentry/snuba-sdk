@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any, Mapping
+from typing import Any
 
+from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
 
 
@@ -49,7 +50,6 @@ class Request:
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
     tenant_ids: dict[str, str | int] = field(default_factory=dict)
-    mql_context: dict[str, Mapping[str, Any]] | None = None
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
@@ -72,45 +72,44 @@ class Request:
         if self.flags is not None:
             self.flags.validate()
 
-    def to_dict(self) -> dict[str, str | bool | dict[str, str | int]]:
+    def to_dict(self, mql: bool = False) -> dict[str, bool | str | dict[str, Any]]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
 
-        # TODO: Uncomment when we fully support MQL snuba endpoint.
-        # if isinstance(self.query, MetricsQuery):
-        #     serialized_mql = self.query.serialize_to_mql()
-        #     mql_context = serialized_mql["mql_context"]
-        #     if self.mql_context:
-        #         if "indexer_mappings" in self.mql_context:
-        #             mql_context["indexer_mappings"] = self.mql_context["indexer_mappings"]
-        #         if "entity" in self.mql_context:
-        #             mql_context["entity"] = self.mql_context["entity"]
-        #         self.mql_context = mql_context
-        #     return {
-        #         **flags,
-        #         "query": serialized_mql["mql"],
-        #         "mql_context": mql_context,
-        #         "dataset": self.dataset,
-        #         "app_id": self.app_id,
-        #         "tenant_ids": self.tenant_ids,
-        #         "parent_api": self.parent_api,
-        #     }
-        return {
+        # ret: dict[str, bool | str | dict[str, str | int]] = {}
+        # Feature flag just for initial testing
+        mql_context = None
+        if mql and isinstance(self.query, MetricsQuery):
+            serialized_mql = self.query.serialize_to_mql()
+            mql_context = serialized_mql["mql_context"]
+            query = str(serialized_mql["mql"])
+        else:
+            query = self.query.serialize()
+
+        ret: dict[str, bool | str | dict[str, Any]] = {
             **flags,
-            "query": self.query.serialize(),
+            "query": query,
             "dataset": self.dataset,
             "app_id": self.app_id,
             "tenant_ids": self.tenant_ids,
             "parent_api": self.parent_api,
         }
+        if mql_context is not None:
+            ret["mql_context"] = mql_context
+        return ret
 
     def serialize(self) -> str:
         return json.dumps(self.to_dict())
 
+    def serialize_mql(self) -> str:
+        # NOTE: This function is temporary, just to help with a cutover in the Sentry codebase.
+        # It will be removed in a future version.
+        return json.dumps(self.to_dict(mql=True))
+
     def __str__(self) -> str:
         return self.serialize()
 
-    def print(self) -> str:
+    def print(self, mql: bool = False) -> str:
         self.validate()
-        output = self.to_dict()
+        output = self.to_dict(mql)
         return json.dumps(output, sort_keys=True, indent=4 * " ")
