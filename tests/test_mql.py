@@ -509,13 +509,13 @@ tests = [
         id="test group by 1",
     ),
     pytest.param(
-        "max(`d:transactions/duration@millisecond`{foo:foz} by transaction)",
+        "max(`d:transactions/duration@millisecond`{foo:foz} by http.status_code)",
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
                 aggregate="max",
                 filters=[Condition(Column("foo"), Op.EQ, "foz")],
-                groupby=[Column("transaction")],
+                groupby=[Column("http.status_code")],
             ),
         ),
         id="test group by 2",
@@ -533,7 +533,7 @@ tests = [
         id="test group by 3",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
+        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a.something, b.something)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
@@ -542,7 +542,7 @@ tests = [
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),
                 ],
-                groupby=[Column("a"), Column("b")],
+                groupby=[Column("a.something"), Column("b.something")],
             )
         ),
         id="test group by 4",
@@ -633,7 +633,7 @@ def test_terms() -> None:
         )
     )
 
-    mql = "sum(foo) * sum(bar)"
+    mql = "sum(foo) * bar"
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
