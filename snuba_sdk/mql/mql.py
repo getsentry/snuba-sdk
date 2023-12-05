@@ -50,7 +50,7 @@ unquoted_string = ~r'[^,\[\]\"}}{{\(\)\s]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
-variable = "$" ~r"[a-zA-Z0-9_]+"
+variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = (curried_aggregate / aggregate) (group_by)?
@@ -62,7 +62,7 @@ param_expression = number / quoted_string / unquoted_string
 aggregate_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
-group_by_name = ~r"[a-zA-Z0-9_]+"
+group_by_name = ~r"[a-zA-Z0-9_.]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
