@@ -80,12 +80,14 @@ class MQLPrinter(MQLVisitor):
         assert isinstance(returns["query"], Mapping)  # mypy
         mql_string = returns["query"]["mql_string"]
         mql_context = MQLContext(
+            entity=returns["entity"],
             start=returns["start"],
             end=returns["end"],
             rollup=returns["rollup"],
             scope=returns["scope"],
             limit=returns["limit"],
             offset=returns["offset"],
+            indexer_mappings=returns["indexer_mappings"],
         )
         return {
             "mql": mql_string,

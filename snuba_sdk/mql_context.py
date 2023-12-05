@@ -9,35 +9,42 @@ from snuba_sdk.mql_context_visitors import MQLContextPrinter, Validator
 from snuba_sdk.timeseries import MetricsScope, Rollup
 
 
+class InvalidMQLContextError(Exception):
+    pass
+
+
 @dataclass
 class MQLContext:
     """
     The MQL string alone is not enough to fully describe a query.
     This class contains all of the additional information needed to
     execute a metrics query in snuba.
+
+    It should be noted that this class is used as an intermediary encoding
+    class for data in the the MetricsQuery class that can't be encoded into
+    MQL. As such it shouldn't be used directly by users of the SDK.
+
+    This also means that the validation here is quite loose, since this object
+    should be created from a MetricsQuery object, which has already been validated.
     """
 
-    entity: str | None = None
-    start: datetime | None = None
-    end: datetime | None = None
-    rollup: Rollup | None = None
-    scope: MetricsScope | None = None
+    entity: str
+    start: datetime
+    end: datetime
+    rollup: Rollup
+    scope: MetricsScope
+    indexer_mappings: dict[str, Any]
     limit: Limit | None = None
     offset: Offset | None = None
-    indexer_mappings: dict[str, Any] | None = None
-
-    def get_fields(self) -> Sequence[str]:
-        self_fields = fields(self)
-        return tuple(f.name for f in self_fields)
 
     def validate(self) -> None:
-        # For now, we cannot validate entity because it unknown when
-        # we converting MetricsQuery to MQL. In that specific case, we
-        # need to set the entity on the requesst after serialization.
+        fields = ["entity", "start", "end", "rollup", "scope"]
+        for field in fields:
+            if getattr(self, field) is None:
+                raise InvalidMQLContextError(f"{field} is required for a MQL context")
 
-        # In the future, we should be able to remove entity from this class
-        # entirely when we join entities together.
-        VALIDATOR.visit(self)
+        if not isinstance(indexer_mapping, dict):
+            raise InvalidMQLContextError("indexer_mapping must be a dictionary")
 
     def serialize(self) -> Mapping[str, Any]:
         self.validate()

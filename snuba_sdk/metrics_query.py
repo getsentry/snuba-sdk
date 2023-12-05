@@ -33,6 +33,7 @@ class MetricsQuery(BaseQuery):
     scope: MetricsScope | None = None
     limit: Limit | None = None
     offset: Offset | None = None
+    indexer_mappings: dict[str, str | int] | None = None
 
     def _replace(self, field: str, value: Any) -> MetricsQuery:
         new = replace(self, **{field: value})
@@ -68,6 +69,11 @@ class MetricsQuery(BaseQuery):
 
     def set_offset(self, offset: int) -> MetricsQuery:
         return self._replace("offset", Offset(offset))
+
+    def set_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int]
+    ) -> MetricsQuery:
+        return self._replace("indexer_mappings", indexer_mappings)
 
     def validate(self) -> None:
         Validator().visit(self)

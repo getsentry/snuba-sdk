@@ -73,7 +73,14 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
     def _visit_limit(self, limit: Limit | None) -> QVisited:
         raise NotImplementedError
 
+    @abstractmethod
     def _visit_offset(self, offset: Offset | None) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int] | None
+    ) -> QVisited:
         raise NotImplementedError
 
 
@@ -215,6 +222,12 @@ class SnQLPrinter(MetricsQueryVisitor[str]):
             return self.expression_visitor.visit(offset)
         return ""
 
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int] | None
+    ) -> str:
+        # SnQL is a temporary measure and assumes the queries are resolved in Sentry
+        return ""
+
 
 class Validator(MetricsQueryVisitor[None]):
     def _combine(
@@ -278,3 +291,11 @@ class Validator(MetricsQueryVisitor[None]):
             raise InvalidMetricsQueryError("offset must be a Offset object")
 
         offset.validate()
+
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int] | None
+    ) -> None:
+        if indexer_mappings is None:
+            return
+        if not isinstance(indexer_mappings, dict):
+            raise InvalidMetricsQueryError("indexer_mappings must be a dictionary")

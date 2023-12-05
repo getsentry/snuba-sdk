@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Generic, Mapping, Optional, TypeVar
+from typing import Any, Generic, Mapping, TypeVar, Union
 
 from snuba_sdk import mql_context as main
 from snuba_sdk.expressions import Limit, Offset
@@ -18,22 +20,22 @@ QVisited = TypeVar("QVisited")
 
 
 class MQLContextVisitor(ABC, Generic[QVisited]):
-    def visit(self, query: main.MQLContext) -> Mapping[str, QVisited]:
-        fields = query.get_fields()
+    def visit(self, context: main.MQLContext) -> Mapping[str, QVisited]:
+        fields = context.get_fields()
         returns = {}
         for field in fields:
             if field == "entity":
                 continue
-            returns[field] = getattr(self, f"_visit_{field}")(getattr(query, field))
+            returns[field] = getattr(self, f"_visit_{field}")(getattr(context, field))
 
-        return self._combine(query, returns)
+        return self._combine(context, returns)
 
     @abstractmethod
     def _combine(
         self,
-        query: main.MQLContext,
-        returns: Mapping[str, QVisited | Mapping[str, QVisited]],
-    ) -> Mapping[str, QVisited]:
+        context: main.MQLContext,
+        returns: dict[str, QVisited],
+    ) -> dict[str, QVisited]:
         raise NotImplementedError
 
     @abstractmethod
@@ -45,15 +47,11 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_rollup(
-        self, rollup: Rollup | None
-    ) -> Mapping[str, QVisited | Mapping[str, QVisited]]:
+    def _visit_rollup(self, rollup: Rollup | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_scope(
-        self, scope: MetricsScope | None
-    ) -> QVisited | Mapping[QVisited, list[int] | Optional[QVisited]]:
+    def _visit_scope(self, scope: MetricsScope | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -67,14 +65,19 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
     @abstractmethod
     def _visit_indexer_mappings(
         self, indexer_mappings: dict[str, Any] | None
-    ) -> Mapping[str, QVisited]:
+    ) -> QVisited:
         raise NotImplementedError
 
 
-class MQLContextPrinter(MQLContextVisitor[str]):
+ContextJSONTypes = Union[str, int, datetime, None, Mapping[str, Any]]
+
+
+class MQLContextJSONPrinter(MQLContextVisitor[ContextJSONTypes]):
     def _combine(
-        self, query: main.MQLContext, returns: Mapping[str, str | Mapping[str, str]]
-    ) -> Mapping[str, Any]:
+        self,
+        context: main.MQLContext,
+        returns: dict[str, ContextJSONTypes],
+    ) -> dict[str, Any]:
         return {
             "start": returns["start"],
             "end": returns["end"],
@@ -91,66 +94,52 @@ class MQLContextPrinter(MQLContextVisitor[str]):
 
         return entity
 
-    def _visit_start(self, start: datetime | None) -> str:
+    def _visit_start(self, start: datetime | None) -> datetime:
         if start is None:
             raise InvalidMQLContextError("MetricQuery.start must not be None")
 
-        return start.isoformat()
+        return start
 
-    def _visit_end(self, end: datetime | None) -> str:
+    def _visit_end(self, end: datetime | None) -> datetime:
         if end is None:
             raise InvalidMQLContextError("MetricQuery.end must not be None")
 
-        return end.isoformat()
+        return end
 
-    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, Any]:
+    def _visit_rollup(
+        self, rollup: Rollup | None
+    ) -> dict[str, ContextJSONTypes | dict[str, ContextJSONTypes]]:
         if rollup is None:
             raise InvalidMQLContextError("MetricQuery.rollup must not be None")
 
-        granularity = ""
-        if rollup.granularity is not None:
-            granularity = str(rollup.granularity)
-
-        interval = ""
-        orderby = {"column_name": "", "direction": ""}
-        with_totals = ""
+        orderby = None
         if rollup.interval:
-            interval = str(rollup.interval)
             orderby = {"column_name": "time", "direction": "ASC"}
-            if rollup.totals:
-                with_totals = "{rollup.totals}"
         elif rollup.orderby is not None:
             orderby = {
                 "column_name": AGGREGATE_ALIAS,
                 "direction": rollup.orderby.value,
             }
 
+        with_totals = str(rollup.totals)
         return {
             "orderby": orderby,
-            "granularity": granularity,
-            "interval": interval,
+            "granularity": rollup.granularity,
+            "interval": rollup.interval,
             "with_totals": with_totals,
         }
 
-    def _visit_scope(self, scope: MetricsScope | None) -> str | Mapping[str, Any]:
+    def _visit_scope(self, scope: MetricsScope | None) -> dict[str, ContextJSONTypes]:
         if scope is None:
             raise InvalidMQLContextError("MetricQuery.scope must not be None")
 
-        return {
-            "org_ids": scope.org_ids,
-            "project_ids": scope.project_ids,
-            "use_case_id": scope.use_case_id,
-        }
+        return asdict(scope)
 
-    def _visit_limit(self, limit: Limit | None) -> str:
-        if limit is not None:
-            return str(limit.limit)
-        return ""
+    def _visit_limit(self, limit: Limit | None) -> int | None:
+        return limit.limit if limit is not None else None
 
-    def _visit_offset(self, offset: Offset | None) -> str:
-        if offset is not None:
-            return str(offset.offset)
-        return ""
+    def _visit_offset(self, offset: Offset | None) -> int | None:
+        return offset.offset if offset is not None else None
 
     def _visit_indexer_mappings(
         self, indexer_mappings: dict[str, Any] | None
@@ -162,8 +151,8 @@ class MQLContextPrinter(MQLContextVisitor[str]):
 
 class Validator(MQLContextVisitor[None]):
     def _combine(
-        self, query: main.MQLContext, returns: Mapping[str, None | Mapping[str, None]]
-    ) -> Mapping[str, Any]:
+        self, context: main.MQLContext, returns: dict[str, None]
+    ) -> dict[str, None]:
         return {}
 
     def _visit_start(self, start: datetime | None) -> None:
@@ -178,7 +167,7 @@ class Validator(MQLContextVisitor[None]):
         elif not isinstance(end, datetime):
             raise InvalidMQLContextError("end must be a datetime")
 
-    def _visit_rollup(self, rollup: Rollup | None) -> Mapping[str, None]:
+    def _visit_rollup(self, rollup: Rollup | None) -> None:
         if rollup is None:
             raise InvalidMQLContextError("rollup is required for a MQL context")
         elif not isinstance(rollup, Rollup):
@@ -190,7 +179,6 @@ class Validator(MQLContextVisitor[None]):
             raise InvalidMQLContextError("granularity must be set on the rollup")
 
         rollup.validate()
-        return {}
 
     def _visit_scope(self, scope: MetricsScope | None) -> None:
         if scope is None:
@@ -217,9 +205,8 @@ class Validator(MQLContextVisitor[None]):
 
     def _visit_indexer_mappings(
         self, indexer_mapping: Mapping[str, Any] | None
-    ) -> Mapping[str, Any]:
+    ) -> None:
         if indexer_mapping is None:
-            return {}
+            return
         if not isinstance(indexer_mapping, dict):
             raise InvalidMQLContextError("indexer_mapping must be a dictionary")
-        return {}
