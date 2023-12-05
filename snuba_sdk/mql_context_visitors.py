@@ -22,8 +22,6 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
         fields = query.get_fields()
         returns = {}
         for field in fields:
-            if field == "entity":
-                continue
             returns[field] = getattr(self, f"_visit_{field}")(getattr(query, field))
 
         return self._combine(query, returns)
@@ -34,6 +32,10 @@ class MQLContextVisitor(ABC, Generic[QVisited]):
         query: main.MQLContext,
         returns: Mapping[str, QVisited | Mapping[str, QVisited]],
     ) -> Mapping[str, QVisited]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_entity(self, entity: str | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -76,6 +78,7 @@ class MQLContextPrinter(MQLContextVisitor[str]):
         self, query: main.MQLContext, returns: Mapping[str, str | Mapping[str, str]]
     ) -> Mapping[str, Any]:
         return {
+            "entity": returns["entity"],
             "start": returns["start"],
             "end": returns["end"],
             "rollup": returns["rollup"],
@@ -87,7 +90,9 @@ class MQLContextPrinter(MQLContextVisitor[str]):
 
     def _visit_entity(self, entity: str | None) -> str:
         if entity is None:
-            raise InvalidMQLContextError("MetricQuery.query must not be None")
+            raise InvalidMQLContextError(
+                "MetricQuery must operate on at least one entity"
+            )
 
         return entity
 
@@ -165,6 +170,14 @@ class Validator(MQLContextVisitor[None]):
         self, query: main.MQLContext, returns: Mapping[str, None | Mapping[str, None]]
     ) -> Mapping[str, Any]:
         return {}
+
+    def _visit_entity(self, entity: str | None) -> None:
+        if entity is None:
+            raise InvalidMQLContextError(
+                "MetricQuery must operate on at least one entity"
+            )
+        elif not isinstance(entity, str):
+            raise InvalidMQLContextError("entity must be a string")
 
     def _visit_start(self, start: datetime | None) -> None:
         if start is None:

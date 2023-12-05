@@ -159,7 +159,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             groupby = str(returns["groupby"])
             mql_string += f"{groupby}"
 
-        return {"mql_string": mql_string}
+        return {"mql_string": mql_string, "entity": metric_data["entity"]}
 
     def _visit_metric(self, metric: Metric) -> Mapping[str, str]:
         return self.metrics_visitor.visit(metric)
@@ -227,10 +227,12 @@ class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"
             )
+        if metric.entity is None:
+            raise InvalidExpressionError("metric.entity is required for serialization")
         if metric.mri:
-            return {"metric_name": metric.mri}
+            return {"metric_name": metric.mri, "entity": metric.entity}
         assert metric.public_name is not None
-        return {"metric_name": metric.public_name}
+        return {"metric_name": metric.public_name, "entity": metric.entity}
 
 
 class RollupVisitor(ABC, Generic[TVisited]):

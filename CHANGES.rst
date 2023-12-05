@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.13
+-----
+
+- Expose a `serialize_to_mql` function on the `Request` object
+    - This function will serialize `MetricsQuery` objects to MQL strings
+
+
 2.0.12
 -----
 
