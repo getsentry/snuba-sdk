@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Mapping
 
 import pytest
@@ -10,15 +10,35 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.entity import Entity
+from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.request import Flags, InvalidFlagError, InvalidRequestError, Request
+from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 BASIC_QUERY = (
     Query(Entity("events"))
     .set_select([Column("event_id"), Column("title")])
     .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
+)
+BASIC_METRICS_QUERY = MetricsQuery(
+    query=Timeseries(
+        metric=Metric(
+            mri="d:transactions/duration@millisecond",
+            id=11235813,
+            entity="generic_metrics_distributions",
+        ),
+        aggregate="max",
+        aggregate_params=None,
+        filters=[Condition(Column("bar"), Op.EQ, "baz")],
+        groupby=[Column("transaction")],
+    ),
+    start=NOW,
+    end=NOW + timedelta(days=14),
+    rollup=Rollup(interval=3600, totals=None, granularity=3600),
+    scope=MetricsScope(org_ids=[1], project_ids=[11], use_case_id="transactions"),
+    indexer_mappings={},
 )
 
 
@@ -32,6 +52,47 @@ tests = [
         "s/g",
         {
             "query": "MATCH (events) SELECT event_id, title WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
+            "consistent": True,
+            "turbo": True,
+            "debug": True,
+            "dry_run": True,
+            "dataset": "events",
+            "app_id": "default",
+            "tenant_ids": {"organization_id": 1, "referrer": "default"},
+            "parent_api": "s/g",
+            "legacy": True,
+        },
+        None,
+        id="flags",
+    ),
+    pytest.param(
+        "events",
+        "default",
+        {"organization_id": 1, "referrer": "default"},
+        BASIC_METRICS_QUERY,
+        Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
+        "s/g",
+        {
+            "query": "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+            "mql_context": {
+                "start": "2021-01-02T03:04:05.000006+00:00",
+                "end": "2021-01-16T03:04:05.000006+00:00",
+                "entity": "generic_metrics_distributions",
+                "indexer_mappings": {},
+                "limit": None,
+                "offset": None,
+                "rollup": {
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "orderby": None,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+            },
             "consistent": True,
             "turbo": True,
             "debug": True,
@@ -145,8 +206,10 @@ def test_request(
     else:
         request = Request(dataset, app_id, query, flags, parent_api, tenant_ids)
         request.validate()
-        assert request.to_dict() == expected
-        assert request.print() == json.dumps(expected, sort_keys=True, indent=4 * " ")
+        assert request.to_dict(mql=True) == expected
+        assert request.print(mql=True) == json.dumps(
+            expected, sort_keys=True, indent=4 * " "
+        )
 
 
 def test_request_set_methods() -> None:

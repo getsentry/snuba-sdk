@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Mapping
 
@@ -9,8 +10,8 @@ from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.metrics_visitors import (
-    RollupSnQLPrinter,
-    ScopeSnQLPrinter,
+    RollupMQLPrinter,
+    ScopeMQLPrinter,
     TimeseriesMQLPrinter,
 )
 from snuba_sdk.mql_context import MQLContext
@@ -40,26 +41,33 @@ class MQLVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_start(self, start: datetime | None) -> datetime:
+    def _visit_start(self, start: datetime | None) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_end(self, end: datetime | None) -> datetime:
+    def _visit_end(self, end: datetime | None) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_rollup(self, rollup: Rollup | None) -> Rollup:
+    def _visit_rollup(self, rollup: Rollup | None) -> dict[str, str | int | None]:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_scope(self, scope: MetricsScope | None) -> MetricsScope:
+    def _visit_scope(self, scope: MetricsScope | None) -> dict[str, str | list[int]]:
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_limit(self, limit: Limit | None) -> Limit | None:
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int]
+    ) -> dict[str, str | int]:
         raise NotImplementedError
 
-    def _visit_offset(self, offset: Offset | None) -> Offset | None:
+    @abstractmethod
+    def _visit_limit(self, limit: Limit | None) -> int | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_offset(self, offset: Offset | None) -> int | None:
         raise NotImplementedError
 
 
@@ -67,8 +75,8 @@ class MQLPrinter(MQLVisitor):
     def __init__(self) -> None:
         self.expression_visitor = Translation()
         self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
-        self.rollup_visitor = RollupSnQLPrinter(self.expression_visitor)
-        self.scope_visitor = ScopeSnQLPrinter(self.expression_visitor)
+        self.rollup_visitor = RollupMQLPrinter()
+        self.scope_visitor = ScopeMQLPrinter()
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, Any]
@@ -80,7 +88,7 @@ class MQLPrinter(MQLVisitor):
         assert isinstance(returns["query"], Mapping)  # mypy
         mql_string = returns["query"]["mql_string"]
         mql_context = MQLContext(
-            entity=returns["entity"],
+            entity=returns["query"]["entity"],
             start=returns["start"],
             end=returns["end"],
             rollup=returns["rollup"],
@@ -91,7 +99,7 @@ class MQLPrinter(MQLVisitor):
         )
         return {
             "mql": mql_string,
-            "mql_context": mql_context.serialize(),
+            "mql_context": asdict(mql_context),
         }
 
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
@@ -104,32 +112,41 @@ class MQLPrinter(MQLVisitor):
 
         return self.timeseries_visitor.visit(query)
 
-    def _visit_start(self, start: datetime | None) -> datetime:
+    def _visit_start(self, start: datetime | None) -> str:
         if start is None:
             raise InvalidMetricsQueryError("MetricQuery.start must not be None")
 
-        return start
+        return start.isoformat()
 
-    def _visit_end(self, end: datetime | None) -> datetime:
+    def _visit_end(self, end: datetime | None) -> str:
         if end is None:
             raise InvalidMetricsQueryError("MetricQuery.end must not be None")
 
-        return end
+        return end.isoformat()
 
-    def _visit_rollup(self, rollup: Rollup | None) -> Rollup:
+    def _visit_rollup(self, rollup: Rollup | None) -> dict[str, str | int | None]:
         if rollup is None:
             raise InvalidMetricsQueryError("MetricQuery.rollup must not be None")
 
-        return rollup
+        return self.rollup_visitor.visit(rollup)
 
-    def _visit_scope(self, scope: MetricsScope | None) -> MetricsScope:
+    def _visit_scope(self, scope: MetricsScope | None) -> dict[str, str | list[int]]:
         if scope is None:
             raise InvalidMetricsQueryError("MetricQuery.scope must not be None")
 
-        return scope
+        return self.scope_visitor.visit(scope)
 
-    def _visit_limit(self, limit: Limit | None) -> Limit | None:
-        return limit
+    def _visit_limit(self, limit: Limit | None) -> int | None:
+        return limit.limit if limit is not None else None
 
-    def _visit_offset(self, offset: Offset | None) -> Offset | None:
-        return offset
+    def _visit_offset(self, offset: Offset | None) -> int | None:
+        return offset.offset if offset is not None else None
+
+    def _visit_indexer_mappings(
+        self, indexer_mappings: dict[str, str | int]
+    ) -> dict[str, str | int]:
+        if indexer_mappings is None:
+            raise InvalidMetricsQueryError(
+                "MetricQuery.indexer_mappings must not be None"
+            )
+        return indexer_mappings

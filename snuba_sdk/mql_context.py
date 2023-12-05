@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from datetime import datetime
-from typing import Any, Mapping, Sequence
-
-from snuba_sdk.expressions import Limit, Offset
-from snuba_sdk.mql_context_visitors import MQLContextPrinter, Validator
-from snuba_sdk.timeseries import MetricsScope, Rollup
+from dataclasses import dataclass
 
 
 class InvalidMQLContextError(Exception):
@@ -25,32 +19,24 @@ class MQLContext:
     MQL. As such it shouldn't be used directly by users of the SDK.
 
     This also means that the validation here is quite loose, since this object
-    should be created from a MetricsQuery object, which has already been validated.
+    should be created exclusively from a valid MetricsQuery object.
     """
 
     entity: str
-    start: datetime
-    end: datetime
-    rollup: Rollup
-    scope: MetricsScope
-    indexer_mappings: dict[str, Any]
-    limit: Limit | None = None
-    offset: Offset | None = None
+    start: str
+    end: str
+    rollup: dict[str, str | int | None]
+    scope: dict[str, str | list[int]]
+    indexer_mappings: dict[str, str | int]
+    limit: int | None = None
+    offset: int | None = None
+
+    def __post_init__(self) -> None:
+        self.validate()
 
     def validate(self) -> None:
-        fields = ["entity", "start", "end", "rollup", "scope"]
+        # Simple assert that all the expected fields are present
+        fields = ["entity", "start", "end", "rollup", "scope", "indexer_mappings"]
         for field in fields:
             if getattr(self, field) is None:
-                raise InvalidMQLContextError(f"{field} is required for a MQL context")
-
-        if not isinstance(indexer_mapping, dict):
-            raise InvalidMQLContextError("indexer_mapping must be a dictionary")
-
-    def serialize(self) -> Mapping[str, Any]:
-        self.validate()
-        result = MQL_CONTEXT_PRINTER.visit(self)
-        return result
-
-
-MQL_CONTEXT_PRINTER = MQLContextPrinter()
-VALIDATOR = Validator()
+                raise InvalidMQLContextError(f"MQLContext.{field} is required")

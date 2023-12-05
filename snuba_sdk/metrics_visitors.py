@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Mapping, TypeVar
+from dataclasses import asdict
+from typing import Any, Generic, Mapping, Sequence, TypeVar, Union
 
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
@@ -159,7 +160,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             groupby = str(returns["groupby"])
             mql_string += f"{groupby}"
 
-        return {"mql_string": mql_string}
+        return {"mql_string": mql_string, "entity": metric_data["entity"]}
 
     def _visit_metric(self, metric: Metric) -> Mapping[str, str]:
         return self.metrics_visitor.visit(metric)
@@ -227,10 +228,12 @@ class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"
             )
+        if metric.entity is None:
+            raise InvalidExpressionError("metric.entity is required for serialization")
         if metric.mri:
-            return {"metric_name": metric.mri}
+            return {"metric_name": metric.mri, "entity": metric.entity}
         assert metric.public_name is not None
-        return {"metric_name": metric.public_name}
+        return {"metric_name": metric.public_name, "entity": metric.entity}
 
 
 class RollupVisitor(ABC, Generic[TVisited]):
@@ -282,6 +285,16 @@ class RollupSnQLPrinter(RollupVisitor[Mapping[str, str]]):
         }
 
 
+class RollupMQLPrinter(RollupVisitor[Mapping[str, Union[str, int, None]]]):
+    def visit(self, rollup: Rollup) -> dict[str, str | int | None]:
+        return {
+            "orderby": rollup.orderby.value if rollup.orderby else None,
+            "granularity": rollup.granularity,
+            "interval": rollup.interval,
+            "with_totals": str(rollup.totals) if rollup.totals is not None else None,
+        }
+
+
 class ScopeVisitor(ABC, Generic[TVisited]):
     @abstractmethod
     def visit(self, scope: MetricsScope) -> TVisited:
@@ -314,6 +327,11 @@ class ScopeSnQLPrinter(ScopeVisitor[str]):
         )
 
         return self.translator.visit(condition)
+
+
+class ScopeMQLPrinter(ScopeVisitor[Mapping[str, Union[str, Sequence[int]]]]):
+    def visit(self, scope: MetricsScope) -> dict[str, str | list[int]]:
+        return asdict(scope)
 
 
 # Normally this would be a visitor class, but this is itself a hack to get derived metrics off the ground
