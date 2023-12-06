@@ -6,6 +6,7 @@ Changelog and versioning
 
 - Expose a `serialize_to_mql` function on the `Request` object
     - This function will serialize `MetricsQuery` objects to MQL strings
+- Simplify the MQLContext and change it to serialize values other than strings
 
 
 2.0.12

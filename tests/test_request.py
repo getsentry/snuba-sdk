@@ -38,6 +38,7 @@ BASIC_METRICS_QUERY = MetricsQuery(
     end=NOW + timedelta(days=14),
     rollup=Rollup(interval=3600, totals=None, granularity=3600),
     scope=MetricsScope(org_ids=[1], project_ids=[11], use_case_id="transactions"),
+    indexer_mappings={},
 )
 
 
@@ -78,13 +79,13 @@ tests = [
                 "end": "2021-01-16T03:04:05.000006+00:00",
                 "entity": "generic_metrics_distributions",
                 "indexer_mappings": {},
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "rollup": {
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "with_totals": "",
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "orderby": None,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],

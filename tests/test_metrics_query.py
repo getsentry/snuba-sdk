@@ -12,6 +12,7 @@ from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
+from snuba_sdk.orderby import Direction
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2023, 1, 2, 3, 4, 5, 0, timezone.utc)
@@ -503,6 +504,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond)",
@@ -511,18 +513,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -542,10 +544,11 @@ metrics_query_to_mql_tests = [
             ),
             start=NOW,
             end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            rollup=Rollup(totals=True, orderby=Direction.DESC, granularity=3600),
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(transactions.duration)",
@@ -554,18 +557,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": "DESC",
+                    "granularity": 3600,
+                    "interval": None,
+                    "with_totals": "True",
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -589,6 +592,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond){bar:'baz'}",
@@ -597,18 +601,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -632,6 +636,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
@@ -640,18 +645,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -692,6 +697,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond){bar:'baz' AND foo:'foz' AND (foo:'foz' OR hee:'hez' OR (foo:'foz' AND hee:'hez'))}",
@@ -700,18 +706,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -735,6 +741,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond) by (transaction)",
@@ -743,18 +750,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": None,
+                "offset": None,
                 "indexer_mappings": {},
             },
         },
@@ -778,6 +785,7 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            indexer_mappings={"d:transactions/duration@millisecond": 11235813},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond) by (a, b)",
@@ -786,19 +794,19 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
-                "indexer_mappings": {},
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {"d:transactions/duration@millisecond": 11235813},
             },
         },
         id="multiple groupby query",
@@ -821,6 +829,9 @@ metrics_query_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
         ),
         {
             "mql": "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
@@ -829,18 +840,18 @@ metrics_query_to_mql_tests = [
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
-                    "orderby": {"column_name": "time", "direction": "ASC"},
-                    "granularity": "3600",
-                    "interval": "3600",
-                    "with_totals": "",
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
                 },
                 "scope": {
                     "org_ids": [1],
                     "project_ids": [11],
                     "use_case_id": "transactions",
                 },
-                "limit": "",
-                "offset": "",
+                "limit": 100,
+                "offset": 5,
                 "indexer_mappings": {},
             },
         },
