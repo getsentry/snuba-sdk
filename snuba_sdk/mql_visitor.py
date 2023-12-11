@@ -73,7 +73,7 @@ class MQLVisitor(ABC):
 
 class MQLPrinter(MQLVisitor):
     def __init__(self) -> None:
-        self.expression_visitor = Translation()
+        self.expression_visitor = Translation(is_mql=True)
         self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
         self.rollup_visitor = RollupMQLPrinter()
         self.scope_visitor = ScopeMQLPrinter()

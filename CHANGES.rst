@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+2.0.15
+-----
+
+- Fix a bug where quotes in MQL encoded strings were using single quotes instead of double quotes
+
+
 2.0.14
 -----
 

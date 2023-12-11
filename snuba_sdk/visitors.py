@@ -122,8 +122,9 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
 
 class Translation(ExpressionVisitor[str]):
-    def __init__(self, use_entity_aliases: bool = False):
+    def __init__(self, use_entity_aliases: bool = False, is_mql: bool = False):
         self.use_entity_aliases = use_entity_aliases
+        self.is_mql = is_mql
 
     def _stringify_scalar(self, value: ScalarType) -> str:
         if value is None:
@@ -142,7 +143,9 @@ class Translation(ExpressionVisitor[str]):
             decoded = (
                 decoded.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
             )
-            return f"'{decoded}'"
+
+            quote_char = '"' if self.is_mql else "'"
+            return f"{quote_char}{decoded}{quote_char}"
         elif isinstance(value, (int, float)):
             return f"{value}"
         elif isinstance(value, datetime):
@@ -159,34 +162,16 @@ class Translation(ExpressionVisitor[str]):
             return self.visit(value)
         elif isinstance(value, list):
             is_scalar(value)  # Throws on an invalid array
-            return f"array({', '.join([self._stringify_scalar(v) for v in value])})"
+            prefix = "[" if self.is_mql else "array("
+            suffix = "]" if self.is_mql else ")"
+            return f"{prefix}{', '.join([self._stringify_scalar(v) for v in value])}{suffix}"
         elif isinstance(value, tuple):
             is_scalar(value)  # Throws on an invalid tuple
-            return f"tuple({', '.join([self._stringify_scalar(v) for v in value])})"
+            prefix = "[" if self.is_mql else "tuple("
+            suffix = "]" if self.is_mql else ")"
+            return f"{prefix}{', '.join([self._stringify_scalar(v) for v in value])}{suffix}"
 
         raise InvalidExpressionError(f"'{value}' is not a valid scalar")
-
-    def _stringify_scalar_mql(self, value: ScalarType) -> str:
-        if value is None:
-            return "NULL"
-        elif isinstance(value, bool):
-            return "TRUE" if value else "FALSE"
-        if isinstance(value, (str, bytes)):
-            if isinstance(value, bytes):
-                decoded = value.decode()
-            else:
-                decoded = value
-            decoded = (
-                decoded.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
-            )
-            return f"'{decoded}'"
-        elif isinstance(value, (int, float)):
-            return f"{value}"
-        elif isinstance(value, (list, tuple)):
-            is_scalar(value)  # Throws on an invalid array
-            return f"[{', '.join([self._stringify_scalar(v) for v in value])}]"
-
-        raise InvalidExpressionError(f"'{value}' is not a valid scalar type for MQL")
 
     def _visit_aliased_expression(self, aliased: AliasedExpression) -> str:
         alias_clause = ""
@@ -293,7 +278,7 @@ class Translation(ExpressionVisitor[str]):
         elif isinstance(cond.rhs, Column):
             rhs = f"{self.visit(cond.rhs)}"
         elif is_scalar(cond.rhs):
-            rhs = f"{self._stringify_scalar_mql(cond.rhs)}"
+            rhs = f"{self._stringify_scalar(cond.rhs)}"
 
         assert rhs is not None
         op = ""

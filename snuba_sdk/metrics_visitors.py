@@ -136,7 +136,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         expression_visitor: Translation | None = None,
         metrics_visitor: MetricMQLPrinter | None = None,
     ) -> None:
-        self.expression_visitor = expression_visitor or Translation()
+        self.expression_visitor = expression_visitor or Translation(is_mql=True)
         self.metrics_visitor = metrics_visitor or MetricMQLPrinter()
 
     def _combine(

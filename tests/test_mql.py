@@ -607,6 +607,27 @@ tests = [
         ),
         id="test curried functions with filters and group by",
     ),
+    pytest.param(
+        "quantiles(0.5)(`d:transactions/duration@millisecond`{foo:'foz' AND hee:\"hoo\"}){bar:baz} by (a, b)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="quantiles",
+                aggregate_params=[0.5],
+                filters=[
+                    Condition(Column("bar"), Op.EQ, "baz"),
+                    And(
+                        [
+                            Condition(Column("foo"), Op.EQ, "'foz'"),
+                            Condition(Column("hee"), Op.EQ, "hoo"),
+                        ]
+                    ),
+                ],
+                groupby=[Column("a"), Column("b")],
+            )
+        ),
+        id="test quotes parsing",
+    ),
 ]
 
 
