@@ -12,6 +12,7 @@ from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
+from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.orderby import Direction
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
@@ -595,7 +596,7 @@ metrics_query_to_mql_tests = [
             indexer_mappings={},
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:'baz'}",
+            "mql": 'max(d:transactions/duration@millisecond){bar:"baz"}',
             "mql_context": {
                 "entity": "generic_metrics_distributions",
                 "start": "2023-01-02T03:04:05+00:00",
@@ -639,7 +640,7 @@ metrics_query_to_mql_tests = [
             indexer_mappings={},
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:['baz', 'bap']}",
+            "mql": 'max(d:transactions/duration@millisecond){bar:["baz", "bap"]}',
             "mql_context": {
                 "entity": "generic_metrics_distributions",
                 "start": "2023-01-02T03:04:05+00:00",
@@ -700,7 +701,7 @@ metrics_query_to_mql_tests = [
             indexer_mappings={},
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:'baz' AND foo:'foz' AND (foo:'foz' OR hee:'hez' OR (foo:'foz' AND hee:'hez'))}",
+            "mql": 'max(d:transactions/duration@millisecond){bar:"baz" AND foo:"foz" AND (foo:"foz" OR hee:"hez" OR (foo:"foz" AND hee:"hez"))}',
             "mql_context": {
                 "entity": "generic_metrics_distributions",
                 "start": "2023-01-02T03:04:05+00:00",
@@ -834,7 +835,7 @@ metrics_query_to_mql_tests = [
             indexer_mappings={},
         ),
         {
-            "mql": "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+            "mql": 'max(d:transactions/duration@millisecond){bar:"baz"} by (transaction)',
             "mql_context": {
                 "entity": "generic_metrics_distributions",
                 "start": "2023-01-02T03:04:05+00:00",
@@ -863,8 +864,12 @@ metrics_query_to_mql_tests = [
 @pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
 def test_metrics_query_to_mql(query: MetricsQuery, translated: dict[str, Any]) -> None:
     query.validate()
-    assert query.serialize_to_mql()["mql"] == translated["mql"]
-    assert query.serialize_to_mql()["mql_context"] == translated["mql_context"]
+    serialized = query.serialize_to_mql()
+    assert serialized["mql"] == translated["mql"]
+    assert serialized["mql_context"] == translated["mql_context"]
+    assert (
+        parse_mql(str(serialized["mql"])) is not None
+    )  # ensure we can parse our own encoding
 
 
 invalid_metrics_query_to_mql_tests = [

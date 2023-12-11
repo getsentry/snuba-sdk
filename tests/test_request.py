@@ -73,7 +73,7 @@ tests = [
         Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
         "s/g",
         {
-            "query": "max(d:transactions/duration@millisecond){bar:'baz'} by (transaction)",
+            "query": 'max(d:transactions/duration@millisecond){bar:"baz"} by (transaction)',
             "mql_context": {
                 "start": "2021-01-02T03:04:05.000006+00:00",
                 "end": "2021-01-16T03:04:05.000006+00:00",
