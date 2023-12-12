@@ -168,8 +168,10 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
     def _visit_aggregate(
         self, aggregate: str, aggregate_params: list[Any] | None
     ) -> str:
-        # TODO: support aggregate_params in MQL
-        return aggregate
+        aggregate_params_st = ""
+        if aggregate_params:
+            aggregate_params_st = f"({', '.join(self.expression_visitor.visit(p) for p in aggregate_params)})"
+        return f"{aggregate}{aggregate_params_st}"
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         conditions = []

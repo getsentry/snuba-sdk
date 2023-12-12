@@ -61,6 +61,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_int_literal(node.granularity)
         elif isinstance(node, Totals):
             return self._visit_totals(node.totals)
+        elif is_scalar(node):
+            return self._visit_scalar(node)
 
         raise AssertionError(f"Unhandled Expression: {node}")
 
@@ -118,6 +120,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_totals(self, totals: bool) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_scalar(self, value: Any) -> TVisited:
         raise NotImplementedError
 
 
@@ -300,6 +306,9 @@ class Translation(ExpressionVisitor[str]):
     def _visit_totals(self, totals: bool) -> str:
         return f"{totals}"
 
+    def _visit_scalar(self, value: Any) -> str:
+        return self._stringify_scalar(value)
+
 
 @contextmanager
 def entity_aliases(translator: Translation) -> Generator[None, None, None]:
@@ -405,4 +414,7 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
         return set.union(*[self.visit(column) for column in limitby.columns])
 
     def _visit_totals(self, totals: bool) -> set[Expression]:
+        return set()
+
+    def _visit_scalar(self, value: Any) -> Set[Expression]:
         return set()
