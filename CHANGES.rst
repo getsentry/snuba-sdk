@@ -1,6 +1,12 @@
 Changelog and versioning
 ==========================
 
+2.0.16
+-----
+
+- Properly serialize curried aggregates in MQL
+
+
 2.0.15
 -----
 
