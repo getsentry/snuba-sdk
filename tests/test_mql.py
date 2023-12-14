@@ -509,38 +509,38 @@ tests = [
         id="test group by 1",
     ),
     pytest.param(
-        "max(`d:transactions/duration@millisecond`{foo:foz} by http.status_code)",
+        "max(`d:transactions/duration@millisecond`{transaction.status:foz} by http.status_code)",
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
                 aggregate="max",
-                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                filters=[Condition(Column("transaction.status"), Op.EQ, "foz")],
                 groupby=[Column("http.status_code")],
             ),
         ),
         id="test group by 2",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo:"foz"}) by (transaction)',
+        'max(`d:transactions/duration@millisecond`{transaction.status:"foz"}) by (transaction)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
                 aggregate="max",
-                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                filters=[Condition(Column("transaction.status"), Op.EQ, "foz")],
                 groupby=[Column("transaction")],
             ),
         ),
         id="test group by 3",
     ),
     pytest.param(
-        'max(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a.something, b.something)',
+        'max(`d:transactions/duration@millisecond`{transaction.status:"foz"}){transaction.op:baz} by (a.something, b.something)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
                 aggregate="max",
                 filters=[
-                    Condition(Column("bar"), Op.EQ, "baz"),
-                    Condition(Column("foo"), Op.EQ, "foz"),
+                    Condition(Column("transaction.op"), Op.EQ, "baz"),
+                    Condition(Column("transaction.status"), Op.EQ, "foz"),
                 ],
                 groupby=[Column("a.something"), Column("b.something")],
             )
