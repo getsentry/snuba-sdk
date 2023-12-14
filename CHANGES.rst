@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.17
+------
+
+### Various fixes & improvements
+
+- fix(ddm): Add support for . in the tag keys (#153) by @iambriccardo
+
 2.0.16
 -----
 
