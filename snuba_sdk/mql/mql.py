@@ -42,7 +42,7 @@ condition_op = "!"
 
 joint_operator = comma / and
 
-tag_key = ~r"[a-zA-Z0-9_]+"
+tag_key = ~r"[a-zA-Z0-9_.]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
