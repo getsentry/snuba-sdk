@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from typing import Any, Generic, Mapping, Sequence, TypeVar, Union
 
+from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import (
     OPERATOR_TO_FUNCTION,
@@ -14,7 +15,7 @@ from snuba_sdk.conditions import (
     Op,
 )
 from snuba_sdk.expressions import InvalidExpressionError, Totals
-from snuba_sdk.formula import Formula
+from snuba_sdk.formula import PREFIX_TO_INFIX, Formula, FormulaParameterGroup
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, OrderBy
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
@@ -64,7 +65,9 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_groupby(self, groupby: list[Column] | None) -> TVisited:
+    def _visit_groupby(
+        self, groupby: list[Column | AliasedExpression] | None
+    ) -> TVisited:
         raise NotImplementedError
 
 
@@ -124,10 +127,33 @@ class TimeseriesSnQLPrinter(TimeseriesVisitor[str]):
             return " AND ".join(self.expression_visitor.visit(c) for c in filters)
         return ""
 
-    def _visit_groupby(self, groupby: list[Column] | None) -> str:
+    def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
         if groupby is not None:
             return ", ".join(self.expression_visitor.visit(c) for c in groupby)
         return ""
+
+
+def _visit_mql_filters(
+    filters: ConditionGroup | None, expression_visitor: Translation
+) -> str:
+    conditions = []
+    if filters is not None:
+        for c in filters:
+            if isinstance(c, Condition):
+                conditions.append(expression_visitor._visit_condition_mql(c))
+            elif isinstance(c, BooleanCondition):
+                conditions.append(expression_visitor._visit_boolean_condition_mql(c))
+        # We use by default the `AND` operator as joint operator for printing top level conditions.
+        return "{" + " AND ".join(conditions) + "}"
+    return ""
+
+
+def _visit_mql_groupby(
+    groupby: list[Column | AliasedExpression] | None, expression_visitor: Translation
+) -> str:
+    if groupby is not None:
+        return " by (" + ", ".join(expression_visitor.visit(c) for c in groupby) + ")"
+    return ""
 
 
 class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
@@ -174,27 +200,57 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         return f"{aggregate}{aggregate_params_st}"
 
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
-        conditions = []
-        if filters is not None:
-            for c in filters:
-                if isinstance(c, Condition):
-                    conditions.append(self.expression_visitor._visit_condition_mql(c))
-                elif isinstance(c, BooleanCondition):
-                    conditions.append(
-                        self.expression_visitor._visit_boolean_condition_mql(c)
-                    )
-            # We use by default the `AND` operator as joint operator for printing top level conditions.
-            return "{" + " AND ".join(conditions) + "}"
-        return ""
+        return _visit_mql_filters(filters, self.expression_visitor)
 
-    def _visit_groupby(self, groupby: list[Column] | None) -> str:
-        if groupby is not None:
-            return (
-                " by ("
-                + ", ".join(self.expression_visitor.visit(c) for c in groupby)
-                + ")"
-            )
-        return ""
+    def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
+        return _visit_mql_groupby(groupby, self.expression_visitor)
+
+
+class FormulaMQLPrinter:
+    def __init__(self, timeseries_visitor: TimeseriesMQLPrinter | None = None) -> None:
+        self.timeseries_visitor = timeseries_visitor or TimeseriesMQLPrinter()
+        self.expression_visitor = self.timeseries_visitor.expression_visitor
+
+    def _visit_parameter(self, parameter: FormulaParameterGroup) -> Mapping[str, str]:
+        if isinstance(parameter, Timeseries):
+            return self.timeseries_visitor.visit(parameter)
+        elif isinstance(parameter, Formula):
+            return self.visit(parameter)
+
+        return {"mql_string": str(parameter)}
+
+    def _visit_filters(self, filters: ConditionGroup | None) -> str:
+        return _visit_mql_filters(filters, self.expression_visitor)
+
+    def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
+        return _visit_mql_groupby(groupby, self.expression_visitor)
+
+    def visit(self, formula: Formula) -> Mapping[str, str]:
+        assert formula.parameters is not None
+
+        parameters = [self._visit_parameter(p) for p in formula.parameters]
+
+        # Infix vs. prefix
+        # TODO: Formulas currently only support simple math, however in the future they could support
+        # arbitrary functions (e.g. failure_rate(sum(...), 50)). In that case, they could be represented
+        # as prefix functions.
+        if formula.operator in PREFIX_TO_INFIX:
+            separator = f" {PREFIX_TO_INFIX[formula.operator]} "
+            mql_string = f"({separator.join(p['mql_string'] for p in parameters)})"
+        else:
+            mql_string = f"{formula.operator.value}({', '.join(p['mql_string'] for p in parameters)})"
+
+        mql_string += f"{self._visit_filters(formula.filters)}"
+        mql_string += f"{self._visit_groupby(formula.groupby)}"
+
+        entity = next(
+            p.get("entity") for p in parameters if p.get("entity") is not None
+        )
+        assert entity is not None
+        return {
+            "mql_string": mql_string,
+            "entity": entity,
+        }
 
 
 class MetricVisitor(ABC, Generic[TVisited]):
@@ -346,7 +402,7 @@ class FormulaSnQLVisitor:
         self.expression_visitor = self.timeseries_visitor.expression_visitor
 
     def _visit_parameter(
-        self, side: Timeseries | int | float, filters: ConditionGroup | None
+        self, side: Formula | Timeseries | int | float, filters: ConditionGroup | None
     ) -> Mapping[str, str]:
         if isinstance(side, (float, int)):
             return {"select": f"{side}"}
@@ -468,7 +524,7 @@ class TimeseriesFormulaSnQLPrinter(TimeseriesVisitor[str]):
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         return ""
 
-    def _visit_groupby(self, groupby: list[Column] | None) -> str:
+    def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
         if groupby is not None:
             return ", ".join(self.expression_visitor.visit(c) for c in groupby)
         return ""

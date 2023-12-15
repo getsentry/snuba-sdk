@@ -154,7 +154,7 @@ tests = [
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             [Column("tags[release]")],
         ),
-        InvalidFormulaError("Formulas can only operate on a single entity"),
+        InvalidFormulaError("Formulas must operate on a single entity"),
         id="different entities",
     ),
     pytest.param(
@@ -197,7 +197,7 @@ tests = [
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             [Column("tags[release]")],
         ),
-        InvalidFormulaError("Formulas must have an an entity"),
+        InvalidFormulaError("Formulas must operate on a single entity"),
         id="no simple math",
     ),
 ]
