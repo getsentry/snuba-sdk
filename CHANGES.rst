@@ -1,10 +1,15 @@
 Changelog and versioning
 ==========================
 
-2.0.17
+2.0.18
 ------
 
-### Various fixes & improvements
+- Support serializing Formula objects into MQL
+- Enable all the tests for deserializing MQL into Formulas
+
+
+2.0.17
+------
 
 - fix(ddm): Add support for . in the tag keys (#153) by @iambriccardo
 
