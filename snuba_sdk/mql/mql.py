@@ -142,7 +142,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
-        # raise InvalidQueryError("Arithmetic function not supported yet")
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(
@@ -161,7 +160,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return term
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
-        # raise InvalidQueryError("Arithmetic function not supported yet")
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(
