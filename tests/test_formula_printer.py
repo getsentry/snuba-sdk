@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
+from snuba_sdk.conditions import Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_visitors import FormulaMQLPrinter
 from snuba_sdk.mql.mql import parse_mql
@@ -137,7 +137,6 @@ formula_tests = [
             filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
             groupby=[Column("transaction")],
         ),
-        # '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction',
         '(sum(foo) / sum(bar)){tag:"tag_value"} by (transaction)',
     ),
     pytest.param(
@@ -293,6 +292,50 @@ formula_tests = [
             groupby=[Column("transaction")],
         ),
         '((sum(foo){tag2:"tag_value2" AND tag:"tag_value"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by (transaction)',
+    ),
+    pytest.param(
+        Formula(
+            operator=ArithmeticOperator.MULTIPLY,
+            parameters=[
+                Formula(
+                    ArithmeticOperator.DIVIDE,
+                    [
+                        Timeseries(
+                            metric=Metric(
+                                public_name="foo",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                            filters=[
+                                Condition(Column("tag2"), Op.EQ, "tag_value2"),
+                                Or(
+                                    [
+                                        Condition(Column("tag"), Op.EQ, "tag_value"),
+                                        Condition(Column("tag"), Op.EQ, "tag_valueor"),
+                                    ]
+                                ),
+                            ],
+                        ),
+                        Timeseries(
+                            metric=Metric(
+                                public_name="bar",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                        ),
+                    ],
+                    filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
+                ),
+                Timeseries(
+                    metric=Metric(
+                        public_name="pop", entity="generic_metrics_distributions"
+                    ),
+                    aggregate="sum",
+                ),
+            ],
+            groupby=[Column("transaction")],
+        ),
+        '((sum(foo){tag2:"tag_value2" AND (tag:"tag_value" OR tag:"tag_valueor")} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by (transaction)',
     ),
 ]
 
