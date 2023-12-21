@@ -142,7 +142,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
-        # raise InvalidQueryError("Arithmetic function not supported yet")
         return EXPRESSION_OPERATORS[node.text]
 
     def visit_term(
@@ -153,14 +152,14 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         then merge them into a single Formula with the operator.
         """
         term, zero_or_more_others = children
-        assert isinstance(term, (Timeseries, float, int))
+        assert isinstance(term, (Formula, Timeseries, float, int))
+
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
             return Formula(term_operator, [term, coefficient])
         return term
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
-        # raise InvalidQueryError("Arithmetic function not supported yet")
         return TERM_OPERATORS[node.text]
 
     def visit_coefficient(
@@ -213,7 +212,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             elif operator == BooleanOp.OR:
                 return Or(conditions=filters)
             else:
-                return BooleanCondition(op=operator, conditions=filters)
+                raise InvalidQueryError(f"Invalid boolean operator {operator}")
 
     def visit_filter_expr(
         self, node: Node, children: Sequence[Any]

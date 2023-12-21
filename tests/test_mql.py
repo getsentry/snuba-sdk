@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from snuba_sdk.column import Column
@@ -637,7 +639,6 @@ def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
     assert result == metrics_query
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms() -> None:
     mql = "sum(foo) / 1000"
     result = parse_mql(mql)
@@ -654,7 +655,7 @@ def test_terms() -> None:
         )
     )
 
-    mql = "sum(foo) * bar"
+    mql = "sum(foo) * max(bar)"
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -666,14 +667,13 @@ def test_terms() -> None:
                 ),
                 Timeseries(
                     metric=Metric(public_name="bar"),
-                    aggregate="sum",
+                    aggregate="max",
                 ),
             ],
         )
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_multi_terms() -> None:
     mql = "(sum(foo) * sum(bar)) / 1000"
     result = parse_mql(mql)
@@ -681,7 +681,7 @@ def test_multi_terms() -> None:
         query=Formula(
             ArithmeticOperator.DIVIDE,
             [
-                Formula(  # type: ignore
+                Formula(
                     ArithmeticOperator.MULTIPLY,
                     [
                         Timeseries(
@@ -700,9 +700,8 @@ def test_multi_terms() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_filters() -> None:
-    mql = '(sum(foo) / sum(bar)){tag="tag_value"}'
+    mql = '(sum(foo) / sum(bar)){tag:"tag_value"}'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -721,7 +720,7 @@ def test_terms_with_filters() -> None:
         ),
     )
 
-    mql = 'sum(foo{tag="tag_value"}) / sum(bar{tag="tag_value"})'
+    mql = 'sum(foo{tag:"tag_value"}) / sum(bar{tag:"tag_value"})'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -742,9 +741,8 @@ def test_terms_with_filters() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_terms_with_groupby() -> None:
-    mql = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    mql = '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -784,7 +782,7 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    mql = '(sum(foo) by transaction / sum(bar) by transaction){tag="tag_value"}'
+    mql = '(sum(foo) by transaction / sum(bar) by transaction){tag:"tag_value"}'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -805,7 +803,7 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    mql = '(sum(foo{tag="tag_value"}) by transaction) / (sum(bar{tag="tag_value"}) by transaction)'
+    mql = '(sum(foo{tag:"tag_value"}) by transaction) / (sum(bar{tag:"tag_value"}) by transaction)'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -827,7 +825,7 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    mql = '(sum(foo){tag="tag_value"}) by transaction / (sum(bar){tag="tag_value"}) by transaction'
+    mql = '(sum(foo){tag:"tag_value"}) by transaction / (sum(bar){tag:"tag_value"}) by transaction'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -849,7 +847,7 @@ def test_terms_with_groupby() -> None:
         ),
     )
 
-    mql = '(sum(foo) / sum(bar)){tag="tag_value"} by transaction'
+    mql = '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
@@ -870,15 +868,14 @@ def test_terms_with_groupby() -> None:
     )
 
 
-@pytest.mark.xfail(reason="Not supported")
 def test_complex_nested_terms() -> None:
-    mql = '((sum(foo{tag="tag_value"}){tag2="tag_value2"} / sum(bar)){tag3="tag_value3"} * sum(pop)) by transaction'
+    mql = '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by transaction'
     result = parse_mql(mql)
     assert result == MetricsQuery(
         query=Formula(
             operator=ArithmeticOperator.MULTIPLY,
             parameters=[
-                Formula(  # type: ignore
+                Formula(
                     ArithmeticOperator.DIVIDE,
                     [
                         Timeseries(

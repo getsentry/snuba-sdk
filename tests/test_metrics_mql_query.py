@@ -9,6 +9,7 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.mql.mql import parse_mql
@@ -433,6 +434,54 @@ metrics_query_to_mql_tests = [
             },
         },
         id="complex single timeseries query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(
+                            public_name="foo", entity="generic_metrics_distributions"
+                        ),
+                        aggregate="sum",
+                    ),
+                    1000,
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "(sum(foo) / 1000)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test_terms",
     ),
 ]
 

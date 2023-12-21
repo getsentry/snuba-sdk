@@ -10,6 +10,7 @@ from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.metrics_visitors import (
+    FormulaMQLPrinter,
     RollupMQLPrinter,
     ScopeMQLPrinter,
     TimeseriesMQLPrinter,
@@ -75,6 +76,7 @@ class MQLPrinter(MQLVisitor):
     def __init__(self) -> None:
         self.expression_visitor = Translation(is_mql=True)
         self.timeseries_visitor = TimeseriesMQLPrinter(self.expression_visitor)
+        self.formula_visitor = FormulaMQLPrinter(self.timeseries_visitor)
         self.rollup_visitor = RollupMQLPrinter()
         self.scope_visitor = ScopeMQLPrinter()
 
@@ -105,12 +107,10 @@ class MQLPrinter(MQLVisitor):
     def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
-        if isinstance(query, Formula):
-            raise InvalidMetricsQueryError(
-                "Serializing a Formula in MetricQuery.query is unsupported"
-            )
-
-        return self.timeseries_visitor.visit(query)
+        elif isinstance(query, Formula):
+            return self.formula_visitor.visit(query)
+        else:
+            return self.timeseries_visitor.visit(query)
 
     def _visit_start(self, start: datetime | None) -> str:
         if start is None:
