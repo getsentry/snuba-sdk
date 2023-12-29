@@ -9,7 +9,7 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.timeseries import Metric, Timeseries
 
-tests = [
+base_tests = [
     pytest.param(
         "sum(`d:transactions/duration@millisecond`)",
         MetricsQuery(
@@ -633,271 +633,288 @@ tests = [
 ]
 
 
-@pytest.mark.parametrize("mql_string, metrics_query", tests)
-def test_parse_mql(mql_string: str, metrics_query: MetricsQuery) -> None:
+@pytest.mark.parametrize("mql_string, metrics_query", base_tests)
+def test_parse_mql_base(mql_string: str, metrics_query: MetricsQuery) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
 
 
-def test_terms() -> None:
-    mql = "sum(foo) / 1000"
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                ),
-                1000.0,
-            ],
-        )
-    )
-
-    mql = "sum(foo) * max(bar)"
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.MULTIPLY,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="max",
-                ),
-            ],
-        )
-    )
-
-
-def test_multi_terms() -> None:
-    mql = "(sum(foo) * sum(bar)) / 1000"
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Formula(
-                    ArithmeticOperator.MULTIPLY,
-                    [
-                        Timeseries(
-                            metric=Metric(public_name="foo"),
-                            aggregate="sum",
-                        ),
-                        Timeseries(
-                            metric=Metric(public_name="bar"),
-                            aggregate="sum",
-                        ),
-                    ],
-                ),
-                1000.0,
-            ],
-        )
-    )
-
-
-def test_terms_with_filters() -> None:
-    mql = '(sum(foo) / sum(bar)){tag:"tag_value"}'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                ),
-            ],
-            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+term_tests = [
+    pytest.param(
+        "sum(foo) / 1000",
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    1000.0,
+                ],
+            )
         ),
-    )
-
-    mql = 'sum(foo{tag:"tag_value"}) / sum(bar{tag:"tag_value"})'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                ),
-            ],
+        id="test terms with number",
+    ),
+    pytest.param(
+        "sum(foo) * max(bar)",
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.MULTIPLY,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="max",
+                    ),
+                ],
+            )
         ),
-    )
-
-
-def test_terms_with_groupby() -> None:
-    mql = '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                ),
-            ],
-            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-            groupby=[Column("transaction")],
+        id="test terms with both aggregates",
+    ),
+    pytest.param(
+        "(sum(foo) * sum(bar)) / 1000",
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Formula(
+                        ArithmeticOperator.MULTIPLY,
+                        [
+                            Timeseries(
+                                metric=Metric(public_name="foo"),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="bar"),
+                                aggregate="sum",
+                            ),
+                        ],
+                    ),
+                    1000.0,
+                ],
+            )
         ),
-    )
-
-    mql = "(sum(foo) by transaction / sum(bar) by transaction)"
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                    groupby=[Column("transaction")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                    groupby=[Column("transaction")],
-                ),
-            ],
+        id="test multi terms",
+    ),
+    pytest.param(
+        '(sum(foo) / sum(bar)){tag:"tag_value"}',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                    ),
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            ),
         ),
-    )
-
-    mql = '(sum(foo) by transaction / sum(bar) by transaction){tag:"tag_value"}'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                    groupby=[Column("transaction")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                    groupby=[Column("transaction")],
-                ),
-            ],
-            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+        id="test terms with one filter",
+    ),
+    pytest.param(
+        'sum(foo{tag:"tag_value"}) / sum(bar{tag:"tag_value"})',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                    ),
+                ],
+            ),
         ),
-    )
-
-    mql = '(sum(foo{tag:"tag_value"}) by transaction) / (sum(bar{tag:"tag_value"}) by transaction)'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-            ],
+        id="test terms with two filters",
+    ),
+    pytest.param(
+        '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                    ),
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            ),
         ),
-    )
-
-    mql = '(sum(foo){tag:"tag_value"}) by transaction / (sum(bar){tag:"tag_value"}) by transaction'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-            ],
+        id="test terms with groupby 1",
+    ),
+    pytest.param(
+        "(sum(foo) by transaction / sum(bar) by transaction)",
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                        groupby=[Column("transaction")],
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                        groupby=[Column("transaction")],
+                    ),
+                ],
+            ),
         ),
-    )
-
-    mql = '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            ArithmeticOperator.DIVIDE,
-            [
-                Timeseries(
-                    metric=Metric(public_name="foo"),
-                    aggregate="sum",
-                ),
-                Timeseries(
-                    metric=Metric(public_name="bar"),
-                    aggregate="sum",
-                ),
-            ],
-            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-            groupby=[Column("transaction")],
+        id="test terms with groupby 2",
+    ),
+    pytest.param(
+        '(sum(foo) by transaction / sum(bar) by transaction){tag:"tag_value"}',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                        groupby=[Column("transaction")],
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                        groupby=[Column("transaction")],
+                    ),
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            ),
         ),
-    )
+        id="test terms with groupby 3",
+    ),
+    pytest.param(
+        '(sum(foo{tag:"tag_value"}) by transaction) / (sum(bar{tag:"tag_value"}) by transaction)',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                        groupby=[Column("transaction")],
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                        filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                        groupby=[Column("transaction")],
+                    ),
+                ],
+            ),
+        ),
+        id="test terms with groupby 4",
+    ),
+    pytest.param(
+        '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="bar"),
+                        aggregate="sum",
+                    ),
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test terms with groupby 5",
+    ),
+    pytest.param(
+        '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by transaction',
+        MetricsQuery(
+            query=Formula(
+                function_name=ArithmeticOperator.MULTIPLY,
+                parameters=[
+                    Formula(
+                        ArithmeticOperator.DIVIDE,
+                        [
+                            Timeseries(
+                                metric=Metric(public_name="foo"),
+                                aggregate="sum",
+                                filters=[
+                                    Condition(Column("tag2"), Op.EQ, "tag_value2"),
+                                    Condition(Column("tag"), Op.EQ, "tag_value"),
+                                ],
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="bar"),
+                                aggregate="sum",
+                            ),
+                        ],
+                        filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="pop"),
+                        aggregate="sum",
+                    ),
+                ],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test complex nested terms",
+    ),
+]
 
 
-def test_complex_nested_terms() -> None:
-    mql = '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by transaction'
-    result = parse_mql(mql)
-    assert result == MetricsQuery(
-        query=Formula(
-            operator=ArithmeticOperator.MULTIPLY,
-            parameters=[
-                Formula(
-                    ArithmeticOperator.DIVIDE,
-                    [
-                        Timeseries(
-                            metric=Metric(public_name="foo"),
-                            aggregate="sum",
-                            filters=[
-                                Condition(Column("tag2"), Op.EQ, "tag_value2"),
-                                Condition(Column("tag"), Op.EQ, "tag_value"),
-                            ],
-                        ),
-                        Timeseries(
-                            metric=Metric(public_name="bar"),
-                            aggregate="sum",
-                        ),
-                    ],
-                    filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
-                ),
-                Timeseries(
-                    metric=Metric(public_name="pop"),
-                    aggregate="sum",
-                ),
-            ],
-            groupby=[Column("transaction")],
-        )
+@pytest.mark.parametrize("mql_string, metrics_query", term_tests)
+def test_parse_mql_terms(mql_string: str, metrics_query: MetricsQuery) -> None:
+    result = parse_mql(mql_string)
+    assert result == metrics_query
+
+
+arbitrary_function_tests = [
+    pytest.param(
+        "apdex(sum(transaction.duration), 500)",
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                    500,
+                ],
+            )
+        ),
+        id="test simple arbitrary function",
     )
+]
+
+
+@pytest.mark.parametrize("mql_string, metrics_query", arbitrary_function_tests)
+def test_parse_mql_arbitrary_functions(
+    mql_string: str, metrics_query: MetricsQuery
+) -> None:
+    result = parse_mql(mql_string)
+    assert result == metrics_query

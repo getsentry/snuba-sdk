@@ -36,7 +36,7 @@ PREFIX_TO_INFIX: dict[ArithmeticOperator, str] = {
 
 @dataclass(frozen=True)
 class Formula:
-    operator: ArithmeticOperator
+    function_name: str
     parameters: Optional[Sequence[FormulaParameterGroup]] = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
@@ -74,21 +74,19 @@ class Formula:
         return entities.pop(), list(groupbys[0])
 
     def validate(self) -> None:
-        if not isinstance(self.operator, ArithmeticOperator):
-            raise InvalidFormulaError(
-                f"formula '{self.operator}' must be a ArithmeticOperator"
-            )
+        if not isinstance(self.function_name, str):
+            raise InvalidFormulaError(f"formula '{self.function_name}' must be a str")
         if self.parameters is None:
             raise InvalidFormulaError("Formula must have parameters")
         elif not isinstance(self.parameters, Sequence):
             raise InvalidFormulaError(
-                f"parameters of formula {self.operator.value} must be a Sequence"
+                f"parameters of formula {self.function_name.value} must be a Sequence"
             )
 
         for param in self.parameters:
             if not isinstance(param, tuple(FormulaParameter)):
                 raise InvalidFormulaError(
-                    f"parameter '{param}' of formula {self.operator.value} is an invalid type"
+                    f"parameter '{param}' of formula {self.function_name.value} is an invalid type"
                 )
         self.__validate_consistency()
 
