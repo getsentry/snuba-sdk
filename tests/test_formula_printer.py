@@ -45,6 +45,7 @@ formula_tests = [
             ],
         ),
         "(sum(foo) * max(bar))",
+        id="test two aggregate terms",
     ),
     pytest.param(
         Formula(
@@ -73,6 +74,7 @@ formula_tests = [
             ],
         ),
         "((sum(foo) * sum(bar)) / 1000.0)",
+        id="test nested terms",
     ),
     pytest.param(
         Formula(
@@ -94,6 +96,7 @@ formula_tests = [
             filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
         ),
         '(sum(foo) / sum(bar)){tag:"tag_value"}',
+        id="test terms with filter",
     ),
     pytest.param(
         Formula(
@@ -116,6 +119,7 @@ formula_tests = [
             ],
         ),
         '(sum(foo){tag:"tag_value"} / sum(bar){tag:"tag_value"})',
+        id="test terms with filters",
     ),
     pytest.param(
         Formula(
@@ -138,6 +142,7 @@ formula_tests = [
             groupby=[Column("transaction")],
         ),
         '(sum(foo) / sum(bar)){tag:"tag_value"} by (transaction)',
+        id="test terms with filters and groupby",
     ),
     pytest.param(
         Formula(
@@ -160,6 +165,7 @@ formula_tests = [
             ],
         ),
         "(sum(foo) by (transaction) / sum(bar) by (transaction))",
+        id="test terms with filters and groupbys",
     ),
     pytest.param(
         Formula(
@@ -183,6 +189,7 @@ formula_tests = [
             filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
         ),
         '(sum(foo) by (transaction) / sum(bar) by (transaction)){tag:"tag_value"}',
+        id="test terms with inner groupbys and outer filter",
     ),
     pytest.param(
         Formula(
@@ -207,30 +214,7 @@ formula_tests = [
             ],
         ),
         '(sum(foo){tag:"tag_value"} by (transaction) / sum(bar){tag:"tag_value"} by (transaction))',
-    ),
-    pytest.param(
-        Formula(
-            ArithmeticOperator.DIVIDE.value,
-            [
-                Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-                Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
-                    aggregate="sum",
-                    filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                    groupby=[Column("transaction")],
-                ),
-            ],
-        ),
-        '(sum(foo){tag:"tag_value"} by (transaction) / sum(bar){tag:"tag_value"} by (transaction))',
+        id="test terms with inner groupbys and inner filter",
     ),
     pytest.param(
         Formula(
@@ -253,6 +237,7 @@ formula_tests = [
             groupby=[Column("transaction")],
         ),
         '(sum(foo) / sum(bar)){tag:"tag_value"} by (transaction)',
+        id="test terms with outer groupbys and outer filter",
     ),
     pytest.param(
         Formula(
@@ -292,6 +277,7 @@ formula_tests = [
             groupby=[Column("transaction")],
         ),
         '((sum(foo){tag2:"tag_value2" AND tag:"tag_value"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by (transaction)',
+        id="test complex nested terms",
     ),
     pytest.param(
         Formula(
@@ -336,6 +322,116 @@ formula_tests = [
             groupby=[Column("transaction")],
         ),
         '((sum(foo){tag2:"tag_value2" AND (tag:"tag_value" OR tag:"tag_valueor")} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by (transaction)',
+        id="test complex nested terms with OR condition",
+    ),
+    pytest.param(
+        Formula(
+            function_name="apdex",
+            parameters=[
+                Timeseries(
+                    metric=Metric(
+                        public_name="foo",
+                        entity="generic_metrics_distributions",
+                    ),
+                    aggregate="sum",
+                ),
+                500,
+            ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
+        ),
+        'apdex(sum(foo), 500){tag:"tag_value"} by (transaction)',
+        id="test arbitrary function with filters and groupby",
+    ),
+    pytest.param(
+        Formula(
+            function_name="apdex",
+            parameters=[
+                Formula(
+                    function_name=ArithmeticOperator.DIVIDE.value,
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(
+                                public_name="foo",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                        ),
+                        Timeseries(
+                            metric=Metric(
+                                public_name="bar",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                        ),
+                    ],
+                ),
+                500,
+            ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
+        ),
+        'apdex((sum(foo) / sum(bar)), 500){tag:"tag_value"} by (transaction)',
+        id="test arbitrary function with filters, groupby, and terms",
+    ),
+    pytest.param(
+        Formula(
+            function_name="topK",
+            parameters=[
+                Timeseries(
+                    metric=Metric(
+                        public_name="foo",
+                        entity="generic_metrics_distributions",
+                    ),
+                    aggregate="sum",
+                ),
+                500,
+                "random",
+                "test",
+                4.2,
+            ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
+        ),
+        'topK(sum(foo), 500, random, test, 4.2){tag:"tag_value"} by (transaction)',
+        id="test arbitrary function with filters, groupby, and terms",
+    ),
+    pytest.param(
+        Formula(
+            function_name="multiply",
+            parameters=[
+                Formula(
+                    "apdex",
+                    [
+                        Timeseries(
+                            metric=Metric(
+                                public_name="foo",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                        ),
+                        500,
+                    ],
+                ),
+                Formula(
+                    "apdex",
+                    [
+                        Timeseries(
+                            metric=Metric(
+                                public_name="foo",
+                                entity="generic_metrics_distributions",
+                            ),
+                            aggregate="sum",
+                        ),
+                        400,
+                    ],
+                ),
+            ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
+        ),
+        '(apdex(sum(foo), 500) * apdex(sum(foo), 400)){tag:"tag_value"} by (transaction)',
+        id="test arbitrary functions",
     ),
 ]
 

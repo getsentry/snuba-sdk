@@ -928,7 +928,7 @@ arbitrary_function_tests = [
         id="test arbitrary function with filters and groupby",
     ),
     pytest.param(
-        'topK(sum(transaction.duration), 500, "test", 4.2){tag:"tag_value"} by transaction',
+        'topK(sum(transaction.duration), 500, test, 4.2){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
                 function_name="topK",
