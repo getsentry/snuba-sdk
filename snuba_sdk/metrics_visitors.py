@@ -402,7 +402,9 @@ class FormulaSnQLVisitor:
         self.expression_visitor = self.timeseries_visitor.expression_visitor
 
     def _visit_parameter(
-        self, side: Formula | Timeseries | int | float, filters: ConditionGroup | None
+        self,
+        side: Formula | Timeseries | int | float | str,
+        filters: ConditionGroup | None,
     ) -> Mapping[str, str]:
         if isinstance(side, (float, int)):
             return {"select": f"{side}"}

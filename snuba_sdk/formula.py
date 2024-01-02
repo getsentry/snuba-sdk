@@ -26,7 +26,7 @@ class ArithmeticOperator(Enum):
     DIVIDE = "divide"
 
 
-PREFIX_TO_INFIX: dict[ArithmeticOperator, str] = {
+PREFIX_TO_INFIX: dict[str, str] = {
     ArithmeticOperator.PLUS.value: "+",
     ArithmeticOperator.MINUS.value: "-",
     ArithmeticOperator.MULTIPLY.value: "*",
@@ -116,5 +116,5 @@ class Formula:
         return self._replace("groupby", groupby)
 
 
-FormulaParameterGroup = Union[Formula, Timeseries, float, int]
+FormulaParameterGroup = Union[Formula, Timeseries, float, int, str]
 FormulaParameter = {Formula, Timeseries, float, int}

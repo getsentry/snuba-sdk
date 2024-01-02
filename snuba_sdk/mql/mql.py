@@ -90,12 +90,12 @@ _ = ~r"\s*"
 """
 )
 
-EXPRESSION_OPERATORS: Mapping[str, ArithmeticOperator] = {
+EXPRESSION_OPERATORS: Mapping[str, str] = {
     "+": ArithmeticOperator.PLUS.value,
     "-": ArithmeticOperator.MINUS.value,
 }
 
-TERM_OPERATORS: Mapping[str, ArithmeticOperator] = {
+TERM_OPERATORS: Mapping[str, str] = {
     "*": ArithmeticOperator.MULTIPLY.value,
     "/": ArithmeticOperator.DIVIDE.value,
 }
