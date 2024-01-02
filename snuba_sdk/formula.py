@@ -27,10 +27,10 @@ class ArithmeticOperator(Enum):
 
 
 PREFIX_TO_INFIX: dict[ArithmeticOperator, str] = {
-    ArithmeticOperator.PLUS: "+",
-    ArithmeticOperator.MINUS: "-",
-    ArithmeticOperator.MULTIPLY: "*",
-    ArithmeticOperator.DIVIDE: "/",
+    ArithmeticOperator.PLUS.value: "+",
+    ArithmeticOperator.MINUS.value: "-",
+    ArithmeticOperator.MULTIPLY.value: "*",
+    ArithmeticOperator.DIVIDE.value: "/",
 }
 
 
@@ -80,13 +80,13 @@ class Formula:
             raise InvalidFormulaError("Formula must have parameters")
         elif not isinstance(self.parameters, Sequence):
             raise InvalidFormulaError(
-                f"parameters of formula {self.function_name.value} must be a Sequence"
+                f"parameters of formula {self.function_name} must be a Sequence"
             )
 
         for param in self.parameters:
             if not isinstance(param, tuple(FormulaParameter)):
                 raise InvalidFormulaError(
-                    f"parameter '{param}' of formula {self.function_name.value} is an invalid type"
+                    f"parameter '{param}' of formula {self.function_name} is an invalid type"
                 )
         self.__validate_consistency()
 

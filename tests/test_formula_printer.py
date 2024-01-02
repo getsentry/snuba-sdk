@@ -12,7 +12,7 @@ from snuba_sdk.timeseries import Metric, Timeseries
 formula_tests = [
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -28,7 +28,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.MULTIPLY,
+            ArithmeticOperator.MULTIPLY.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -48,10 +48,10 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Formula(
-                    ArithmeticOperator.MULTIPLY,
+                    ArithmeticOperator.MULTIPLY.value,
                     [
                         Timeseries(
                             metric=Metric(
@@ -76,7 +76,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -97,7 +97,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -119,7 +119,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -141,7 +141,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -163,7 +163,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -186,7 +186,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -210,7 +210,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -234,7 +234,7 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            ArithmeticOperator.DIVIDE,
+            ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -256,10 +256,10 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            operator=ArithmeticOperator.MULTIPLY,
+            function_name=ArithmeticOperator.MULTIPLY.value,
             parameters=[
                 Formula(
-                    ArithmeticOperator.DIVIDE,
+                    ArithmeticOperator.DIVIDE.value,
                     [
                         Timeseries(
                             metric=Metric(
@@ -295,10 +295,10 @@ formula_tests = [
     ),
     pytest.param(
         Formula(
-            operator=ArithmeticOperator.MULTIPLY,
+            function_name=ArithmeticOperator.MULTIPLY.value,
             parameters=[
                 Formula(
-                    ArithmeticOperator.DIVIDE,
+                    ArithmeticOperator.DIVIDE.value,
                     [
                         Timeseries(
                             metric=Metric(

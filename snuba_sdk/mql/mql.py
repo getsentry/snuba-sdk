@@ -53,14 +53,15 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (aggregate / arbitrary_function / curried_aggregate) (group_by)?
+function = (aggregate / curried_aggregate / arbitrary_function) (group_by)?
 aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
-curried_aggregate = aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ param_expression)* close_paren)
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
 aggregate_name = "avg" / "count" / "max" / "min" / "sum"
+curried_aggregate_name = "quantiles"
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
@@ -90,13 +91,13 @@ _ = ~r"\s*"
 )
 
 EXPRESSION_OPERATORS: Mapping[str, ArithmeticOperator] = {
-    "+": ArithmeticOperator.PLUS,
-    "-": ArithmeticOperator.MINUS,
+    "+": ArithmeticOperator.PLUS.value,
+    "-": ArithmeticOperator.MINUS.value,
 }
 
 TERM_OPERATORS: Mapping[str, ArithmeticOperator] = {
-    "*": ArithmeticOperator.MULTIPLY,
-    "/": ArithmeticOperator.DIVIDE,
+    "*": ArithmeticOperator.MULTIPLY.value,
+    "/": ArithmeticOperator.DIVIDE.value,
 }
 
 AGGREGATION_FUNCTIONS: set[str] = {
@@ -405,6 +406,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return agg_params
 
     def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
+
+    def visit_curried_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
     def visit_arbitrary_function_name(self, node: Node, children: Sequence[Any]) -> str:

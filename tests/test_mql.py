@@ -572,22 +572,22 @@ base_tests = [
         id="test curried functions with multiple params",
     ),
     pytest.param(
-        "topK()(`d:transactions/duration@millisecond`)",
+        "quantiles()(`d:transactions/duration@millisecond`)",
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
-                aggregate="topK",
+                aggregate="quantiles",
                 aggregate_params=[],
             )
         ),
         id="test curried functions with no params",
     ),
     pytest.param(
-        'test(0.5, "random", other, 9)(`d:transactions/duration@millisecond`)',
+        'quantiles(0.5, "random", other, 9)(`d:transactions/duration@millisecond`)',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(mri="d:transactions/duration@millisecond"),
-                aggregate="test",
+                aggregate="quantiles",
                 aggregate_params=[0.5, "random", "other", 9],
             )
         ),
@@ -644,7 +644,7 @@ term_tests = [
         "sum(foo) / 1000",
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -660,7 +660,7 @@ term_tests = [
         "sum(foo) * max(bar)",
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.MULTIPLY,
+                ArithmeticOperator.MULTIPLY.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -679,10 +679,10 @@ term_tests = [
         "(sum(foo) * sum(bar)) / 1000",
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Formula(
-                        ArithmeticOperator.MULTIPLY,
+                        ArithmeticOperator.MULTIPLY.value,
                         [
                             Timeseries(
                                 metric=Metric(public_name="foo"),
@@ -704,7 +704,7 @@ term_tests = [
         '(sum(foo) / sum(bar)){tag:"tag_value"}',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -724,7 +724,7 @@ term_tests = [
         'sum(foo{tag:"tag_value"}) / sum(bar{tag:"tag_value"})',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -745,7 +745,7 @@ term_tests = [
         '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -766,7 +766,7 @@ term_tests = [
         "(sum(foo) by transaction / sum(bar) by transaction)",
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -787,7 +787,7 @@ term_tests = [
         '(sum(foo) by transaction / sum(bar) by transaction){tag:"tag_value"}',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -809,7 +809,7 @@ term_tests = [
         '(sum(foo{tag:"tag_value"}) by transaction) / (sum(bar{tag:"tag_value"}) by transaction)',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -832,7 +832,7 @@ term_tests = [
         '(sum(foo) / sum(bar)){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(public_name="foo"),
@@ -853,10 +853,10 @@ term_tests = [
         '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by transaction',
         MetricsQuery(
             query=Formula(
-                function_name=ArithmeticOperator.MULTIPLY,
+                function_name=ArithmeticOperator.MULTIPLY.value,
                 parameters=[
                     Formula(
-                        ArithmeticOperator.DIVIDE,
+                        ArithmeticOperator.DIVIDE.value,
                         [
                             Timeseries(
                                 metric=Metric(public_name="foo"),
@@ -908,7 +908,52 @@ arbitrary_function_tests = [
             )
         ),
         id="test simple arbitrary function",
-    )
+    ),
+    pytest.param(
+        'apdex(sum(transaction.duration), 500){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                function_name="apdex",
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                    500,
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test arbitrary function with filters and groupby",
+    ),
+    pytest.param(
+        'apdex(sum(foo) / sum(bar), 500){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                function_name="apdex",
+                parameters=[
+                    Formula(
+                        function_name=ArithmeticOperator.DIVIDE.value,
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="foo"),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="bar"),
+                                aggregate="sum",
+                            ),
+                        ],
+                    ),
+                    500,
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test arbitrary function with inner terms",
+    ),
 ]
 
 
