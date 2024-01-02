@@ -928,6 +928,26 @@ arbitrary_function_tests = [
         id="test arbitrary function with filters and groupby",
     ),
     pytest.param(
+        'topK(sum(transaction.duration), 500, "test", 4.2){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                    500,
+                    "test",
+                    4.2,
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test arbitrary function with filters and groupby",
+    ),
+    pytest.param(
         'apdex(sum(foo) / sum(bar), 500){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
