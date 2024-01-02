@@ -60,8 +60,8 @@ arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ c
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
-aggregate_name = "avg" / "count" / "max" / "min" / "sum"
-curried_aggregate_name = "quantiles"
+aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
+curried_aggregate_name = "quantiles" / "histogram"
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
@@ -99,16 +99,6 @@ TERM_OPERATORS: Mapping[str, str] = {
     "*": ArithmeticOperator.MULTIPLY.value,
     "/": ArithmeticOperator.DIVIDE.value,
 }
-
-AGGREGATION_FUNCTIONS: set[str] = {
-    "avg",
-    "count",
-    "max",
-    "min",
-    "sum",
-}
-
-CURRIED_AGGREGATION_FUNCTIONS: set[str] = {"quantiles"}
 
 
 def parse_mql(mql: str) -> MetricsQuery:

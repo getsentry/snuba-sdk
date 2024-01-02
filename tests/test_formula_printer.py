@@ -433,6 +433,26 @@ formula_tests = [
         '(apdex(sum(foo), 500) * apdex(sum(foo), 400)){tag:"tag_value"} by (transaction)',
         id="test arbitrary functions",
     ),
+    pytest.param(
+        Formula(
+            "apdex",
+            [
+                Timeseries(
+                    metric=Metric(
+                        public_name="foo",
+                        entity="generic_metrics_distributions",
+                    ),
+                    aggregate="quantiles",
+                    aggregate_params=[0.5],
+                ),
+                500,
+            ],
+            filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+            groupby=[Column("transaction")],
+        ),
+        'apdex(quantiles(0.5)(foo), 500){tag:"tag_value"} by (transaction)',
+        id="test arbitrary functions",
+    ),
 ]
 
 FORMULA_PRINTER = FormulaMQLPrinter()

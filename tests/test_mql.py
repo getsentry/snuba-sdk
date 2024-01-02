@@ -928,6 +928,23 @@ arbitrary_function_tests = [
         id="test arbitrary function with filters and groupby",
     ),
     pytest.param(
+        "apdex(quantiles(0.5)(transaction.duration), 500)",
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="quantiles",
+                        aggregate_params=[0.5],
+                    ),
+                    500,
+                ],
+            )
+        ),
+        id="test arbitrary function with curried aggregate",
+    ),
+    pytest.param(
         'topK(sum(transaction.duration), 500, test, 4.2){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
