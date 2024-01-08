@@ -295,7 +295,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return str(node.text)
 
     def visit_quoted_string(self, node: Node, children: Sequence[Any]) -> str:
-        return str(node.text[1:-1])
+        # The quoted string might have escaped double quotes in it. Replace
+        # these with regular quotes.
+        text = str(node.text[1:-1])
+        match = text.replace('\\"', '"')
+        return match
 
     def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
         _, _, first, zero_or_more_others, _, _ = children
