@@ -438,7 +438,7 @@ metrics_query_to_mql_tests = [
     pytest.param(
         MetricsQuery(
             query=Formula(
-                ArithmeticOperator.DIVIDE,
+                ArithmeticOperator.DIVIDE.value,
                 [
                     Timeseries(
                         metric=Metric(

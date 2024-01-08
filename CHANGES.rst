@@ -6,6 +6,7 @@ Changelog and versioning
 
 - Support serializing Formula objects into MQL
 - Enable all the tests for deserializing MQL into Formulas
+- Support arbitrary functions in MQL
 
 
 2.0.17

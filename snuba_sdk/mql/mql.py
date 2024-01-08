@@ -53,13 +53,16 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (curried_aggregate / aggregate) (group_by)?
+function = (aggregate / curried_aggregate / arbitrary_function) (group_by)?
 aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
-curried_aggregate = aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ param_expression)* close_paren)
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
-aggregate_name = ~r"[a-zA-Z0-9_]+"
+aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
+curried_aggregate_name = "quantiles" / "histogram"
+arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
@@ -87,14 +90,14 @@ _ = ~r"\s*"
 """
 )
 
-EXPRESSION_OPERATORS: Mapping[str, ArithmeticOperator] = {
-    "+": ArithmeticOperator.PLUS,
-    "-": ArithmeticOperator.MINUS,
+EXPRESSION_OPERATORS: Mapping[str, str] = {
+    "+": ArithmeticOperator.PLUS.value,
+    "-": ArithmeticOperator.MINUS.value,
 }
 
-TERM_OPERATORS: Mapping[str, ArithmeticOperator] = {
-    "*": ArithmeticOperator.MULTIPLY,
-    "/": ArithmeticOperator.DIVIDE,
+TERM_OPERATORS: Mapping[str, str] = {
+    "*": ArithmeticOperator.MULTIPLY.value,
+    "/": ArithmeticOperator.DIVIDE.value,
 }
 
 
@@ -250,13 +253,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         _, _, filter_expr, *_ = children
         return cast(Union[Condition, BooleanCondition], filter_expr)
 
-    def visit_function(self, node: Node, children: Sequence[Any]) -> Timeseries:
+    def visit_function(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
         """
-        Given an Timeseries target, set its children groupbys.
+        Given an Timeseries or Formula target, set its children groupbys.
         """
         targets, packed_groupbys = children
         target = targets[0]
-        assert isinstance(target, Timeseries)
+        assert isinstance(target, (Timeseries, Formula))
         if packed_groupbys:
             group_by = packed_groupbys[0]
             if not isinstance(group_by, list):
@@ -354,6 +359,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         assert isinstance(target, Timeseries)
         return target.set_aggregate(aggregate_name, aggregate_params)
 
+    def visit_arbitrary_function(self, node: Node, children: Sequence[Any]) -> Formula:
+        """ """
+        arbitrary_function_name, zero_or_one = children
+        _, expr, params, *_ = zero_or_one
+        _, target, _ = expr
+        arbitrary_function_params = [param[-1] for param in params]
+        parameters = [target, *arbitrary_function_params]
+        return Formula(function_name=arbitrary_function_name, parameters=parameters)
+
     def visit_param(self, node: Node, children: Sequence[Any]) -> str | int | float:
         """
         Discard the comma and return the aggregate param for the curried aggregate function.
@@ -382,6 +396,12 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return agg_params
 
     def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
+
+    def visit_curried_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
+
+    def visit_arbitrary_function_name(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
     def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:

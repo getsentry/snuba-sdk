@@ -16,13 +16,13 @@ tests = [
     # This might be possible in the future, but if the formula doesn't contain a metric
     # then it's not possible to infer the entity
     # pytest.param(
-    #     formula(ArithmeticOperator.PLUS, [1, 1], None, None),
+    #     formula(ArithmeticOperator.PLUS.value, [1, 1], None, None),
     #     None,
     #     id="basic formula test",
     # ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(public_name="foo", entity="metrics_sets"),
@@ -38,7 +38,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(public_name="foo", entity="metrics_sets"),
@@ -54,7 +54,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(public_name="foo", entity="metrics_sets"),
@@ -70,7 +70,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(public_name="foo", entity="metrics_sets"),
@@ -100,17 +100,17 @@ tests = [
             None,
             None,
         ),
-        InvalidFormulaError("formula '42' must be a ArithmeticOperator"),
+        InvalidFormulaError("formula '42' must be a str"),
         id="invalid operator type",
     ),
     pytest.param(
-        formula(ArithmeticOperator.PLUS, 42, None, None),
+        formula(ArithmeticOperator.PLUS.value, 42, None, None),
         InvalidFormulaError("parameters of formula plus must be a Sequence"),
         id="invalid parameters",
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.MULTIPLY,
+            ArithmeticOperator.MULTIPLY.value,
             [
                 Timeseries(
                     metric=Metric(public_name="foo", entity="metrics_sets"),
@@ -126,7 +126,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -159,7 +159,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -192,7 +192,7 @@ tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [100, 100],
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             [Column("tags[release]")],
@@ -220,7 +220,7 @@ def test_formulas(
 formula_snql_tests = [
     pytest.param(
         formula(
-            ArithmeticOperator.MULTIPLY,
+            ArithmeticOperator.MULTIPLY.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -247,7 +247,7 @@ formula_snql_tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -283,7 +283,7 @@ formula_snql_tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(
@@ -319,7 +319,7 @@ formula_snql_tests = [
     ),
     pytest.param(
         formula(
-            ArithmeticOperator.PLUS,
+            ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
                     metric=Metric(

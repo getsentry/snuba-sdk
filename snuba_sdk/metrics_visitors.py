@@ -234,11 +234,11 @@ class FormulaMQLPrinter:
         # TODO: Formulas currently only support simple math, however in the future they could support
         # arbitrary functions (e.g. failure_rate(sum(...), 50)). In that case, they could be represented
         # as prefix functions.
-        if formula.operator in PREFIX_TO_INFIX:
-            separator = f" {PREFIX_TO_INFIX[formula.operator]} "
+        if formula.function_name in PREFIX_TO_INFIX:
+            separator = f" {PREFIX_TO_INFIX[formula.function_name]} "
             mql_string = f"({separator.join(p['mql_string'] for p in parameters)})"
         else:
-            mql_string = f"{formula.operator.value}({', '.join(p['mql_string'] for p in parameters)})"
+            mql_string = f"{formula.function_name}({', '.join(p['mql_string'] for p in parameters)})"
 
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"
@@ -402,7 +402,9 @@ class FormulaSnQLVisitor:
         self.expression_visitor = self.timeseries_visitor.expression_visitor
 
     def _visit_parameter(
-        self, side: Formula | Timeseries | int | float, filters: ConditionGroup | None
+        self,
+        side: Formula | Timeseries | int | float | str,
+        filters: ConditionGroup | None,
     ) -> Mapping[str, str]:
         if isinstance(side, (float, int)):
             return {"select": f"{side}"}
@@ -462,9 +464,7 @@ class FormulaSnQLVisitor:
 
         # Collect select statements
         parameters = ", ".join(p["select"] for p in parameters)
-        ret[
-            "aggregate"
-        ] = f"{formula.operator.value}({parameters}) AS {AGGREGATE_ALIAS}"
+        ret["aggregate"] = f"{formula.function_name}({parameters}) AS {AGGREGATE_ALIAS}"
 
         return ret
 
