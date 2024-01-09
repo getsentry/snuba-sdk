@@ -630,6 +630,24 @@ base_tests = [
         ),
         id="test quotes parsing",
     ),
+    pytest.param(
+        'max(d:transactions/duration@millisecond){bar:" !\\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"} by (transaction)',
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="max",
+                filters=[
+                    Condition(
+                        Column("bar"),
+                        Op.EQ,
+                        " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+                    ),
+                ],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test terms with crazy characters",
+    ),
 ]
 
 
