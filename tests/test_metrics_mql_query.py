@@ -483,6 +483,58 @@ metrics_query_to_mql_tests = [
         },
         id="test_terms",
     ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                    entity="generic_metrics_distributions",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[
+                    Condition(
+                        Column("bar"),
+                        Op.EQ,
+                        " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+                    )
+                ],
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'max(d:transactions/duration@millisecond){bar:" !\\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"} by (transaction)',
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test_crazy_characters",
+    ),
 ]
 
 

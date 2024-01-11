@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+
+2.0.19
+------
+
+- Fix escaping quotes in MQL strings
+
+
 2.0.18
 ------
 

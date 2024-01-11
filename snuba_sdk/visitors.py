@@ -146,11 +146,13 @@ class Translation(ExpressionVisitor[str]):
             # The ' and \ character are escaped in the string to ensure
             # the query is valid. They are de-escaped in the SnQL parser.
             # Also escape newlines since they break the SnQL grammar.
+            quote_char = '"' if self.is_mql else "'"
             decoded = (
-                decoded.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+                decoded.replace("\\", "\\\\")
+                .replace(quote_char, f"\\{quote_char}")
+                .replace("\n", "\\n")
             )
 
-            quote_char = '"' if self.is_mql else "'"
             return f"{quote_char}{decoded}{quote_char}"
         elif isinstance(value, (int, float)):
             return f"{value}"
