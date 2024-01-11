@@ -84,7 +84,7 @@ class Timeseries:
     """
 
     metric: Metric
-    aggregate: str
+    aggregate: str | None = None
     aggregate_params: list[Any] | None = None
     filters: ConditionGroup | None = None
     groupby: list[Column | AliasedExpression] | None = None
@@ -103,16 +103,17 @@ class Timeseries:
 
         # TODO: Restrict which specific aggregates are allowed
         # TODO: Validate aggregate_params based on the aggregate supplied e.g. quantile needs a float
-        if not isinstance(self.aggregate, str):
-            raise InvalidTimeseriesError("aggregate must be a string")
-        if self.aggregate_params is not None:
-            if not isinstance(self.aggregate_params, list):
-                raise InvalidTimeseriesError("aggregate_params must be a list")
-            for p in self.aggregate_params:
-                if not is_literal(p):
-                    raise InvalidTimeseriesError(
-                        "aggregate_params can only be literal types"
-                    )
+        if self.aggregate is not None:
+            if not isinstance(self.aggregate, str):
+                raise InvalidTimeseriesError("aggregate must be a string")
+            if self.aggregate_params is not None:
+                if not isinstance(self.aggregate_params, list):
+                    raise InvalidTimeseriesError("aggregate_params must be a list")
+                for p in self.aggregate_params:
+                    if not is_literal(p):
+                        raise InvalidTimeseriesError(
+                            "aggregate_params can only be literal types"
+                        )
 
         # TODO: Validate these are tag conditions only
         # TODO: Validate these are simple conditions e.g. tag[x] op literal

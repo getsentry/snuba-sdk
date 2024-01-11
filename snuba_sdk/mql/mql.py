@@ -17,7 +17,6 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
 
-AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
 NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
 MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
@@ -53,16 +52,17 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (aggregate / curried_aggregate / arbitrary_function) (group_by)?
-aggregate = aggregate_name (open_paren _ filter _ close_paren)
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
-arbitrary_function = arbitrary_function_name (open_paren ( _ filter _ ) (_ comma _ param_expression)* close_paren)
+function = (curried_aggregate / aggregate / arbitrary_function) (group_by)?
+aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
+aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
+arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
+arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+curried_aggregate_name = "quantiles" / "histogram"
+
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
-aggregate_name = ~r"[a-zA-Z0-9_]+"
-curried_aggregate_name = ~r"[a-zA-Z0-9_]+"
-arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
@@ -141,7 +141,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         Top level node, simply returns the expression.
         """
         expr, zero_or_more_others = children
-        assert isinstance(expr, (Formula, Timeseries))
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
@@ -324,8 +323,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if isinstance(children[0], list):
             target = children[0][0]
         if isinstance(target, Metric):
-            # it visit the aggregate name furthur down the tree, for now just set it to a placeholder.
-            timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
+            timeseries = Timeseries(metric=target, aggregate=None)
             return timeseries
         assert isinstance(target, (Timeseries, Formula))
         return target

@@ -552,9 +552,14 @@ base_tests = [
     pytest.param(
         "p90(`d:transactions/duration@millisecond`)",
         MetricsQuery(
-            query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"),
-                aggregate="p90",
+            query=Formula(
+                function_name="p90",
+                parameters=[
+                    Timeseries(
+                        aggregate=None,
+                        metric=Metric(mri="d:transactions/duration@millisecond"),
+                    )
+                ],
             )
         ),
         id="test percentile function",
@@ -922,14 +927,14 @@ def test_parse_mql_terms(mql_string: str, metrics_query: MetricsQuery) -> None:
 
 arbitrary_function_tests = [
     pytest.param(
-        "apdex(sum(transaction.duration), 500)",
+        "apdex(transaction.duration, 500)",
         MetricsQuery(
             query=Formula(
                 "apdex",
                 [
                     Timeseries(
                         metric=Metric(public_name="transaction.duration"),
-                        aggregate="sum",
+                        aggregate=None,
                     ),
                     500,
                 ],
@@ -938,14 +943,14 @@ arbitrary_function_tests = [
         id="test simple arbitrary function",
     ),
     pytest.param(
-        'apdex(sum(transaction.duration), 500){tag:"tag_value"} by transaction',
+        'apdex(transaction.duration, 500){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
                 function_name="apdex",
                 parameters=[
                     Timeseries(
                         metric=Metric(public_name="transaction.duration"),
-                        aggregate="sum",
+                        aggregate=None,
                     ),
                     500,
                 ],
@@ -973,7 +978,28 @@ arbitrary_function_tests = [
         id="test arbitrary function with curried aggregate",
     ),
     pytest.param(
-        'topK(sum(transaction.duration), 500, test, 4.2){tag:"tag_value"} by transaction',
+        "apdex(failure_rate(transaction.duration), 500)",
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Formula(
+                        function_name="failure_rate",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate=None,
+                            )
+                        ],
+                    ),
+                    500,
+                ],
+            )
+        ),
+        id="test arbitrary function with in arbitrary function",
+    ),
+    pytest.param(
+        'topK(sum(transaction.duration), 500, 4.2){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
                 function_name="topK",
@@ -983,7 +1009,6 @@ arbitrary_function_tests = [
                         aggregate="sum",
                     ),
                     500,
-                    "test",
                     4.2,
                 ],
                 filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
@@ -991,6 +1016,63 @@ arbitrary_function_tests = [
             ),
         ),
         id="test arbitrary function with filters and groupby",
+    ),
+    pytest.param(
+        'apdex(sum(foo) / sum(bar), 500){tag:"tag_value"} by transaction',
+        MetricsQuery(
+            query=Formula(
+                function_name="apdex",
+                parameters=[
+                    Formula(
+                        function_name=ArithmeticOperator.DIVIDE.value,
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="foo"),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="bar"),
+                                aggregate="sum",
+                            ),
+                        ],
+                    ),
+                    500,
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test arbitrary function with inner terms",
+    ),
+    pytest.param(
+        "apdex(transaction.duration, 500) * failure_rate(transaction.duration)",
+        MetricsQuery(
+            query=Formula(
+                function_name="multiply",
+                parameters=[
+                    Formula(
+                        function_name="apdex",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate=None,
+                            ),
+                            500,
+                        ],
+                    ),
+                    Formula(
+                        function_name="failure_rate",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate=None,
+                            )
+                        ],
+                    ),
+                ],
+            )
+        ),
+        id="test arbitrary function as outer terms",
     ),
 ]
 
