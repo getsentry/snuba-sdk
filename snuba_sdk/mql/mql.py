@@ -54,14 +54,14 @@ variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = (aggregate / curried_aggregate / arbitrary_function) (group_by)?
-aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
-arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ param_expression)* close_paren)
+aggregate = aggregate_name (open_paren _ filter _ close_paren)
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
+arbitrary_function = arbitrary_function_name (open_paren ( _ filter _ ) (_ comma _ param_expression)* close_paren)
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
-aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
-curried_aggregate_name = "quantiles" / "histogram"
+aggregate_name = ~r"[a-zA-Z0-9_]+"
+curried_aggregate_name = ~r"[a-zA-Z0-9_]+"
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
