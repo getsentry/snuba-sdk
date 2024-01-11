@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.20
+------
+
+- Allow arbitrary name for aggregate or curried aggreate in MQL
+
 
 2.0.19
 ------

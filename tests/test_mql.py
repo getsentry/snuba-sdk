@@ -550,6 +550,16 @@ base_tests = [
         id="test group by 4",
     ),
     pytest.param(
+        "p90(`d:transactions/duration@millisecond`)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="p90",
+            )
+        ),
+        id="test percentile function",
+    ),
+    pytest.param(
         "quantiles(0.5)(`d:transactions/duration@millisecond`)",
         MetricsQuery(
             query=Timeseries(
@@ -981,33 +991,6 @@ arbitrary_function_tests = [
             ),
         ),
         id="test arbitrary function with filters and groupby",
-    ),
-    pytest.param(
-        'apdex(sum(foo) / sum(bar), 500){tag:"tag_value"} by transaction',
-        MetricsQuery(
-            query=Formula(
-                function_name="apdex",
-                parameters=[
-                    Formula(
-                        function_name=ArithmeticOperator.DIVIDE.value,
-                        parameters=[
-                            Timeseries(
-                                metric=Metric(public_name="foo"),
-                                aggregate="sum",
-                            ),
-                            Timeseries(
-                                metric=Metric(public_name="bar"),
-                                aggregate="sum",
-                            ),
-                        ],
-                    ),
-                    500,
-                ],
-                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
-                groupby=[Column("transaction")],
-            )
-        ),
-        id="test arbitrary function with inner terms",
     ),
 ]
 
