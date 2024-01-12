@@ -927,30 +927,42 @@ def test_parse_mql_terms(mql_string: str, metrics_query: MetricsQuery) -> None:
 
 arbitrary_function_tests = [
     pytest.param(
-        "apdex(transaction.duration, 500)",
+        'cool_function("test", 500)',
         MetricsQuery(
             query=Formula(
-                "apdex",
+                "cool_function",
                 [
-                    Timeseries(
-                        metric=Metric(public_name="transaction.duration"),
-                        aggregate=None,
-                    ),
+                    "test",
                     500,
                 ],
             )
         ),
-        id="test simple arbitrary function",
+        id="test arbitrary function with string parameter",
     ),
     pytest.param(
-        'apdex(transaction.duration, 500){tag:"tag_value"} by transaction',
+        "sum(count(transaction.duration))",
+        MetricsQuery(
+            query=Formula(
+                "sum",
+                [
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="count",
+                    ),
+                ],
+            )
+        ),
+        id="test arbitrary function with inner aggregate",
+    ),
+    pytest.param(
+        'apdex(sum(transaction.duration), 500){tag:"tag_value"} by transaction',
         MetricsQuery(
             query=Formula(
                 function_name="apdex",
                 parameters=[
                     Timeseries(
                         metric=Metric(public_name="transaction.duration"),
-                        aggregate=None,
+                        aggregate="sum",
                     ),
                     500,
                 ],
@@ -978,7 +990,7 @@ arbitrary_function_tests = [
         id="test arbitrary function with curried aggregate",
     ),
     pytest.param(
-        "apdex(failure_rate(transaction.duration), 500)",
+        "apdex(failure_rate(sum(transaction.duration)), 500)",
         MetricsQuery(
             query=Formula(
                 "apdex",
@@ -988,7 +1000,7 @@ arbitrary_function_tests = [
                         parameters=[
                             Timeseries(
                                 metric=Metric(public_name="transaction.duration"),
-                                aggregate=None,
+                                aggregate="sum",
                             )
                         ],
                     ),

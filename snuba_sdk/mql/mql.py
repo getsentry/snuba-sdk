@@ -28,7 +28,7 @@ expr_op = "+" / "-"
 
 term = coefficient (_ term_op _ coefficient)*
 term_op = "*" / "/"
-coefficient = number / filter
+coefficient = number / quoted_string / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
 filter = target (open_brace _ filter_expr _ close_brace)? (group_by)?
@@ -53,7 +53,7 @@ variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = (curried_aggregate / aggregate / arbitrary_function) (group_by)?
-aggregate = aggregate_name (open_paren _ expression (_ comma _ expression)* _ close_paren)
+aggregate = aggregate_name (open_paren _ filter _ close_paren)
 aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
@@ -154,7 +154,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         then merge them into a single Formula with the operator.
         """
         term, zero_or_more_others = children
-        assert isinstance(term, (Formula, Timeseries, float, int))
+        assert isinstance(term, (Formula, Timeseries, float, int, str))
 
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
@@ -345,7 +345,13 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         aggregate_name, zero_or_one = children
         _, _, target, zero_or_more_others, *_ = zero_or_one
         assert isinstance(target, Timeseries)
-        return target.set_aggregate(aggregate_name)
+        if target.aggregate is None:
+            return target.set_aggregate(aggregate_name)
+        else:
+            # The parameter inside this aggregate already has an aggregate set.
+            # Therefore, this needs to be treated as an arbitrary function.
+            # e.g. `sum(count(mri))` -> Formula(sum, (Timeseries(count),)
+            return Formula(function_name=aggregate_name, parameters=[target])
 
     def visit_curried_aggregate(
         self, node: Node, children: Sequence[Any]
