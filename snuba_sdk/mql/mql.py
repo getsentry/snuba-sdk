@@ -134,9 +134,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         except Exception as e:
             raise e
 
-    def visit_expression(
-        self, node: Node, children: Sequence[Any]
-    ) -> Union[Formula, Timeseries]:
+    def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
         """
         Top level node, simply returns the expression.
         """
@@ -148,7 +146,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_term(
         self, node: Node, children: Sequence[Any]
-    ) -> Union[Formula, Timeseries, float, int]:
+    ) -> Union[Formula, Timeseries, float, int, str]:
         """
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator.
@@ -337,7 +335,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         assert isinstance(children[2], (Timeseries, Formula))
         return children[2]
 
-    def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Timeseries:
+    def visit_aggregate(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
         """
         Given a target (which is either a Formula or Timeseries object),
         set the aggregate on it.
