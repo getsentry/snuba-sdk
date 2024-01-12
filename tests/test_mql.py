@@ -973,6 +973,21 @@ arbitrary_function_tests = [
         id="test arbitrary function with filters and groupby",
     ),
     pytest.param(
+        "cool_function(transaction.duration)",
+        MetricsQuery(
+            query=Formula(
+                "cool_function",
+                [
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate=None,
+                    ),
+                ],
+            )
+        ),
+        id="test arbitrary function with no aggregate",
+    ),
+    pytest.param(
         "apdex(quantiles(0.5)(transaction.duration), 500)",
         MetricsQuery(
             query=Formula(
@@ -1091,6 +1106,168 @@ arbitrary_function_tests = [
 
 @pytest.mark.parametrize("mql_string, metrics_query", arbitrary_function_tests)
 def test_parse_mql_arbitrary_functions(
+    mql_string: str, metrics_query: MetricsQuery
+) -> None:
+    result = parse_mql(mql_string)
+    assert result == metrics_query
+
+
+curried_arbitrary_function_tests = [
+    pytest.param(
+        "topK(10)(transaction.duration)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transaction.duration"),
+                aggregate="topK",
+                aggregate_params=[10],
+            )
+        ),
+        id="test simple curried arbitrary function",
+    ),
+    pytest.param(
+        "topK(10)(transaction.duration{bar:baz})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transaction.duration"),
+                aggregate="topK",
+                aggregate_params=[10],
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+            )
+        ),
+        id="test curried arbitrary function with filter",
+    ),
+    pytest.param(
+        "topK(10)(transaction.duration{bar:baz} by transaction)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transaction.duration"),
+                aggregate="topK",
+                aggregate_params=[10],
+                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                groupby=[Column("transaction")],
+            )
+        ),
+        id="test curried arbitrary function with filter and groupby",
+    ),
+    pytest.param(
+        "topK(10)(transaction.duration)",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="transaction.duration"),
+                aggregate="topK",
+                aggregate_params=[10],
+            )
+        ),
+        id="test curried arbitrary function with args",
+    ),
+    pytest.param(
+        'topK(10)("test.duration")',
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=["test.duration"],
+            )
+        ),
+        id="test curried arbitrary function with string param",
+    ),
+    pytest.param(
+        "topK(10)(sum(transaction.duration))",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                ],
+            )
+        ),
+        id="test curried arbitrary function with inner aggregate",
+    ),
+    pytest.param(
+        "topK(10)(sum(transaction.duration) / count(transaction.duration))",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Formula(
+                        function_name="divide",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate="count",
+                            ),
+                        ],
+                    ),
+                ],
+            )
+        ),
+        id="test curried arbitrary function with inner aggregate and terms",
+    ),
+    pytest.param(
+        "topK(10)(sum(transaction.duration{bar:baz}) / count(transaction.duration{foo:foz})) by transaction",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Formula(
+                        function_name="divide",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate="sum",
+                                filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                            ),
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate="count",
+                                filters=[Condition(Column("foo"), Op.EQ, "foz")],
+                            ),
+                        ],
+                    ),
+                ],
+                groupby=[Column("transaction")],
+            ),
+        ),
+        id="test complex curried arbitrary function with inner terms",
+    ),
+    pytest.param(
+        "topK(10)(apdex(sum(transaction.duration), 500){bar:baz})",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Formula(
+                        function_name="apdex",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(public_name="transaction.duration"),
+                                aggregate="sum",
+                            ),
+                            500,
+                        ],
+                        filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                    ),
+                ],
+            ),
+        ),
+        id="test curried arbitrary function with arbitrary function",
+    ),
+]
+
+
+@pytest.mark.parametrize("mql_string, metrics_query", curried_arbitrary_function_tests)
+def test_parse_mql_curried_arbitrary_functions(
     mql_string: str, metrics_query: MetricsQuery
 ) -> None:
     result = parse_mql(mql_string)

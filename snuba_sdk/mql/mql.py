@@ -52,13 +52,15 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (curried_aggregate / aggregate / arbitrary_function) (group_by)?
+function = (curried_aggregate / curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
 aggregate = aggregate_name (open_paren _ filter _ close_paren)
 aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ expression (_ comma _ expression)* _ close_paren)
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
 curried_aggregate_name = "quantiles" / "histogram"
+curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) _ close_paren)
+curried_arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
@@ -368,13 +370,38 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return target.set_aggregate(aggregate_name, aggregate_params)
 
     def visit_arbitrary_function(self, node: Node, children: Sequence[Any]) -> Formula:
-        """ """
+        """
+        Returns a Fomula with the arbitrary function name and parameters.
+        apdex(count(mri), 300) -> Formula(apdex, (Timeseries(count), 300))
+        """
         arbitrary_function_name, zero_or_one = children
         _, expr, params, *_ = zero_or_one
         _, target, _ = expr
         arbitrary_function_params = [param[-1] for param in params]
         parameters = [target, *arbitrary_function_params]
         return Formula(function_name=arbitrary_function_name, parameters=parameters)
+
+    def visit_curried_arbitrary_function(
+        self, node: Node, children: Sequence[Any]
+    ) -> Formula:
+        """
+        Returns a Fomula with the arbitrary curried function name and parameters.
+        topK(10)(sum(mri)) -> Formula(topK, (Timeseries(sum), 10))
+        """
+        curried_arbitrary_function_name, agg_params, zero_or_one = children
+        _, _, agg_param_list, *_ = agg_params
+        aggregate_params = agg_param_list[0] if agg_param_list else []
+        _, _, expr, _, *_ = zero_or_one
+        _, target, _ = expr
+        if isinstance(target, Timeseries) and target.aggregate is None:
+            return target.set_aggregate(
+                curried_arbitrary_function_name, aggregate_params
+            )
+        return Formula(
+            function_name=curried_arbitrary_function_name,
+            aggregate_params=aggregate_params,
+            parameters=[target],
+        )
 
     def visit_param(self, node: Node, children: Sequence[Any]) -> str | int | float:
         """
@@ -410,6 +437,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return node.text
 
     def visit_arbitrary_function_name(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
+
+    def visit_curried_arbitrary_function_name(
+        self, node: Node, children: Sequence[Any]
+    ) -> str:
         return node.text
 
     def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:

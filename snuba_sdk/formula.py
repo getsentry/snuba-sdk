@@ -7,7 +7,7 @@ from typing import Any, Optional, Sequence, Union
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
-from snuba_sdk.expressions import InvalidExpressionError, list_type
+from snuba_sdk.expressions import InvalidExpressionError, is_literal, list_type
 from snuba_sdk.timeseries import Timeseries
 
 
@@ -38,6 +38,7 @@ PREFIX_TO_INFIX: dict[str, str] = {
 class Formula:
     function_name: str
     parameters: Optional[Sequence[FormulaParameterGroup]] = None
+    aggregate_params: list[Any] | None = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
 
@@ -88,6 +89,15 @@ class Formula:
                 raise InvalidFormulaError(
                     f"parameter '{param}' of formula {self.function_name} is an invalid type"
                 )
+        # TODO: Restrict which specific aggregates are allowed
+        if self.aggregate_params is not None:
+            if not isinstance(self.aggregate_params, list):
+                raise InvalidFormulaError("aggregate_params must be a list")
+            for p in self.aggregate_params:
+                if not is_literal(p):
+                    raise InvalidFormulaError(
+                        "aggregate_params can only be literal types"
+                    )
         self.__validate_consistency()
 
     def _replace(self, field: str, value: Any) -> Formula:
