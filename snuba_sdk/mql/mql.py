@@ -383,7 +383,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_curried_arbitrary_function(
         self, node: Node, children: Sequence[Any]
-    ) -> Formula:
+    ) -> Union[Timeseries, Formula]:
         """
         Returns a Fomula with the arbitrary curried function name and parameters.
         topK(10)(sum(mri)) -> Formula(topK, (Timeseries(sum), 10))
