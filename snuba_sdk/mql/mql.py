@@ -53,8 +53,9 @@ variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
 function = (curried_aggregate / curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
-aggregate = aggregate_name (open_paren _ filter _ close_paren)
-aggregate_name = "avg" / "count" / "max" / "min" / "sum" / "last" / "uniq"
+aggregate = aggregate_name (open_paren _ inner_filter _ close_paren)
+inner_filter = metric (open_brace _ filter_expr _ close_brace)? (group_by)?
+aggregate_name = ~r"[a-zA-Z0-9_]+"
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
@@ -402,6 +403,26 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             aggregate_params=aggregate_params,
             parameters=[target],
         )
+
+    def visit_inner_filter(self, node: Node, children: Sequence[Any]) -> Timeseries:
+        """
+        Given a Formula or Timeseries target, set its children filters and groupbys.
+        """
+        metric, packed_filters, packed_groupbys, *_ = children
+        metric = metric[0]
+        assert isinstance(metric, Metric)
+        timeseries = Timeseries(metric=metric, aggregate=None)
+        if not packed_filters and not packed_groupbys:
+            return timeseries
+        if packed_filters:
+            _, _, filter_condition, *_ = packed_filters[0]
+            timeseries = timeseries.set_filters([filter_condition])
+        if packed_groupbys:
+            group_by = packed_groupbys[0]
+            if not isinstance(group_by, list):
+                group_by = [group_by]
+            timeseries = timeseries.set_groupby(group_by)
+        return timeseries
 
     def visit_param(self, node: Node, children: Sequence[Any]) -> str | int | float:
         """

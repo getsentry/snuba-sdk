@@ -552,14 +552,9 @@ base_tests = [
     pytest.param(
         "p90(`d:transactions/duration@millisecond`)",
         MetricsQuery(
-            query=Formula(
-                function_name="p90",
-                parameters=[
-                    Timeseries(
-                        aggregate=None,
-                        metric=Metric(mri="d:transactions/duration@millisecond"),
-                    )
-                ],
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="p90",
             )
         ),
         id="test percentile function",
@@ -927,10 +922,25 @@ def test_parse_mql_terms(mql_string: str, metrics_query: MetricsQuery) -> None:
 
 arbitrary_function_tests = [
     pytest.param(
-        'cool_function("test", 500)',
+        "simple_function(sum(transaction.duration))",
         MetricsQuery(
             query=Formula(
-                "cool_function",
+                "simple_function",
+                [
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                ],
+            )
+        ),
+        id="test simple arbitrary function",
+    ),
+    pytest.param(
+        'another_function("test", 500)',
+        MetricsQuery(
+            query=Formula(
+                "another_function",
                 [
                     "test",
                     500,
@@ -971,21 +981,6 @@ arbitrary_function_tests = [
             ),
         ),
         id="test arbitrary function with filters and groupby",
-    ),
-    pytest.param(
-        "cool_function(transaction.duration)",
-        MetricsQuery(
-            query=Formula(
-                "cool_function",
-                [
-                    Timeseries(
-                        metric=Metric(public_name="transaction.duration"),
-                        aggregate=None,
-                    ),
-                ],
-            )
-        ),
-        id="test arbitrary function with no aggregate",
     ),
     pytest.param(
         "apdex(quantiles(0.5)(transaction.duration), 500)",
@@ -1072,7 +1067,7 @@ arbitrary_function_tests = [
         id="test arbitrary function with inner terms",
     ),
     pytest.param(
-        "apdex(transaction.duration, 500) * failure_rate(transaction.duration)",
+        "apdex(sum(transaction.duration), 500) * failure_rate(sum(transaction.duration))",
         MetricsQuery(
             query=Formula(
                 function_name="multiply",
@@ -1082,7 +1077,7 @@ arbitrary_function_tests = [
                         parameters=[
                             Timeseries(
                                 metric=Metric(public_name="transaction.duration"),
-                                aggregate=None,
+                                aggregate="sum",
                             ),
                             500,
                         ],
@@ -1092,7 +1087,7 @@ arbitrary_function_tests = [
                         parameters=[
                             Timeseries(
                                 metric=Metric(public_name="transaction.duration"),
-                                aggregate=None,
+                                aggregate="sum",
                             )
                         ],
                     ),
