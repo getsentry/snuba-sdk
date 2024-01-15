@@ -42,37 +42,37 @@ class Formula:
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
 
-    def __validate_consistency(self) -> tuple[str, list[Column | AliasedExpression]]:
+    def __validate_consistency(self) -> None:
         """
         Ensure that the entity and groupby columns are consistent across all Timeseries
         and Formulas within this Formula."""
         if self.parameters is None:
             raise InvalidFormulaError("Formula must have parameters")
 
-        entities = set()
-        groupbys = []
-        groupbys.append(
-            tuple(g for g in self.groupby) if self.groupby is not None else tuple()
-        )
-        for param in self.parameters:
+        entities: set[str] = set()
+        groupbys = set()
+
+        stack: list[FormulaParameterGroup] = [self]
+        while stack:
+            param = stack.pop()
             if isinstance(param, Formula):
-                entity, found_gpby = param.__validate_consistency()
-                entities.add(entity)
-                if found_gpby:
-                    groupbys.append(tuple(found_gpby))
+                if param.groupby is not None:
+                    groupbys.add(tuple(param.groupby))
+
+                if param.parameters:
+                    stack.extend(param.parameters)
             elif isinstance(param, Timeseries):
                 if param.metric.entity is not None:
                     entities.add(param.metric.entity)
                 if param.groupby is not None:
-                    groupbys.append(tuple(param.groupby))
+                    groupbys.add(tuple(param.groupby))
 
         if len(entities) != 1:
             raise InvalidFormulaError("Formulas must operate on a single entity")
-        if len(set(groupbys)) != 1:
+        if len(set(groupbys)) > 1:
             raise InvalidFormulaError(
                 "Formula parameters must group by the same columns"
             )
-        return entities.pop(), list(groupbys[0])
 
     def validate(self) -> None:
         if not isinstance(self.function_name, str):

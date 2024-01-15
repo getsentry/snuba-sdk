@@ -89,6 +89,25 @@ tests = [
     ),
     pytest.param(
         formula(
+            ArithmeticOperator.DIVIDE.value,
+            [
+                Timeseries(
+                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    aggregate="sum",
+                    groupby=[Column("transaction")],
+                ),
+                Timeseries(
+                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    aggregate="avg",
+                    groupby=[Column("transaction")],
+                ),
+            ],
+        ),
+        None,
+        id="timeseries in formula have the same groupby",
+    ),
+    pytest.param(
+        formula(
             42,
             [
                 Timeseries(
