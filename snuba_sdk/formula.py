@@ -89,15 +89,6 @@ class Formula:
                 raise InvalidFormulaError(
                     f"parameter '{param}' of formula {self.function_name} is an invalid type"
                 )
-        # TODO: Restrict which specific aggregates are allowed
-        if self.aggregate_params is not None:
-            if not isinstance(self.aggregate_params, list):
-                raise InvalidFormulaError("aggregate_params must be a list")
-            for p in self.aggregate_params:
-                if not is_literal(p):
-                    raise InvalidFormulaError(
-                        "aggregate_params can only be literal types"
-                    )
         self.__validate_consistency()
 
     def _replace(self, field: str, value: Any) -> Formula:
