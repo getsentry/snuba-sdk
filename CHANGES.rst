@@ -2,7 +2,7 @@ Changelog and versioning
 ==========================
 
 
-2.0.20
+2.0.21
 ------
 
 - Support curried arbitrary functions in MQL
