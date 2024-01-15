@@ -17,6 +17,7 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
 
+AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
 NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
 MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
@@ -324,7 +325,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if isinstance(children[0], list):
             target = children[0][0]
         if isinstance(target, Metric):
-            timeseries = Timeseries(metric=target, aggregate=None)
+            timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
             return timeseries
         assert isinstance(target, (Timeseries, Formula))
         return target
@@ -348,7 +349,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         aggregate_name, zero_or_one = children
         _, _, target, zero_or_more_others, *_ = zero_or_one
         assert isinstance(target, Timeseries)
-        if target.aggregate is None:
+        if target.aggregate == AGGREGATE_PLACEHOLDER_NAME:
             return target.set_aggregate(aggregate_name)
         else:
             # The parameter inside this aggregate already has an aggregate set.
@@ -394,7 +395,10 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         aggregate_params = agg_param_list[0] if agg_param_list else []
         _, _, expr, _, *_ = zero_or_one
         _, target, _ = expr
-        if isinstance(target, Timeseries) and target.aggregate is None:
+        if (
+            isinstance(target, Timeseries)
+            and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
+        ):
             return target.set_aggregate(
                 curried_arbitrary_function_name, aggregate_params
             )
@@ -411,7 +415,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         metric, packed_filters, packed_groupbys, *_ = children
         metric = metric[0]
         assert isinstance(metric, Metric)
-        timeseries = Timeseries(metric=metric, aggregate=None)
+        timeseries = Timeseries(metric=metric, aggregate=AGGREGATE_PLACEHOLDER_NAME)
         if not packed_filters and not packed_groupbys:
             return timeseries
         if packed_filters:
