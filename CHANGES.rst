@@ -2,6 +2,13 @@ Changelog and versioning
 ==========================
 
 
+2.0.21
+------
+
+- Support curried arbitrary functions in MQL
+- Use tighter rules around aggregates, curried_aggregates, arbitrary_functions, and curried_arbitrary_functions in MQL
+
+
 2.0.20
 ------
 

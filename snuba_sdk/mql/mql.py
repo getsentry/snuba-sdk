@@ -29,7 +29,7 @@ expr_op = "+" / "-"
 
 term = coefficient (_ term_op _ coefficient)*
 term_op = "*" / "/"
-coefficient = number / filter
+coefficient = number / quoted_string / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
 filter = target (open_brace _ filter_expr _ close_brace)? (group_by)?
@@ -53,21 +53,25 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (aggregate / curried_aggregate / arbitrary_function) (group_by)?
-aggregate = aggregate_name (open_paren _ filter _ close_paren)
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
-arbitrary_function = arbitrary_function_name (open_paren ( _ filter _ ) (_ comma _ param_expression)* close_paren)
+function = (curried_aggregate / curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
+aggregate = aggregate_name (open_paren _ inner_filter _ close_paren)
+aggregate_name = ~r"[a-zA-Z0-9_]+"
+arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
+arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ inner_filter _ close_paren)
+curried_aggregate_name = ~r"[a-zA-Z0-9_]+"
+curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) _ close_paren)
+curried_arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
+
 aggregate_list = param* (param_expression)
 param = param_expression _ comma _
 param_expression = number / quoted_string / unquoted_string
-aggregate_name = ~r"[a-zA-Z0-9_]+"
-curried_aggregate_name = ~r"[a-zA-Z0-9_]+"
-arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
+inner_filter = metric (open_brace _ filter_expr _ close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
 unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
@@ -134,14 +138,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         except Exception as e:
             raise e
 
-    def visit_expression(
-        self, node: Node, children: Sequence[Any]
-    ) -> Union[Formula, Timeseries]:
+    def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
         """
         Top level node, simply returns the expression.
         """
         expr, zero_or_more_others = children
-        assert isinstance(expr, (Formula, Timeseries))
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
@@ -149,13 +150,13 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_term(
         self, node: Node, children: Sequence[Any]
-    ) -> Union[Formula, Timeseries, float, int]:
+    ) -> Union[Formula, Timeseries, float, int, str]:
         """
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator.
         """
         term, zero_or_more_others = children
-        assert isinstance(term, (Formula, Timeseries, float, int))
+        assert isinstance(term, (Formula, Timeseries, float, int, str))
 
         if zero_or_more_others:
             _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
@@ -324,7 +325,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if isinstance(children[0], list):
             target = children[0][0]
         if isinstance(target, Metric):
-            # it visit the aggregate name furthur down the tree, for now just set it to a placeholder.
             timeseries = Timeseries(metric=target, aggregate=AGGREGATE_PLACEHOLDER_NAME)
             return timeseries
         assert isinstance(target, (Timeseries, Formula))
@@ -339,7 +339,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         assert isinstance(children[2], (Timeseries, Formula))
         return children[2]
 
-    def visit_aggregate(self, node: Node, children: Sequence[Any]) -> Timeseries:
+    def visit_aggregate(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
         """
         Given a target (which is either a Formula or Timeseries object),
         set the aggregate on it.
@@ -347,7 +349,13 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         aggregate_name, zero_or_one = children
         _, _, target, zero_or_more_others, *_ = zero_or_one
         assert isinstance(target, Timeseries)
-        return target.set_aggregate(aggregate_name)
+        if target.aggregate == AGGREGATE_PLACEHOLDER_NAME:
+            return target.set_aggregate(aggregate_name)
+        else:
+            # The parameter inside this aggregate already has an aggregate set.
+            # Therefore, this needs to be treated as an arbitrary function.
+            # e.g. `sum(count(mri))` -> Formula(sum, (Timeseries(count),)
+            return Formula(function_name=aggregate_name, parameters=[target])
 
     def visit_curried_aggregate(
         self, node: Node, children: Sequence[Any]
@@ -364,13 +372,68 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return target.set_aggregate(aggregate_name, aggregate_params)
 
     def visit_arbitrary_function(self, node: Node, children: Sequence[Any]) -> Formula:
-        """ """
+        """
+        Returns a Fomula with the arbitrary function name and parameters.
+        apdex(count(mri), 300) -> Formula(apdex, (Timeseries(count), 300))
+        """
         arbitrary_function_name, zero_or_one = children
         _, expr, params, *_ = zero_or_one
         _, target, _ = expr
         arbitrary_function_params = [param[-1] for param in params]
         parameters = [target, *arbitrary_function_params]
+        if (
+            isinstance(target, Timeseries)
+            and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
+        ):
+            raise InvalidQueryError(
+                "Cannot use arbitrary functions on a Timeseries without an aggregate"
+            )
         return Formula(function_name=arbitrary_function_name, parameters=parameters)
+
+    def visit_curried_arbitrary_function(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Timeseries, Formula]:
+        """
+        Returns a Fomula with the arbitrary curried function name and parameters.
+        topK(10)(sum(mri)) -> Formula(topK, (Timeseries(sum), 10))
+        """
+        curried_arbitrary_function_name, agg_params, zero_or_one = children
+        _, _, agg_param_list, *_ = agg_params
+        aggregate_params = agg_param_list[0] if agg_param_list else []
+        _, _, expr, _, *_ = zero_or_one
+        _, target, _ = expr
+        if (
+            isinstance(target, Timeseries)
+            and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
+        ):
+            return target.set_aggregate(
+                curried_arbitrary_function_name, aggregate_params
+            )
+        return Formula(
+            function_name=curried_arbitrary_function_name,
+            aggregate_params=aggregate_params,
+            parameters=[target],
+        )
+
+    def visit_inner_filter(self, node: Node, children: Sequence[Any]) -> Timeseries:
+        """
+        Given a metric, set its children filters and groupbys, then return a Timeseries.
+        """
+        metric, packed_filters, packed_groupbys, *_ = children
+        metric = metric[0]
+        assert isinstance(metric, Metric)
+        timeseries = Timeseries(metric=metric, aggregate=AGGREGATE_PLACEHOLDER_NAME)
+        if not packed_filters and not packed_groupbys:
+            return timeseries
+        if packed_filters:
+            _, _, filter_condition, *_ = packed_filters[0]
+            timeseries = timeseries.set_filters([filter_condition])
+        if packed_groupbys:
+            group_by = packed_groupbys[0]
+            if not isinstance(group_by, list):
+                group_by = [group_by]
+            timeseries = timeseries.set_groupby(group_by)
+        return timeseries
 
     def visit_param(self, node: Node, children: Sequence[Any]) -> str | int | float:
         """
@@ -406,6 +469,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return node.text
 
     def visit_arbitrary_function_name(self, node: Node, children: Sequence[Any]) -> str:
+        return node.text
+
+    def visit_curried_arbitrary_function_name(
+        self, node: Node, children: Sequence[Any]
+    ) -> str:
         return node.text
 
     def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:

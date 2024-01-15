@@ -38,6 +38,7 @@ PREFIX_TO_INFIX: dict[str, str] = {
 class Formula:
     function_name: str
     parameters: Optional[Sequence[FormulaParameterGroup]] = None
+    aggregate_params: list[Any] | None = None
     filters: Optional[ConditionGroup] = None
     groupby: Optional[list[Column | AliasedExpression]] = None
 

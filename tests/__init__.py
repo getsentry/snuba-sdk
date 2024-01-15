@@ -95,7 +95,12 @@ def formula(
     groupby: Any = None,
 ) -> Callable[[], Any]:
     def to_formula() -> Formula:
-        return Formula(operator, parameters, filters, groupby)
+        return Formula(
+            function_name=operator,
+            parameters=parameters,
+            filters=filters,
+            groupby=groupby,
+        )
 
     return to_formula
 

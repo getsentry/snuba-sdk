@@ -219,6 +219,11 @@ class FormulaMQLPrinter:
 
         return {"mql_string": str(parameter)}
 
+    def _visit_aggregate_params(self, aggregate_params: list[Any] | None) -> str:
+        if aggregate_params:
+            return "(" + ", ".join(str(param) for param in aggregate_params) + ")"
+        return ""
+
     def _visit_filters(self, filters: ConditionGroup | None) -> str:
         return _visit_mql_filters(filters, self.expression_visitor)
 
@@ -238,7 +243,7 @@ class FormulaMQLPrinter:
             separator = f" {PREFIX_TO_INFIX[formula.function_name]} "
             mql_string = f"({separator.join(p['mql_string'] for p in parameters)})"
         else:
-            mql_string = f"{formula.function_name}({', '.join(p['mql_string'] for p in parameters)})"
+            mql_string = f"{formula.function_name}{self._visit_aggregate_params(formula.aggregate_params)}({', '.join(p['mql_string'] for p in parameters)})"
 
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"
