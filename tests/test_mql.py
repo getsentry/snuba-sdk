@@ -1236,6 +1236,24 @@ curried_arbitrary_function_tests = [
         id="test complex curried arbitrary function with inner terms",
     ),
     pytest.param(
+        "topK(10)(topK(5)(transaction.duration){bar:baz})",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="topK",
+                        aggregate_params=[5],
+                        filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                    ),
+                ],
+            ),
+        ),
+        id="test nested curried arbitrary function",
+    ),
+    pytest.param(
         "topK(10)(apdex(sum(transaction.duration), 500){bar:baz})",
         MetricsQuery(
             query=Formula(

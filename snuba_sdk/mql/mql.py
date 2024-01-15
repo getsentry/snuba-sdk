@@ -55,11 +55,10 @@ nested_expression = open_paren _ expression _ close_paren
 
 function = (curried_aggregate / curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
 aggregate = aggregate_name (open_paren _ inner_filter _ close_paren)
-inner_filter = metric (open_brace _ filter_expr _ close_brace)? (group_by)?
 aggregate_name = ~r"[a-zA-Z0-9_]+"
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ filter _ close_paren)
+curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ inner_filter _ close_paren)
 curried_aggregate_name = "quantiles" / "histogram"
 curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) _ close_paren)
 curried_arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
@@ -72,6 +71,7 @@ group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
+inner_filter = metric (open_brace _ filter_expr _ close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
 unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
@@ -381,6 +381,13 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         _, target, _ = expr
         arbitrary_function_params = [param[-1] for param in params]
         parameters = [target, *arbitrary_function_params]
+        if (
+            isinstance(target, Timeseries)
+            and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
+        ):
+            raise InvalidQueryError(
+                "Cannot use arbitrary functions on a Timeseries without an aggregate"
+            )
         return Formula(function_name=arbitrary_function_name, parameters=parameters)
 
     def visit_curried_arbitrary_function(
@@ -410,7 +417,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_inner_filter(self, node: Node, children: Sequence[Any]) -> Timeseries:
         """
-        Given a Formula or Timeseries target, set its children filters and groupbys.
+        Given a metric, set its children filters and groupbys, then return a Timeseries.
         """
         metric, packed_filters, packed_groupbys, *_ = children
         metric = metric[0]
