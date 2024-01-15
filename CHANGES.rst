@@ -5,6 +5,13 @@ Changelog and versioning
 2.0.20
 ------
 
+- Support curried arbitrary functions in MQL
+- Use tighter rules around aggregates, curried_aggregates, arbitrary_functions, and curried_arbitrary_functions in MQL
+
+
+2.0.20
+------
+
 - Allow arbitrary name for aggregate or curried aggreate in MQL
 - Fix bug in how the groupby in Formulas was being compared to their parameters
 
