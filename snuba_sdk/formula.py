@@ -7,7 +7,7 @@ from typing import Any, Optional, Sequence, Union
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
-from snuba_sdk.expressions import InvalidExpressionError, is_literal, list_type
+from snuba_sdk.expressions import InvalidExpressionError, list_type
 from snuba_sdk.timeseries import Timeseries
 
 
