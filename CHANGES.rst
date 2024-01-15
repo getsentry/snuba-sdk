@@ -1,16 +1,12 @@
 Changelog and versioning
 ==========================
 
-2.0.21
-------
-
-- Fix bug in how the groupby in Formulas was being compared to their parameters
-
 
 2.0.20
 ------
 
 - Allow arbitrary name for aggregate or curried aggreate in MQL
+- Fix bug in how the groupby in Formulas was being compared to their parameters
 
 
 2.0.19
