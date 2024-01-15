@@ -19,7 +19,7 @@ from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 NOW = datetime(2023, 1, 2, 3, 4, 5, 0, timezone.utc)
 
 
-metrics_query_to_mql_tests = [
+metrics_query_timeseries_to_mql_tests = [
     pytest.param(
         MetricsQuery(
             query=Timeseries(
@@ -107,6 +107,50 @@ metrics_query_to_mql_tests = [
             },
         },
         id="basic curried query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                    entity="generic_metrics_distributions",
+                ),
+                aggregate="topK",
+                aggregate_params=[10],
+                filters=None,
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "topK(10)(d:transactions/duration@millisecond)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {},
+            },
+        },
+        id="basic arbitrary curried query",
     ),
     pytest.param(
         MetricsQuery(
@@ -437,54 +481,6 @@ metrics_query_to_mql_tests = [
     ),
     pytest.param(
         MetricsQuery(
-            query=Formula(
-                ArithmeticOperator.DIVIDE.value,
-                [
-                    Timeseries(
-                        metric=Metric(
-                            public_name="foo", entity="generic_metrics_distributions"
-                        ),
-                        aggregate="sum",
-                    ),
-                    1000,
-                ],
-            ),
-            start=NOW,
-            end=NOW + timedelta(days=14),
-            rollup=Rollup(interval=3600, totals=None, granularity=3600),
-            scope=MetricsScope(
-                org_ids=[1], project_ids=[11], use_case_id="transactions"
-            ),
-            limit=Limit(100),
-            offset=Offset(5),
-            indexer_mappings={},
-        ),
-        {
-            "mql": "(sum(foo) / 1000)",
-            "mql_context": {
-                "entity": "generic_metrics_distributions",
-                "start": "2023-01-02T03:04:05+00:00",
-                "end": "2023-01-16T03:04:05+00:00",
-                "rollup": {
-                    "orderby": None,
-                    "granularity": 3600,
-                    "interval": 3600,
-                    "with_totals": None,
-                },
-                "scope": {
-                    "org_ids": [1],
-                    "project_ids": [11],
-                    "use_case_id": "transactions",
-                },
-                "limit": 100,
-                "offset": 5,
-                "indexer_mappings": {},
-            },
-        },
-        id="test_terms",
-    ),
-    pytest.param(
-        MetricsQuery(
             query=Timeseries(
                 metric=Metric(
                     mri="d:transactions/duration@millisecond",
@@ -538,8 +534,10 @@ metrics_query_to_mql_tests = [
 ]
 
 
-@pytest.mark.parametrize("query, translated", metrics_query_to_mql_tests)
-def test_metrics_query_to_mql(query: MetricsQuery, translated: dict[str, Any]) -> None:
+@pytest.mark.parametrize("query, translated", metrics_query_timeseries_to_mql_tests)
+def test_metrics_query_to_mql_timeseries(
+    query: MetricsQuery, translated: dict[str, Any]
+) -> None:
     query.validate()
     serialized = query.serialize_to_mql()
     assert serialized["mql"] == translated["mql"]
@@ -572,3 +570,397 @@ def test_invalid_metrics_query_to_mql_tests(
 ) -> None:
     with pytest.raises(type(exception), match=re.escape(str(exception))):
         query.validate()
+
+
+metrics_query_formula_to_mql_tests = [
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE.value,
+                [
+                    Timeseries(
+                        metric=Metric(
+                            public_name="foo", entity="generic_metrics_distributions"
+                        ),
+                        aggregate="sum",
+                    ),
+                    1000,
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "(sum(foo) / 1000)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test_terms",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Timeseries(
+                        metric=Metric(
+                            public_name="foo", entity="generic_metrics_distributions"
+                        ),
+                        aggregate="sum",
+                    ),
+                    1000,
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "apdex(sum(foo), 1000)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test arbitrary function",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Timeseries(
+                        metric=Metric(
+                            public_name="foo", entity="generic_metrics_distributions"
+                        ),
+                        aggregate="quantiles",
+                        aggregate_params=[0.5],
+                    ),
+                    1000,
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "apdex(quantiles(0.5)(foo), 1000)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test arbitrary function with curried aggregate",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                "apdex",
+                [
+                    Formula(
+                        function_name="failure_rate",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="foo",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="sum",
+                            ),
+                        ],
+                    ),
+                    1000,
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "apdex(failure_rate(sum(foo)), 1000)",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test nested arbitrary function",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                function_name="apdex",
+                parameters=[
+                    Formula(
+                        function_name=ArithmeticOperator.DIVIDE.value,
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="foo",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="bar",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="sum",
+                            ),
+                        ],
+                    ),
+                    500,
+                ],
+                filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
+                groupby=[Column("transaction")],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'apdex((sum(foo) / sum(bar)), 500){tag:"tag_value"} by (transaction)',
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test arbitrary function with inner term",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Formula(
+                        function_name="divide",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="transaction.duration",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="sum",
+                            ),
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="transaction.duration",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="count",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": "topK(10)((sum(transaction.duration) / count(transaction.duration)))",
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test curried arbitrary function with inner aggregate and terms",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Formula(
+                        function_name="apdex",
+                        parameters=[
+                            Timeseries(
+                                metric=Metric(
+                                    public_name="transaction.duration",
+                                    entity="generic_metrics_distributions",
+                                ),
+                                aggregate="sum",
+                            ),
+                            500,
+                        ],
+                        filters=[Condition(Column("bar"), Op.EQ, "baz")],
+                    ),
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'topK(10)(apdex(sum(transaction.duration), 500){bar:"baz"})',
+            "mql_context": {
+                "entity": "generic_metrics_distributions",
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test curried arbitrary function with inner arbitrary function",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, translated", metrics_query_formula_to_mql_tests)
+def test_metrics_query_to_mql_formula(
+    query: MetricsQuery, translated: dict[str, Any]
+) -> None:
+    query.validate()
+    serialized = query.serialize_to_mql()
+    assert serialized["mql"] == translated["mql"]
+    assert serialized["mql_context"] == translated["mql_context"]
+    assert parse_mql(str(serialized["mql"])) is not None

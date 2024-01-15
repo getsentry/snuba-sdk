@@ -1018,7 +1018,7 @@ arbitrary_function_tests = [
                 ],
             )
         ),
-        id="test arbitrary function with in arbitrary function",
+        id="test arbitrary function within arbitrary function",
     ),
     pytest.param(
         'topK(sum(transaction.duration), 500, 4.2){tag:"tag_value"} by transaction',
@@ -1274,7 +1274,7 @@ curried_arbitrary_function_tests = [
                 ],
             ),
         ),
-        id="test curried arbitrary function with arbitrary function",
+        id="test curried arbitrary function with inner arbitrary function",
     ),
 ]
 

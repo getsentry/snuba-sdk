@@ -53,13 +53,11 @@ target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
 nested_expression = open_paren _ expression _ close_paren
 
-function = (curried_aggregate / curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
+function = (curried_arbitrary_function / aggregate / arbitrary_function) (group_by)?
 aggregate = aggregate_name (open_paren _ inner_filter _ close_paren)
 aggregate_name = ~r"[a-zA-Z0-9_]+"
 arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ comma _ expression)* close_paren)
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
-curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ inner_filter _ close_paren)
-curried_aggregate_name = "quantiles" / "histogram"
 curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) _ close_paren)
 curried_arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
@@ -357,20 +355,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             # e.g. `sum(count(mri))` -> Formula(sum, (Timeseries(count),)
             return Formula(function_name=aggregate_name, parameters=[target])
 
-    def visit_curried_aggregate(
-        self, node: Node, children: Sequence[Any]
-    ) -> Timeseries:
-        """
-        Given a target (which is either a Formula or Timeseries object),
-        set the aggregate and aggregate params on it.
-        """
-        aggregate_name, agg_params, zero_or_one = children
-        _, _, target, _, *_ = zero_or_one
-        _, _, agg_param_list, *_ = agg_params
-        aggregate_params = agg_param_list[0] if agg_param_list else []
-        assert isinstance(target, Timeseries)
-        return target.set_aggregate(aggregate_name, aggregate_params)
-
     def visit_arbitrary_function(self, node: Node, children: Sequence[Any]) -> Formula:
         """
         Returns a Fomula with the arbitrary function name and parameters.
@@ -463,9 +447,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return agg_params
 
     def visit_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
-        return node.text
-
-    def visit_curried_aggregate_name(self, node: Node, children: Sequence[Any]) -> str:
         return node.text
 
     def visit_arbitrary_function_name(self, node: Node, children: Sequence[Any]) -> str:

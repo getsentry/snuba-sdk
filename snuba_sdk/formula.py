@@ -58,7 +58,8 @@ class Formula:
             if isinstance(param, Formula):
                 entity, found_gpby = param.__validate_consistency()
                 entities.add(entity)
-                groupbys.append(tuple(found_gpby))
+                if found_gpby:
+                    groupbys.append(tuple(found_gpby))
             elif isinstance(param, Timeseries):
                 if param.metric.entity is not None:
                     entities.add(param.metric.entity)
@@ -71,7 +72,6 @@ class Formula:
             raise InvalidFormulaError(
                 "Formula parameters must group by the same columns"
             )
-
         return entities.pop(), list(groupbys[0])
 
     def validate(self) -> None:
