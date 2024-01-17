@@ -2,6 +2,12 @@ Changelog and versioning
 ==========================
 
 
+2.0.22
+------
+
+- Support multiple parameters in curried arbitirary functions
+
+
 2.0.21
 ------
 
