@@ -1109,53 +1109,6 @@ def test_parse_mql_arbitrary_functions(
 
 curried_arbitrary_function_tests = [
     pytest.param(
-        "topK(10)(transaction.duration)",
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(public_name="transaction.duration"),
-                aggregate="topK",
-                aggregate_params=[10],
-            )
-        ),
-        id="test simple curried arbitrary function",
-    ),
-    pytest.param(
-        "topK(10)(transaction.duration{bar:baz})",
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(public_name="transaction.duration"),
-                aggregate="topK",
-                aggregate_params=[10],
-                filters=[Condition(Column("bar"), Op.EQ, "baz")],
-            )
-        ),
-        id="test curried arbitrary function with filter",
-    ),
-    pytest.param(
-        "topK(10)(transaction.duration{bar:baz} by transaction)",
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(public_name="transaction.duration"),
-                aggregate="topK",
-                aggregate_params=[10],
-                filters=[Condition(Column("bar"), Op.EQ, "baz")],
-                groupby=[Column("transaction")],
-            )
-        ),
-        id="test curried arbitrary function with filter and groupby",
-    ),
-    pytest.param(
-        "topK(10)(transaction.duration)",
-        MetricsQuery(
-            query=Timeseries(
-                metric=Metric(public_name="transaction.duration"),
-                aggregate="topK",
-                aggregate_params=[10],
-            )
-        ),
-        id="test curried arbitrary function with args",
-    ),
-    pytest.param(
         'topK(10)("test.duration")',
         MetricsQuery(
             query=Formula(
@@ -1181,6 +1134,44 @@ curried_arbitrary_function_tests = [
             )
         ),
         id="test curried arbitrary function with inner aggregate",
+    ),
+    pytest.param(
+        'topK(10)(sum(transaction.duration), 500, "test")',
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                    500,
+                    "test",
+                ],
+            )
+        ),
+        id="test curried arbitrary function with inner aggregate and params",
+    ),
+    pytest.param(
+        "topK(10)(sum(transaction.duration), count(transaction.duration))",
+        MetricsQuery(
+            query=Formula(
+                function_name="topK",
+                aggregate_params=[10],
+                parameters=[
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="sum",
+                    ),
+                    Timeseries(
+                        metric=Metric(public_name="transaction.duration"),
+                        aggregate="count",
+                    ),
+                ],
+            )
+        ),
+        id="test curried arbitrary function with multiple inner aggregate params",
     ),
     pytest.param(
         "topK(10)(sum(transaction.duration) / count(transaction.duration))",
