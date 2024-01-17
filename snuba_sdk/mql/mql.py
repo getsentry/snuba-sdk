@@ -60,7 +60,7 @@ arbitrary_function = arbitrary_function_name (open_paren ( _ expression _ ) (_ c
 arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 curried_aggregate = curried_aggregate_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ inner_filter _ close_paren)
 curried_aggregate_name = ~r"[a-zA-Z0-9_]+"
-curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) _ close_paren)
+curried_arbitrary_function = curried_arbitrary_function_name (open_paren _ aggregate_list? _ close_paren) (open_paren _ ( _ expression _ ) (_ comma _ expression)* close_paren)
 curried_arbitrary_function_name = ~r"[a-zA-Z0-9_]+"
 
 aggregate_list = param* (param_expression)
@@ -400,8 +400,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         curried_arbitrary_function_name, agg_params, zero_or_one = children
         _, _, agg_param_list, *_ = agg_params
         aggregate_params = agg_param_list[0] if agg_param_list else []
-        _, _, expr, _, *_ = zero_or_one
+        _, _, expr, params, *_ = zero_or_one
         _, target, _ = expr
+        curried_arbitrary_function_params = [param[-1] for param in params]
         if (
             isinstance(target, Timeseries)
             and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
@@ -412,7 +413,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return Formula(
             function_name=curried_arbitrary_function_name,
             aggregate_params=aggregate_params,
-            parameters=[target],
+            parameters=[target, *curried_arbitrary_function_params],
         )
 
     def visit_inner_filter(self, node: Node, children: Sequence[Any]) -> Timeseries:
