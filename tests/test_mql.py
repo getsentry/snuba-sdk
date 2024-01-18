@@ -88,6 +88,16 @@ base_tests = [
         id="test filter",
     ),
     pytest.param(
+        "sum(foo){}",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(public_name="foo"),
+                aggregate="sum",
+            )
+        ),
+        id="test empty filter",
+    ),
+    pytest.param(
         "sum(foo){bar:baz}",
         MetricsQuery(
             query=Timeseries(
@@ -602,6 +612,17 @@ base_tests = [
             )
         ),
         id="test curried functions with random params",
+    ),
+    pytest.param(
+        "quantiles(0.5)(`d:transactions/duration@millisecond`{})",
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(mri="d:transactions/duration@millisecond"),
+                aggregate="quantiles",
+                aggregate_params=[0.5],
+            )
+        ),
+        id="test curried functions with empty filter",
     ),
     pytest.param(
         'quantiles(0.5)(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
