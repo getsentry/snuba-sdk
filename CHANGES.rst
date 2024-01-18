@@ -2,6 +2,12 @@ Changelog and versioning
 ==========================
 
 
+2.0.23
+------
+
+- Support empty filters in MQL
+
+
 2.0.22
 ------
 
