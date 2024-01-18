@@ -32,7 +32,7 @@ term_op = "*" / "/"
 coefficient = number / quoted_string / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target (open_brace _ filter_expr _ close_brace)? (group_by)?
+filter = target open_brace? (_ filter_expr _ )? close_brace? (group_by)?
 
 filter_expr = filter_term (_ or _ filter_term)*
 filter_term = filter_factor (_ joint_operator? _ filter_factor)*
@@ -71,7 +71,7 @@ group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
-inner_filter = metric (open_brace _ filter_expr _ close_brace)? (group_by)?
+inner_filter = metric open_brace? (_ filter_expr _)? close_brace? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
 unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
@@ -180,12 +180,12 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Given a Formula or Timeseries target, set its children filters and groupbys.
         """
-        target, packed_filters, packed_groupbys, *_ = children
+        target, _, packed_filters, _, packed_groupbys, *_ = children
         assert isinstance(target, Formula) or isinstance(target, Timeseries)
         if not packed_filters and not packed_groupbys:
             return target
         if packed_filters:
-            _, _, filter_condition, *_ = packed_filters[0]
+            _, filter_condition, *_ = packed_filters[0]
             current_filters = target.filters if target.filters else []
             filters = [filter_condition]
             filters.extend(current_filters)
@@ -420,14 +420,14 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Given a metric, set its children filters and groupbys, then return a Timeseries.
         """
-        metric, packed_filters, packed_groupbys, *_ = children
+        metric, _, packed_filters, _, packed_groupbys, *_ = children
         metric = metric[0]
         assert isinstance(metric, Metric)
         timeseries = Timeseries(metric=metric, aggregate=AGGREGATE_PLACEHOLDER_NAME)
         if not packed_filters and not packed_groupbys:
             return timeseries
         if packed_filters:
-            _, _, filter_condition, *_ = packed_filters[0]
+            _, filter_condition, *_ = packed_filters[0]
             timeseries = timeseries.set_filters([filter_condition])
         if packed_groupbys:
             group_by = packed_groupbys[0]
