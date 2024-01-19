@@ -21,7 +21,7 @@ Status
 Examples
 =========
 
-Snuba SDK is a tool that allows requests to Snuba to be built programatically. A Request consists of a Query, the dataset the Query is targeting, the AppID of the Request, and any flags for the Request. A Query object is a code representation of a SnQL query, and has a number of attributes corresponding to different parts of the query.
+Snuba SDK is a tool that allows requests to Snuba to be built programatically. A Request consists of a Query, the dataset the Query is targeting, the AppID of the Request, and any flags for the Request. A Query object is a code representation of a SnQL or MQL query, and has a number of attributes corresponding to different parts of the query.
 
 Requests and Queries can be created directly:
 
@@ -100,6 +100,41 @@ This outputs:
 If an expression in the query is invalid (e.g. ``Column(1)``) then an ``InvalidExpressionError`` exception will be thrown.
 If there is a problem with a query, it will throw an ``InvalidQueryError`` exception when ``.validate()`` or ``.translate()`` is called.
 If there is a problem with the Request or the Flags, an ``InvalidRequestError`` or ``InvalidFlagError`` will be thrown respectively.
+
+============
+MQL Examples
+============
+
+MQL queries can be built in a similar way to SnQL queries. However they use a ``MetricsQuery`` object instead of a ``Query`` object. The ``query`` argument of a ``MetricsQuery`` is either a ``Timeseries`` or ``Formula``, which is a mathemtical formula of ``Timeseries``.
+
+The other arguments to the ``MetricsQuery`` are meta data about how to run the query, e.g. start/end timestamps, the granularity, limits etc.
+
+.. code-block:: python
+
+    MetricsQuery(
+        query=Formula(
+            ArithmeticOperator.DIVIDE.value,
+            [
+                Timeseries(
+                    metric=Metric(
+                        public_name="transaction.duration",
+                        entity="generic_metrics_distributions",
+                    ),
+                    aggregate="sum",
+                ),
+                1000,
+            ],
+        ),
+        start=NOW,
+        end=NOW + timedelta(days=14),
+        rollup=Rollup(interval=3600, totals=None, granularity=3600),
+        scope=MetricsScope(
+            org_ids=[1], project_ids=[11], use_case_id="transactions"
+        ),
+        limit=Limit(100),
+        offset=Offset(5),
+    )
+
 
 ===========================
 Contributing to the SDK
