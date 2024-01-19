@@ -68,6 +68,40 @@ query = (
 )
 ```
 
+
+# MQL Examples
+
+MQL queries can be built in a similar way to SnQL queries. However they use a `MetricsQuery` object instead of a `Query` object. The `query` argument of a `MetricsQuery` is either a `Timeseries` or `Formula`, which is a mathemtical formula of `Timeseries`.
+
+The other arguments to the `MetricsQuery` are meta data about how to run the query, e.g. start/end timestamps, the granularity, limits etc.
+
+``` python
+
+    MetricsQuery(
+        query=Formula(
+            ArithmeticOperator.DIVIDE.value,
+            [
+                Timeseries(
+                    metric=Metric(
+                        public_name="transaction.duration",
+                        entity="generic_metrics_distributions",
+                    ),
+                    aggregate="sum",
+                ),
+                1000,
+            ],
+        ),
+        start=NOW,
+        end=NOW + timedelta(days=14),
+        rollup=Rollup(interval=3600, totals=None, granularity=3600),
+        scope=MetricsScope(
+            org_ids=[1], project_ids=[11], use_case_id="transactions"
+        ),
+        limit=Limit(100),
+        offset=Offset(5),
+    )
+```
+
 Once the request is built, it can be translated into a Snuba request
 that can be sent to Snuba.
 
