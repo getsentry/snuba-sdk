@@ -6,7 +6,7 @@ from typing import Any, Mapping, Optional
 import pytest
 
 from snuba_sdk.expressions import InvalidExpressionError, Totals
-from snuba_sdk.metrics_visitors import RollupSnQLPrinter, ScopeSnQLPrinter
+from snuba_sdk.metrics_visitors import RollupMQLPrinter, ScopeMQLPrinter
 from snuba_sdk.orderby import Direction
 from snuba_sdk.timeseries import MetricsScope, Rollup
 
@@ -16,12 +16,7 @@ rollup_tests = [
         None,
         None,
         60,
-        {
-            "orderby": "time ASC",
-            "filter": "granularity = 60",
-            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
-            "with_totals": "",
-        },
+        {"granularity": 60, "interval": 60, "orderby": None, "with_totals": None},
         None,
         id="1",
     ),
@@ -30,12 +25,7 @@ rollup_tests = [
         None,
         None,
         60,
-        {
-            "orderby": "time ASC",
-            "filter": "granularity = 60",
-            "interval": "toStartOfInterval(timestamp, toIntervalSecond(3600), 'Universal') AS `time`",
-            "with_totals": "",
-        },
+        {"granularity": 60, "interval": 3600, "orderby": None, "with_totals": None},
         None,
         id="2",
     ),
@@ -53,12 +43,7 @@ rollup_tests = [
         True,
         Direction.ASC,
         60,
-        {
-            "orderby": "aggregate_value ASC",
-            "filter": "granularity = 60",
-            "interval": "",
-            "with_totals": "",
-        },
+        {"granularity": 60, "interval": None, "orderby": "ASC", "with_totals": "True"},
         None,
         id="4",
     ),
@@ -85,12 +70,7 @@ rollup_tests = [
         True,
         None,
         60,
-        {
-            "orderby": "time ASC",
-            "filter": "granularity = 60",
-            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
-            "with_totals": "TOTALS True",
-        },
+        {"granularity": 60, "interval": 60, "orderby": None, "with_totals": "True"},
         None,
         id="7",
     ),
@@ -117,12 +97,7 @@ rollup_tests = [
         None,
         None,
         None,
-        {
-            "orderby": "time ASC",
-            "filter": "",
-            "interval": "toStartOfInterval(timestamp, toIntervalSecond(60), 'Universal') AS `time`",
-            "with_totals": "",
-        },
+        {"granularity": None, "interval": 60, "orderby": None, "with_totals": None},
         None,
         id="10",
     ),
@@ -156,7 +131,7 @@ rollup_tests = [
 ]
 
 
-TRANSLATOR = RollupSnQLPrinter()
+TRANSLATOR = RollupMQLPrinter()
 
 
 @pytest.mark.parametrize(
@@ -176,7 +151,7 @@ def test_rollup(
     else:
         rollup = Rollup(interval, totals, orderby, granularity)
         assert rollup.interval == interval
-        assert TRANSLATOR.visit(rollup) == translated
+        assert TRANSLATOR.visit(rollup) == translated, TRANSLATOR.visit(rollup)
 
 
 metric_scope_tests = [
@@ -184,14 +159,14 @@ metric_scope_tests = [
         [1],
         [11],
         "transactions",
-        "(org_id IN array(1) AND project_id IN array(11) AND use_case_id = 'transactions')",
+        {"org_ids": [1], "project_ids": [11], "use_case_id": "transactions"},
         None,
     ),
     pytest.param(
         [1, 2],
         [11, 12],
         "transactions",
-        "(org_id IN array(1, 2) AND project_id IN array(11, 12) AND use_case_id = 'transactions')",
+        {"org_ids": [1, 2], "project_ids": [11, 12], "use_case_id": "transactions"},
         None,
     ),
     pytest.param([1, 2], [11, 12], None, None, None),
@@ -246,7 +221,7 @@ metric_scope_tests = [
     ),
 ]
 
-SCOPE_TRANSLATOR = ScopeSnQLPrinter()
+SCOPE_TRANSLATOR = ScopeMQLPrinter()
 
 
 @pytest.mark.parametrize(
@@ -256,7 +231,7 @@ def test_metric_scope(
     org_ids: Any,
     project_ids: Any,
     use_case_id: Any,
-    translated: str | None,
+    translated: dict[str, Any] | None,
     exception: Exception | None,
 ) -> None:
     if exception is not None:
@@ -267,7 +242,9 @@ def test_metric_scope(
         scope = MetricsScope(org_ids, project_ids, use_case_id)
         assert scope.project_ids == project_ids
         if translated is not None:
-            assert SCOPE_TRANSLATOR.visit(scope) == translated
+            assert SCOPE_TRANSLATOR.visit(scope) == translated, SCOPE_TRANSLATOR.visit(
+                scope
+            )
 
         if use_case_id:  # It's not possible to "unset" a use_case_id
             new_scope = MetricsScope(org_ids, project_ids, None).set_use_case_id(

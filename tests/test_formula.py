@@ -8,7 +8,7 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op
 from snuba_sdk.formula import ArithmeticOperator, InvalidFormulaError
-from snuba_sdk.metrics_visitors import FormulaSnQLVisitor
+from snuba_sdk.metrics_visitors import FormulaMQLPrinter
 from snuba_sdk.timeseries import Metric, Timeseries
 from tests import formula
 
@@ -236,7 +236,7 @@ def test_formulas(
             formula.validate()
 
 
-formula_snql_tests = [
+formula_mql_tests = [
     pytest.param(
         formula(
             ArithmeticOperator.MULTIPLY.value,
@@ -258,8 +258,7 @@ formula_snql_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "groupby": "",
-            "aggregate": "multiply(sumIf(value, and(equals(metric_id, 1123), equals(tags[referrer], 'foo'))), 100) AS aggregate_value",
+            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} * 100)',
         },
         None,
         id="basic formula",
@@ -294,8 +293,7 @@ formula_snql_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "groupby": "",
-            "aggregate": "plus(sumIf(value, and(equals(metric_id, 1123), equals(tags[referrer], 'foo'))), sumIf(value, and(equals(metric_id, 123), equals(tags[referrer], 'bar')))) AS aggregate_value",
+            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"})',
         },
         None,
         id="basic timeseries formula",
@@ -330,8 +328,7 @@ formula_snql_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "groupby": "",
-            "aggregate": "plus(sumIf(value, and(equals(metric_id, 1123), equals(tags[referrer], 'foo'), equals(tags[status_code], 200))), sumIf(value, and(equals(metric_id, 123), equals(tags[referrer], 'bar'), equals(tags[status_code], 200)))) AS aggregate_value",
+            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"}){tags[status_code]:200}',
         },
         None,
         id="formula with filters",
@@ -368,8 +365,7 @@ formula_snql_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "groupby": "tags[release], tags[status_code]",
-            "aggregate": "plus(sumIf(value, and(equals(metric_id, 1123), equals(tags[referrer], 'foo'), equals(tags[status_code], 200))), sumIf(value, and(equals(metric_id, 123), equals(tags[referrer], 'bar'), equals(tags[status_code], 200)))) AS aggregate_value",
+            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} by (tags[status_code]) + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"} by (tags[status_code])){tags[status_code]:200} by (tags[release])',
         },
         None,
         id="group bys",
@@ -377,10 +373,10 @@ formula_snql_tests = [
 ]
 
 
-TRANSLATOR = FormulaSnQLVisitor()
+TRANSLATOR = FormulaMQLPrinter()
 
 
-@pytest.mark.parametrize("formula_func, translated, exception", formula_snql_tests)
+@pytest.mark.parametrize("formula_func, translated, exception", formula_mql_tests)
 def test_formula_translate(
     formula_func: Callable[[], Any],
     translated: dict[str, str],
@@ -391,4 +387,4 @@ def test_formula_translate(
             formula_func()
     else:
         formula = formula_func()
-        assert TRANSLATOR.visit(formula) == translated
+        assert TRANSLATOR.visit(formula) == translated, TRANSLATOR.visit(formula)

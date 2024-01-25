@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
-from snuba_sdk.metrics_query_visitors import SnQLPrinter, Validator
+from snuba_sdk.metrics_query_visitors import Validator
 from snuba_sdk.mql_visitor import MQLPrinter
 from snuba_sdk.query import BaseQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -79,31 +80,19 @@ class MetricsQuery(BaseQuery):
         Validator().visit(self)
 
     def __str__(self) -> str:
-        result = PRETTY_PRINTER.visit(self)
-        assert isinstance(result, str)
-        return result
-
-    def serialize(self) -> str:
-        self.validate()
-        result = SNQL_PRINTER.visit(self)
-        assert isinstance(result, str)
-        return result
+        result = MQL_PRINTER.visit(self)
+        return json.dumps(result, indent=4)
 
     def print(self) -> str:
         self.validate()
-        result = PRETTY_PRINTER.visit(self)
-        assert isinstance(result, str)
-        return result
+        result = MQL_PRINTER.visit(self)
+        return json.dumps(result, indent=4)
 
-    def serialize_to_mql(self) -> dict[str, str | dict[str, Any]]:
-        # TODO: when the new MQL snuba endpoint is ready, this method will replace .serialize()
+    def serialize(self) -> str | dict[str, Any]:
         self.validate()
         result = MQL_PRINTER.visit(self)
-        assert isinstance(result, dict)
         return result
 
 
-SNQL_PRINTER = SnQLPrinter()
-PRETTY_PRINTER = SnQLPrinter(pretty=True)
 MQL_PRINTER = MQLPrinter()
 VALIDATOR = Validator()

@@ -72,19 +72,18 @@ class Request:
         if self.flags is not None:
             self.flags.validate()
 
-    def to_dict(self, mql: bool = False) -> dict[str, bool | str | dict[str, Any]]:
+    def to_dict(self) -> dict[str, bool | str | dict[str, Any]]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
 
-        # ret: dict[str, bool | str | dict[str, str | int]] = {}
-        # Feature flag just for initial testing
         mql_context = None
-        if mql and isinstance(self.query, MetricsQuery):
-            serialized_mql = self.query.serialize_to_mql()
+        if isinstance(self.query, MetricsQuery):
+            serialized_mql = self.query.serialize()
+            assert isinstance(serialized_mql, dict)  # mypy
             mql_context = serialized_mql["mql_context"]
             query = str(serialized_mql["mql"])
         else:
-            query = self.query.serialize()
+            query = str(self.query.serialize())
 
         ret: dict[str, bool | str | dict[str, Any]] = {
             **flags,
@@ -104,12 +103,12 @@ class Request:
     def serialize_mql(self) -> str:
         # NOTE: This function is temporary, just to help with a cutover in the Sentry codebase.
         # It will be removed in a future version.
-        return json.dumps(self.to_dict(mql=True))
+        return json.dumps(self.to_dict())
 
     def __str__(self) -> str:
         return self.serialize()
 
-    def print(self, mql: bool = False) -> str:
+    def print(self) -> str:
         self.validate()
-        output = self.to_dict(mql)
+        output = self.to_dict()
         return json.dumps(output, sort_keys=True, indent=4 * " ")
