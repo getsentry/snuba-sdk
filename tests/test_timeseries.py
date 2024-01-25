@@ -8,7 +8,7 @@ import pytest
 from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import Condition, Op, Or
-from snuba_sdk.metrics_visitors import MetricSnQLPrinter, TimeseriesSnQLPrinter
+from snuba_sdk.metrics_visitors import MetricMQLPrinter, TimeseriesMQLPrinter
 from snuba_sdk.timeseries import InvalidTimeseriesError, Metric
 from tests import timeseries
 
@@ -18,7 +18,10 @@ metric_tests = [
         "d:transactions/duration@millisecond",
         123,
         "generic_metrics_distributions",
-        {"entity": "generic_metrics_distributions", "metric_filter": "metric_id = 123"},
+        {
+            "entity": "generic_metrics_distributions",
+            "metric_name": "d:transactions/duration@millisecond",
+        },
         None,
     ),
     pytest.param(
@@ -34,7 +37,10 @@ metric_tests = [
         None,
         123,
         "generic_metrics_distributions",
-        {"entity": "generic_metrics_distributions", "metric_filter": "metric_id = 123"},
+        {
+            "entity": "generic_metrics_distributions",
+            "metric_name": "transaction.duration",
+        },
         None,
     ),
     pytest.param(
@@ -42,7 +48,10 @@ metric_tests = [
         "d:transactions/duration@millisecond",
         123,
         "generic_metrics_distributions",
-        {"entity": "generic_metrics_distributions", "metric_filter": "metric_id = 123"},
+        {
+            "entity": "generic_metrics_distributions",
+            "metric_name": "d:transactions/duration@millisecond",
+        },
         None,
     ),
     pytest.param(
@@ -66,8 +75,8 @@ metric_tests = [
         None,
         123,
         "generic_metrics_distributions",
-        {"entity": "generic_metrics_distributions", "metric_filter": "metric_id = 123"},
         None,
+        InvalidTimeseriesError("Metric must have at least one of public_name or mri"),
     ),
     pytest.param(
         None,
@@ -75,9 +84,7 @@ metric_tests = [
         None,
         "generic_metrics_distributions",
         None,
-        InvalidTimeseriesError(
-            "Metric must have at least one of public_name, mri or id"
-        ),
+        InvalidTimeseriesError("Metric must have at least one of public_name or mri"),
     ),
     pytest.param(
         123,
@@ -113,7 +120,7 @@ metric_tests = [
     ),
 ]
 
-METRIC_PRINTER = MetricSnQLPrinter()
+METRIC_PRINTER = MetricMQLPrinter()
 
 
 @pytest.mark.parametrize(
@@ -134,39 +141,31 @@ def test_metric(
         metric = Metric(public_name, mri, mid, entity)
         assert metric.id == mid
         if translated:
-            assert METRIC_PRINTER.visit(metric) == translated
+            assert METRIC_PRINTER.visit(metric) == translated, METRIC_PRINTER.visit(
+                metric
+            )
 
 
 timeseries_tests = [
     pytest.param(
-        timeseries(Metric(id=123, entity="metrics_sets"), "count", None, None, None),
-        {
-            "entity": "metrics_sets",
-            "aggregate": "count(value) AS `aggregate_value`",
-            "filters": "",
-            "groupby": "",
-            "metric_filter": "metric_id = 123",
-        },
+        timeseries(
+            Metric("duration", entity="metrics_sets"), "count", None, None, None
+        ),
+        {"entity": "metrics_sets", "mql_string": "count(duration)"},
         None,
         id="simple test",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"), "quantile", [0.95], None, None
+            Metric("duration", entity="metrics_sets"), "quantile", [0.95], None, None
         ),
-        {
-            "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "",
-            "groupby": "",
-            "metric_filter": "metric_id = 123",
-        },
+        {"entity": "metrics_sets", "mql_string": "quantile(0.95)(duration)"},
         None,
         id="aggregate params",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [Condition(Column("tags[release]"), Op.EQ, "1.2.3")],
@@ -174,17 +173,14 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "tags[release] = '1.2.3'",
-            "groupby": "",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3"}',
         },
         None,
         id="filter",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [
@@ -195,17 +191,14 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "tags[release] = '1.2.3' AND tags[highway] = '401'",
-            "groupby": "",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"}',
         },
         None,
         id="filters",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [
@@ -220,17 +213,14 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "(tags[release] = '1.2.3' OR tags[highway] = '401')",
-            "groupby": "",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){(tags[release]:"1.2.3" OR tags[highway]:"401")}',
         },
         None,
         id="boolean condition filters",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [
@@ -241,17 +231,14 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "tags[release] = '1.2.3' AND tags[highway] = '401'",
-            "groupby": "tags[transaction]",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction])',
         },
         None,
         id="groupby",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [
@@ -262,17 +249,14 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "tags[release] = '1.2.3' AND tags[highway] = '401'",
-            "groupby": "tags[transaction], tags[device]",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction], tags[device])',
         },
         None,
         id="groupbys",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "quantile",
             [0.95],
             [
@@ -286,61 +270,66 @@ timeseries_tests = [
         ),
         {
             "entity": "metrics_sets",
-            "aggregate": "quantile(0.95)(value) AS `aggregate_value`",
-            "filters": "tags[release] = '1.2.3' AND tags[highway] = '401'",
-            "groupby": "tags[transaction] AS `transaction`, tags[device] AS `device`",
-            "metric_filter": "metric_id = 123",
+            "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction] AS `transaction`, tags[device] AS `device`)',
         },
         None,
         id="aliased groupbys",
     ),
     pytest.param(
-        timeseries(Metric(id=123, entity="metrics_sets"), 456, None, None, None),
+        timeseries(Metric("duration", entity="metrics_sets"), 456, None, None, None),
         None,
         InvalidTimeseriesError("aggregate must be a string"),
         id="invalid aggregate",
     ),
     pytest.param(
-        timeseries(Metric(id=123, entity="metrics_sets"), "count", 6, None, None),
+        timeseries(Metric("duration", entity="metrics_sets"), "count", 6, None, None),
         None,
         InvalidTimeseriesError("aggregate_params must be a list"),
         id="invalid aggregate param",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"), "count", [Column("test")], None, None
+            Metric("duration", entity="metrics_sets"),
+            "count",
+            [Column("test")],
+            None,
+            None,
         ),
         None,
         InvalidTimeseriesError("aggregate_params can only be literal types"),
         id="invalid aggregate params",
     ),
     pytest.param(
-        timeseries(Metric(id=123, entity="metrics_sets"), "count", None, 6, None),
+        timeseries(Metric("duration", entity="metrics_sets"), "count", None, 6, None),
         None,
         InvalidTimeseriesError("filters must be a list"),
         id="invalid filter",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"), "count", None, [Column("test")], None
+            Metric("duration", entity="metrics_sets"),
+            "count",
+            None,
+            [Column("test")],
+            None,
         ),
         None,
         InvalidTimeseriesError("filters must be a list of Conditions"),
         id="invalid filters",
     ),
     pytest.param(
-        timeseries(Metric(id=123, entity="metrics_sets"), "count", None, None, 3),
+        timeseries(Metric("duration", entity="metrics_sets"), "count", None, None, 3),
         None,
         InvalidTimeseriesError("groupby must be a list"),
         id="invalid groupby",
     ),
     pytest.param(
         timeseries(
-            Metric(id=123, entity="metrics_sets"),
+            Metric("duration", entity="metrics_sets"),
             "count",
             None,
             None,
-            [Metric(id=123)],
+            [Metric("duration")],
         ),
         None,
         InvalidTimeseriesError("groupby must be a list of Columns"),
@@ -348,8 +337,7 @@ timeseries_tests = [
     ),
 ]
 
-# TODO: Add this back when we have a proper translator
-TRANSLATOR = TimeseriesSnQLPrinter()
+TRANSLATOR = TimeseriesMQLPrinter()
 
 
 @pytest.mark.parametrize("func_wrapper, translated, exception", timeseries_tests)
@@ -360,7 +348,7 @@ def test_timeseries(
 ) -> None:
     def verify() -> None:
         exp = func_wrapper()
-        assert TRANSLATOR.visit(exp) == translated
+        assert TRANSLATOR.visit(exp) == translated, TRANSLATOR.visit(exp)
 
     if exception is not None:
         with pytest.raises(type(exception), match=re.escape(str(exception))):

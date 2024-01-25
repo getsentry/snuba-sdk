@@ -206,10 +206,8 @@ def test_request(
     else:
         request = Request(dataset, app_id, query, flags, parent_api, tenant_ids)
         request.validate()
-        assert request.to_dict(mql=True) == expected
-        assert request.print(mql=True) == json.dumps(
-            expected, sort_keys=True, indent=4 * " "
-        )
+        assert request.to_dict() == expected
+        assert request.print() == json.dumps(expected, sort_keys=True, indent=4 * " ")
 
 
 def test_request_set_methods() -> None:

@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.24
+------
+
+- Drop support for translating MetricsQuery to SnQL
+
 
 2.0.23
 ------

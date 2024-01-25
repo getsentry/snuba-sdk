@@ -539,7 +539,8 @@ def test_metrics_query_to_mql_timeseries(
     query: MetricsQuery, translated: dict[str, Any]
 ) -> None:
     query.validate()
-    serialized = query.serialize_to_mql()
+    serialized = query.serialize()
+    assert isinstance(serialized, dict)
     assert serialized["mql"] == translated["mql"]
     assert serialized["mql_context"] == translated["mql_context"]
     assert (
@@ -960,7 +961,8 @@ def test_metrics_query_to_mql_formula(
     query: MetricsQuery, translated: dict[str, Any]
 ) -> None:
     query.validate()
-    serialized = query.serialize_to_mql()
+    serialized = query.serialize()
+    assert isinstance(serialized, dict)
     assert serialized["mql"] == translated["mql"]
     assert serialized["mql_context"] == translated["mql_context"]
     assert parse_mql(str(serialized["mql"])) is not None

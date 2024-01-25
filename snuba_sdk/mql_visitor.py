@@ -21,7 +21,7 @@ from snuba_sdk.visitors import Translation
 
 
 class MQLVisitor(ABC):
-    def visit(self, query: main.MetricsQuery) -> Mapping[str, Any]:
+    def visit(self, query: main.MetricsQuery) -> dict[str, Any]:
         fields = query.get_fields()
         returns = {}
         for field in fields:
@@ -34,7 +34,7 @@ class MQLVisitor(ABC):
         self,
         query: main.MetricsQuery,
         returns: Mapping[str, Mapping[str, Any]],
-    ) -> Mapping[str, Any]:
+    ) -> dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
@@ -82,7 +82,7 @@ class MQLPrinter(MQLVisitor):
 
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
+    ) -> dict[str, Any]:
         """
         TODO: This printer only supports Timeseries queries for now. We will need to extend this
         for Formula queries. For now, this only returns the MQL string.

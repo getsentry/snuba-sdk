@@ -39,7 +39,7 @@ class BaseQuery(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def serialize(self) -> str:
+    def serialize(self) -> str | dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod

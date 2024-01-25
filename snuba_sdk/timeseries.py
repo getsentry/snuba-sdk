@@ -48,9 +48,9 @@ class Metric:
         if self.entity is not None and not isinstance(self.entity, str):
             raise InvalidTimeseriesError("entity must be a string")
 
-        if all(v is None for v in (self.public_name, self.mri, self.id)):
+        if all(v is None for v in (self.public_name, self.mri)):
             raise InvalidTimeseriesError(
-                "Metric must have at least one of public_name, mri or id"
+                "Metric must have at least one of public_name or mri"
             )
 
     def set_mri(self, mri: str) -> Metric:
