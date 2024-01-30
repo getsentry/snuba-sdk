@@ -18,10 +18,12 @@ from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
+
 METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
-NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
-MRI_NAME_REGEX = r"([a-z_]+(?:\.[a-z_]+)*)"
-UNIT_REGEX = r"([\w.]*)"
+METRIC_NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
+METRIC_NAME_REGEX = r"([a-z0-9_]+(?:\.[a-z0-9_]+)*)"
+METRIC_UNIT_REGEX = r"([\w.]*)"
+
 MQL_GRAMMAR = Grammar(
     rf"""
 expression = term (_ expr_op _ term)*
@@ -74,7 +76,7 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 inner_filter = metric open_brace? (_ filter_expr _)? close_brace? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{NAMESPACE_REGEX}/{MRI_NAME_REGEX}@{UNIT_REGEX}"
+unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{METRIC_NAMESPACE_REGEX}/{METRIC_NAME_REGEX}@{METRIC_UNIT_REGEX}"
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
