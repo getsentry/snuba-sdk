@@ -614,10 +614,10 @@ base_tests = [
         id="test curried functions with random params",
     ),
     pytest.param(
-        "quantiles(0.5)(`d:transactions/duration@millisecond`{})",
+        "quantiles(0.5)(`d:transactions/duration.1@millisecond`{})",
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"),
+                metric=Metric(mri="d:transactions/duration.1@millisecond"),
                 aggregate="quantiles",
                 aggregate_params=[0.5],
             )
@@ -625,10 +625,10 @@ base_tests = [
         id="test curried functions with empty filter",
     ),
     pytest.param(
-        'quantiles(0.5)(`d:transactions/duration@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
+        'quantiles(0.5)(`d:transactions/duration_2@millisecond`{foo:"foz"}){bar:baz} by (a, b)',
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"),
+                metric=Metric(mri="d:transactions/duration_2@millisecond"),
                 aggregate="quantiles",
                 aggregate_params=[0.5],
                 filters=[

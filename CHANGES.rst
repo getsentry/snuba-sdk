@@ -4,6 +4,7 @@ Changelog and versioning
 2.0.25
 ------
 - Add support for `or` and `and` lowercase boolean operators in the MQL grammar.
+- Align MRI representation with backend, by allowing numbers in the metric name.
 
 2.0.24
 ------
