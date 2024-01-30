@@ -1,6 +1,10 @@
 Changelog and versioning
 ==========================
 
+2.0.25
+------
+- Add support for `or` and `and` lowercase boolean operators in the MQL grammar.
+
 2.0.24
 ------
 
