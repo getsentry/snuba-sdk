@@ -277,7 +277,7 @@ base_tests = [
         id="test multiple filters with space delimiter",
     ),
     pytest.param(
-        'sum(user{bar:"baz" AND foo:"foz"})',
+        'sum(user{bar:"baz" and foo:"foz"})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
@@ -292,10 +292,10 @@ base_tests = [
                 ],
             )
         ),
-        id="test multiple filters with AND operator",
+        id="test multiple filters with lowercase AND operator",
     ),
     pytest.param(
-        'sum(user{bar:"baz" OR foo:"foz" AND (hee:"haw")})',
+        'sum(user{bar:"baz" OR foo:"foz" and (hee:"haw")})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
@@ -315,10 +315,10 @@ base_tests = [
                 ],
             )
         ),
-        id="test multiple filters with AND and OR operators and no parentheses",
+        id="test multiple filters with lowercase AND and OR operators and no parentheses",
     ),
     pytest.param(
-        'sum(user{(bar:"baz" OR foo:"foz") AND hee:"haw"})',
+        'sum(user{(bar:"baz" or foo:"foz") AND hee:"haw"})',
         MetricsQuery(
             query=Timeseries(
                 metric=Metric(public_name="user"),
@@ -338,7 +338,7 @@ base_tests = [
                 ],
             )
         ),
-        id="test multiple filters with AND and OR operators",
+        id="test multiple filters with AND and lowercase OR operators",
     ),
     pytest.param(
         'sum(user{bar:"baz" foo:"foz", hee:"haw" AND key:"value"})',
