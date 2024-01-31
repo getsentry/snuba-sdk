@@ -21,7 +21,7 @@ AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 
 METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
 METRIC_NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
-METRIC_NAME_REGEX = r"([a-z0-9_]+(?:\.[a-z0-9_]+)*)"
+METRIC_NAME_REGEX = r"([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)"
 METRIC_UNIT_REGEX = r"([\w.]*)"
 
 MQL_GRAMMAR = Grammar(

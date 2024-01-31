@@ -11,20 +11,20 @@ from snuba_sdk.timeseries import Metric, Timeseries
 
 base_tests = [
     pytest.param(
-        "sum(`d:transactions/duration@millisecond`)",
+        "sum(`d:transactions/Duration.Metric@millisecond`)",
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"),
+                metric=Metric(mri="d:transactions/Duration.Metric@millisecond"),
                 aggregate="sum",
             )
         ),
         id="test quoted mri name",
     ),
     pytest.param(
-        "sum(d:transactions/duration@millisecond)",
+        "sum(d:transactions/Duration@millisecond)",
         MetricsQuery(
             query=Timeseries(
-                metric=Metric(mri="d:transactions/duration@millisecond"),
+                metric=Metric(mri="d:transactions/Duration@millisecond"),
                 aggregate="sum",
             )
         ),
