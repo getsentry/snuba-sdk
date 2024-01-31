@@ -42,7 +42,9 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_metric(self, metric: Metric) -> str | Mapping[str, TVisited]:
+    def _visit_metric(
+        self, metric: Metric
+    ) -> str | Mapping[str, TVisited | Mapping[str, TVisited]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -124,7 +126,7 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             "entity": metric_data["entity"],
         }
 
-    def _visit_metric(self, metric: Metric) -> Mapping[str, str]:
+    def _visit_metric(self, metric: Metric) -> Mapping[str, str | Mapping[str, str]]:
         return self.metrics_visitor.visit(metric)
 
     def _visit_aggregate(
@@ -147,7 +149,9 @@ class FormulaMQLPrinter:
         self.timeseries_visitor = timeseries_visitor or TimeseriesMQLPrinter()
         self.expression_visitor = self.timeseries_visitor.expression_visitor
 
-    def _visit_parameter(self, parameter: FormulaParameterGroup) -> Mapping[str, str]:
+    def _visit_parameter(
+        self, parameter: FormulaParameterGroup
+    ) -> Mapping[str, str | Mapping[str, str]]:
         if isinstance(parameter, Timeseries):
             return self.timeseries_visitor.visit(parameter)
         elif isinstance(parameter, Formula):
@@ -166,7 +170,7 @@ class FormulaMQLPrinter:
     def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
         return _visit_mql_groupby(groupby, self.expression_visitor)
 
-    def visit(self, formula: Formula) -> Mapping[str, str]:
+    def visit(self, formula: Formula) -> Mapping[str, str | dict[str, str]]:
         assert formula.parameters is not None
 
         parameters = [self._visit_parameter(p) for p in formula.parameters]
@@ -175,19 +179,25 @@ class FormulaMQLPrinter:
         # TODO: Formulas currently only support simple math, however in the future they could support
         # arbitrary functions (e.g. failure_rate(sum(...), 50)). In that case, they could be represented
         # as prefix functions.
+        param_strings = []
+        for p in parameters:
+            if isinstance(p["mql_string"], str):
+                param_strings.append(p["mql_string"])
         if formula.function_name in PREFIX_TO_INFIX:
             separator = f" {PREFIX_TO_INFIX[formula.function_name]} "
-            mql_string = f"({separator.join(p['mql_string'] for p in parameters)})"
+            mql_string = f"({separator.join(param_strings)})"
         else:
-            mql_string = f"{formula.function_name}{self._visit_aggregate_params(formula.aggregate_params)}({', '.join(p['mql_string'] for p in parameters)})"
+            mql_string = f"{formula.function_name}{self._visit_aggregate_params(formula.aggregate_params)}({', '.join(param_strings)})"
 
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"
 
-        entities = {}
+        entities: dict[str, str] = {}
         for p in parameters:
-            if p.get("entity"):
-                entities = {**entities, **p.get("entity")}
+            other_entities = p.get("entity")
+            if other_entities:
+                assert isinstance(other_entities, dict)
+                entities = {**entities, **other_entities}
 
         assert len(entities) > 0
         return {
@@ -202,8 +212,8 @@ class MetricVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
 
-class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
-    def visit(self, metric: Metric) -> Mapping[str, str]:
+class MetricMQLPrinter(MetricVisitor[Mapping[str, Union[str, Mapping[str, str]]]]):
+    def visit(self, metric: Metric) -> Mapping[str, str | Mapping[str, str]]:
         if metric.mri is None and metric.public_name is None:
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"

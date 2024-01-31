@@ -461,12 +461,14 @@ FORMULA_PRINTER = FormulaMQLPrinter()
 @pytest.mark.parametrize("formula, mql", formula_tests)
 def test_metrics_query_to_mql_formula(formula: Formula, mql: str) -> None:
     output = FORMULA_PRINTER.visit(formula)
-    assert output["mql_string"] == mql
+    mql_string = output["mql_string"]
+    assert isinstance(mql_string, str)
+    assert mql_string == mql
 
     # TODO: We can't simply assert the whole query, because we need an Entity in order to serialize the formula,
     # but when we parse the MQL the entity is None. Once SnQL support is removed, we can change this.
     # assert parse_mql(output["mql_string"]).query == formula
-    parsed = parse_mql(output["mql_string"])
+    parsed = parse_mql(mql_string)
     assert parsed.query is not None
     assert parsed.query.groupby == formula.groupby
     assert parsed.query.filters == formula.filters
