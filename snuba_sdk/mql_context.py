@@ -22,7 +22,9 @@ class MQLContext:
     should be created exclusively from a valid MetricsQuery object.
     """
 
-    entity: str
+    entity: dict[
+        str, str
+    ]  # mapping between metric name (mri or public_name) and entity
     start: str
     end: str
     rollup: dict[str, str | int | None]

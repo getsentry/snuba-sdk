@@ -119,7 +119,10 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             groupby = str(returns["groupby"])
             mql_string += f"{groupby}"
 
-        return {"mql_string": mql_string, "entity": metric_data["entity"]}
+        return {
+            "mql_string": mql_string,
+            "entity": metric_data["entity"],
+        }
 
     def _visit_metric(self, metric: Metric) -> Mapping[str, str]:
         return self.metrics_visitor.visit(metric)
@@ -181,13 +184,15 @@ class FormulaMQLPrinter:
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"
 
-        entity = next(
-            p.get("entity") for p in parameters if p.get("entity") is not None
-        )
-        assert entity is not None
+        entities = {}
+        for p in parameters:
+            if p.get("entity"):
+                entities = {**entities, **p.get("entity")}
+
+        assert len(entities) > 0
         return {
             "mql_string": mql_string,
-            "entity": entity,
+            "entity": entities,
         }
 
 
@@ -206,9 +211,12 @@ class MetricMQLPrinter(MetricVisitor[Mapping[str, str]]):
         if metric.entity is None:
             raise InvalidExpressionError("metric.entity is required for serialization")
         if metric.mri:
-            return {"metric_name": metric.mri, "entity": metric.entity}
+            return {"metric_name": metric.mri, "entity": {metric.mri: metric.entity}}
         assert metric.public_name is not None
-        return {"metric_name": metric.public_name, "entity": metric.entity}
+        return {
+            "metric_name": metric.public_name,
+            "entity": {metric.public_name: metric.entity},
+        }
 
 
 class RollupVisitor(ABC, Generic[TVisited]):

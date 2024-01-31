@@ -19,7 +19,9 @@ metric_tests = [
         123,
         "generic_metrics_distributions",
         {
-            "entity": "generic_metrics_distributions",
+            "entity": {
+                "d:transactions/duration@millisecond": "generic_metrics_distributions"
+            },
             "metric_name": "d:transactions/duration@millisecond",
         },
         None,
@@ -38,7 +40,7 @@ metric_tests = [
         123,
         "generic_metrics_distributions",
         {
-            "entity": "generic_metrics_distributions",
+            "entity": {"transaction.duration": "generic_metrics_distributions"},
             "metric_name": "transaction.duration",
         },
         None,
@@ -49,7 +51,9 @@ metric_tests = [
         123,
         "generic_metrics_distributions",
         {
-            "entity": "generic_metrics_distributions",
+            "entity": {
+                "d:transactions/duration@millisecond": "generic_metrics_distributions"
+            },
             "metric_name": "d:transactions/duration@millisecond",
         },
         None,
@@ -151,7 +155,7 @@ timeseries_tests = [
         timeseries(
             Metric("duration", entity="metrics_sets"), "count", None, None, None
         ),
-        {"entity": "metrics_sets", "mql_string": "count(duration)"},
+        {"entity": {"duration": "metrics_sets"}, "mql_string": "count(duration)"},
         None,
         id="simple test",
     ),
@@ -159,7 +163,10 @@ timeseries_tests = [
         timeseries(
             Metric("duration", entity="metrics_sets"), "quantile", [0.95], None, None
         ),
-        {"entity": "metrics_sets", "mql_string": "quantile(0.95)(duration)"},
+        {
+            "entity": {"duration": "metrics_sets"},
+            "mql_string": "quantile(0.95)(duration)",
+        },
         None,
         id="aggregate params",
     ),
@@ -172,7 +179,7 @@ timeseries_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3"}',
         },
         None,
@@ -190,7 +197,7 @@ timeseries_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"}',
         },
         None,
@@ -212,7 +219,7 @@ timeseries_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){(tags[release]:"1.2.3" OR tags[highway]:"401")}',
         },
         None,
@@ -230,7 +237,7 @@ timeseries_tests = [
             [Column("tags[transaction]")],
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction])',
         },
         None,
@@ -248,7 +255,7 @@ timeseries_tests = [
             [Column("tags[transaction]"), Column("tags[device]")],
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction], tags[device])',
         },
         None,
@@ -269,7 +276,7 @@ timeseries_tests = [
             ],
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"duration": "metrics_sets"},
             "mql_string": 'quantile(0.95)(duration){tags[release]:"1.2.3" AND tags[highway]:"401"} by (tags[transaction] AS `transaction`, tags[device] AS `device`)',
         },
         None,
