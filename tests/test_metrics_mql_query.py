@@ -43,7 +43,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "max(d:transactions/duration@millisecond)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -87,7 +89,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "quantiles(0.5)(d:transactions/duration@millisecond)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -131,7 +135,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "topK(10)(d:transactions/duration@millisecond)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -175,7 +181,7 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "max(transactions.duration)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"transactions.duration": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -219,7 +225,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": 'max(d:transactions/duration@millisecond){bar:"baz"}',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -263,7 +271,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": 'max(d:transactions/duration@millisecond){bar:["baz", "bap"]}',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -324,7 +334,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": 'max(d:transactions/duration@millisecond){bar:"baz" AND foo:"foz" AND (foo:"foz" OR hee:"hez" OR (foo:"foz" AND hee:"hez"))}',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -368,7 +380,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "max(d:transactions/duration@millisecond) by (transaction)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -412,7 +426,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": "max(d:transactions/duration@millisecond) by (a, b)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -458,7 +474,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": 'max(d:transactions/duration@millisecond){bar:"baz"} by (transaction)',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -510,7 +528,9 @@ metrics_query_timeseries_to_mql_tests = [
         {
             "mql": 'max(d:transactions/duration@millisecond){bar:" !\\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"} by (transaction)',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -601,7 +621,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": "(sum(foo) / 1000)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"foo": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -649,7 +669,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": "apdex(sum(foo), 1000)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"foo": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -698,7 +718,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": "apdex(quantiles(0.5)(foo), 1000)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"foo": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -752,7 +772,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": "apdex(failure_rate(sum(foo)), 1000)",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"foo": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -815,7 +835,10 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": 'apdex((sum(foo) / sum(bar)), 500){tag:"tag_value"} by (transaction)',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {
+                    "foo": "generic_metrics_distributions",
+                    "bar": "generic_metrics_distributions",
+                },
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -876,7 +899,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": "topK(10)((sum(transaction.duration) / count(transaction.duration)))",
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"transaction.duration": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {
@@ -932,7 +955,7 @@ metrics_query_formula_to_mql_tests = [
         {
             "mql": 'topK(10)(apdex(sum(transaction.duration), 500){bar:"baz"})',
             "mql_context": {
-                "entity": "generic_metrics_distributions",
+                "entity": {"transaction.duration": "generic_metrics_distributions"},
                 "start": "2023-01-02T03:04:05+00:00",
                 "end": "2023-01-16T03:04:05+00:00",
                 "rollup": {

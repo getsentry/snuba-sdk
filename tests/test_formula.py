@@ -257,7 +257,7 @@ formula_mql_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
             "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} * 100)',
         },
         None,
@@ -292,7 +292,7 @@ formula_mql_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
             "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"})',
         },
         None,
@@ -327,7 +327,7 @@ formula_mql_tests = [
             None,
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
             "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"}){tags[status_code]:200}',
         },
         None,
@@ -364,7 +364,7 @@ formula_mql_tests = [
             [Column("tags[release]")],
         ),
         {
-            "entity": "metrics_sets",
+            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
             "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} by (tags[status_code]) + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"} by (tags[status_code])){tags[status_code]:200} by (tags[release])',
         },
         None,

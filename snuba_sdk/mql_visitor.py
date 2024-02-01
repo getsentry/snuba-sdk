@@ -104,7 +104,9 @@ class MQLPrinter(MQLVisitor):
             "mql_context": asdict(mql_context),
         }
 
-    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, str]:
+    def _visit_query(
+        self, query: Timeseries | Formula | None
+    ) -> Mapping[str, str | Mapping[str, str]]:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         elif isinstance(query, Formula):
