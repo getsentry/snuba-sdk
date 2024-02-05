@@ -27,7 +27,7 @@ class MetricsQuery(BaseQuery):
     a simpler syntax for writing timeseries queries, which have fewer available features.
     """
 
-    query: Timeseries | Formula | None = None
+    query: Timeseries | Formula | str | None = None
     start: datetime | None = None
     end: datetime | None = None
     rollup: Rollup | None = None
@@ -40,9 +40,11 @@ class MetricsQuery(BaseQuery):
         new = replace(self, **{field: value})
         return new
 
-    def set_query(self, query: Formula | Timeseries) -> MetricsQuery:
-        if not isinstance(query, (Formula, Timeseries)):
-            raise InvalidQueryError("query must be a Formula or Timeseries")
+    def set_query(self, query: Formula | Timeseries | str) -> MetricsQuery:
+        if not isinstance(query, (Formula, Timeseries, str)):
+            raise InvalidQueryError(
+                "query must be a Formula or Timeseries or MQL string"
+            )
         return self._replace("query", query)
 
     def set_start(self, start: datetime) -> MetricsQuery:

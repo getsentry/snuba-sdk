@@ -13,9 +13,13 @@ from parsimonious.nodes import Node, NodeVisitor
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
-from snuba_sdk.metrics_query import MetricsQuery
-from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
+
+
+# In order to avoid circular imports, we need to redefine the exception here.
+class InvalidQueryError(Exception):
+    pass
+
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 
@@ -107,7 +111,7 @@ TERM_OPERATORS: Mapping[str, str] = {
 }
 
 
-def parse_mql(mql: str) -> MetricsQuery:
+def parse_mql(mql: str) -> Timeseries | Formula:
     """
     Parse a MQL string into a MetricsQuery object.
     """
@@ -117,8 +121,7 @@ def parse_mql(mql: str) -> MetricsQuery:
         raise InvalidQueryError("Invalid metrics syntax") from e
     result = MQLVisitor().visit(tree)
     assert isinstance(result, (Timeseries, Formula))
-    metrics_query = MetricsQuery(query=result)
-    return metrics_query
+    return result
 
 
 class MQLVisitor(NodeVisitor):  # type: ignore

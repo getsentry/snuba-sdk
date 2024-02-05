@@ -44,7 +44,7 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
     @abstractmethod
     def _visit_metric(
         self, metric: Metric
-    ) -> str | Mapping[str, TVisited | Mapping[str, TVisited]]:
+    ) -> str | Mapping[str, TVisited | Mapping[str, TVisited | None]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -126,7 +126,9 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             "entity": metric_data["entity"],
         }
 
-    def _visit_metric(self, metric: Metric) -> Mapping[str, str | Mapping[str, str]]:
+    def _visit_metric(
+        self, metric: Metric
+    ) -> Mapping[str, str | Mapping[str, str | None]]:
         return self.metrics_visitor.visit(metric)
 
     def _visit_aggregate(
@@ -212,14 +214,17 @@ class MetricVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
 
-class MetricMQLPrinter(MetricVisitor[Mapping[str, Union[str, Mapping[str, str]]]]):
-    def visit(self, metric: Metric) -> Mapping[str, str | Mapping[str, str]]:
+class MetricMQLPrinter(
+    MetricVisitor[Mapping[str, Union[str, Mapping[str, Union[str, None]]]]]
+):
+    def visit(
+        self, metric: Metric
+    ) -> Mapping[str, str | Mapping[str, Union[str, None]]]:
         if metric.mri is None and metric.public_name is None:
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"
             )
-        if metric.entity is None:
-            raise InvalidExpressionError("metric.entity is required for serialization")
+
         if metric.mri:
             return {"metric_name": metric.mri, "entity": {metric.mri: metric.entity}}
         assert metric.public_name is not None

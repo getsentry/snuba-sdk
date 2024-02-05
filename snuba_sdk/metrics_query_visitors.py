@@ -9,6 +9,7 @@ from typing import Generic, Mapping, Optional, TypeVar
 from snuba_sdk import metrics_query as main
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
+from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 
 
@@ -81,11 +82,23 @@ class Validator(MetricsQueryVisitor[None]):
     ) -> None:
         pass
 
-    def _visit_query(self, query: Timeseries | Formula | None) -> Mapping[str, None]:
+    def _visit_query(
+        self, query: Timeseries | Formula | str | None
+    ) -> Mapping[str, None]:
         if query is None:
             raise InvalidMetricsQueryError("query is required for a metrics query")
-        elif not isinstance(query, (Timeseries, Formula)):
-            raise InvalidMetricsQueryError("query must be a Timeseries or Formula")
+        elif not isinstance(query, (Timeseries, Formula, str)):
+            raise InvalidMetricsQueryError(
+                "query must be a Timeseries or Formula or MQL string"
+            )
+
+        if isinstance(query, str):
+            # Parse the MQL string into the Formula/Timeseries object
+            try:
+                query = parse_mql(query)
+            except Exception as e:
+                raise InvalidMetricsQueryError(f"invalid MQL: {e}")
+
         query.validate()
         return {}  # Necessary for typing
 

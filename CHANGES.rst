@@ -4,6 +4,7 @@ Changelog and versioning
 2.0.26
 ------
 - Support multiple entities in MQL Context
+- Support MQL strings as a query
 
 2.0.25
 ------

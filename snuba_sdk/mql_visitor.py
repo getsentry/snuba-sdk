@@ -15,6 +15,7 @@ from snuba_sdk.metrics_visitors import (
     ScopeMQLPrinter,
     TimeseriesMQLPrinter,
 )
+from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.mql_context import MQLContext
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
@@ -83,10 +84,6 @@ class MQLPrinter(MQLVisitor):
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, Any]
     ) -> dict[str, Any]:
-        """
-        TODO: This printer only supports Timeseries queries for now. We will need to extend this
-        for Formula queries. For now, this only returns the MQL string.
-        """
         assert isinstance(returns["query"], Mapping)  # mypy
         mql_string = returns["query"]["mql_string"]
         mql_context = MQLContext(
@@ -105,14 +102,17 @@ class MQLPrinter(MQLVisitor):
         }
 
     def _visit_query(
-        self, query: Timeseries | Formula | None
+        self, query: Timeseries | Formula | str | None
     ) -> Mapping[str, str | Mapping[str, str]]:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         elif isinstance(query, Formula):
             return self.formula_visitor.visit(query)
-        else:
+        elif isinstance(query, Timeseries):
             return self.timeseries_visitor.visit(query)
+        else:
+            query = parse_mql(query)
+            return self._visit_query(query)
 
     def _visit_start(self, start: datetime | None) -> str:
         if start is None:
