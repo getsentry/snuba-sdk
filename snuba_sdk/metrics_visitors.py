@@ -217,9 +217,7 @@ class MetricVisitor(ABC, Generic[TVisited]):
 class MetricMQLPrinter(
     MetricVisitor[Mapping[str, Union[str, Mapping[str, Union[str, None]]]]]
 ):
-    def visit(
-        self, metric: Metric
-    ) -> Mapping[str, str | Mapping[str, Union[str, None]]]:
+    def visit(self, metric: Metric) -> dict[str, str | dict[str, str | None]]:
         if metric.mri is None and metric.public_name is None:
             raise InvalidExpressionError(
                 "metric.mri or metric.public is required for serialization"

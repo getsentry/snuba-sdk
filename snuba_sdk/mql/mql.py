@@ -113,7 +113,7 @@ TERM_OPERATORS: Mapping[str, str] = {
 
 def parse_mql(mql: str) -> Timeseries | Formula:
     """
-    Parse a MQL string into a MetricsQuery object.
+    Parse a MQL string into a Timeseries object.
     """
     try:
         tree = MQL_GRAMMAR.parse(mql.strip())
