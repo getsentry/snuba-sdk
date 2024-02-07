@@ -16,8 +16,7 @@ from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.timeseries import Metric, Timeseries
 
 
-# In order to avoid circular imports, we need to redefine the exception here.
-class InvalidQueryError(Exception):
+class InvalidMQLQueryError(Exception):
     pass
 
 
@@ -118,7 +117,7 @@ def parse_mql(mql: str) -> Timeseries | Formula:
     try:
         tree = MQL_GRAMMAR.parse(mql.strip())
     except ParseError as e:
-        raise InvalidQueryError("Invalid metrics syntax") from e
+        raise InvalidMQLQueryError("Invalid metrics syntax") from e
     result = MQLVisitor().visit(tree)
     assert isinstance(result, (Timeseries, Formula))
     return result
@@ -221,7 +220,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             elif operator == BooleanOp.OR:
                 return Or(conditions=filters)
             else:
-                raise InvalidQueryError(f"Invalid boolean operator {operator}")
+                raise InvalidMQLQueryError(f"Invalid boolean operator {operator}")
 
     def visit_filter_expr(
         self, node: Node, children: Sequence[Any]
@@ -336,7 +335,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return target
 
     def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
-        raise InvalidQueryError("Variables are not supported yet")
+        raise InvalidMQLQueryError("Variables are not supported yet")
 
     def visit_nested_expression(
         self, node: Node, children: Sequence[Any]
@@ -390,7 +389,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             isinstance(target, Timeseries)
             and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
         ):
-            raise InvalidQueryError(
+            raise InvalidMQLQueryError(
                 "Cannot use arbitrary functions on a Timeseries without an aggregate"
             )
         return Formula(function_name=arbitrary_function_name, parameters=parameters)
