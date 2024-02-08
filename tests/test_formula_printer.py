@@ -469,6 +469,6 @@ def test_metrics_query_to_mql_formula(formula: Formula, mql: str) -> None:
     # but when we parse the MQL the entity is None. Once SnQL support is removed, we can change this.
     # assert parse_mql(output["mql_string"]).query == formula
     parsed = parse_mql(mql_string)
-    assert parsed.query is not None
-    assert parsed.query.groupby == formula.groupby
-    assert parsed.query.filters == formula.filters
+    assert parsed is not None
+    assert parsed.groupby == formula.groupby
+    assert parsed.filters == formula.filters

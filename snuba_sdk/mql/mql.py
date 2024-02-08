@@ -13,9 +13,12 @@ from parsimonious.nodes import Node, NodeVisitor
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
-from snuba_sdk.metrics_query import MetricsQuery
-from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import Metric, Timeseries
+
+
+class InvalidMQLQueryError(Exception):
+    pass
+
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 
@@ -107,18 +110,17 @@ TERM_OPERATORS: Mapping[str, str] = {
 }
 
 
-def parse_mql(mql: str) -> MetricsQuery:
+def parse_mql(mql: str) -> Timeseries | Formula:
     """
-    Parse a MQL string into a MetricsQuery object.
+    Parse a MQL string into a Timeseries object.
     """
     try:
         tree = MQL_GRAMMAR.parse(mql.strip())
     except ParseError as e:
-        raise InvalidQueryError("Invalid metrics syntax") from e
+        raise InvalidMQLQueryError("Invalid metrics syntax") from e
     result = MQLVisitor().visit(tree)
     assert isinstance(result, (Timeseries, Formula))
-    metrics_query = MetricsQuery(query=result)
-    return metrics_query
+    return result
 
 
 class MQLVisitor(NodeVisitor):  # type: ignore
@@ -218,7 +220,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             elif operator == BooleanOp.OR:
                 return Or(conditions=filters)
             else:
-                raise InvalidQueryError(f"Invalid boolean operator {operator}")
+                raise InvalidMQLQueryError(f"Invalid boolean operator {operator}")
 
     def visit_filter_expr(
         self, node: Node, children: Sequence[Any]
@@ -333,7 +335,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return target
 
     def visit_variable(self, node: Node, children: Sequence[Any]) -> Any:
-        raise InvalidQueryError("Variables are not supported yet")
+        raise InvalidMQLQueryError("Variables are not supported yet")
 
     def visit_nested_expression(
         self, node: Node, children: Sequence[Any]
@@ -387,7 +389,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             isinstance(target, Timeseries)
             and target.aggregate == AGGREGATE_PLACEHOLDER_NAME
         ):
-            raise InvalidQueryError(
+            raise InvalidMQLQueryError(
                 "Cannot use arbitrary functions on a Timeseries without an aggregate"
             )
         return Formula(function_name=arbitrary_function_name, parameters=parameters)
