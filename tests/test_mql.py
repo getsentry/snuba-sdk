@@ -574,31 +574,6 @@ base_tests = [
         ),
         id="test terms with crazy characters",
     ),
-    pytest.param(
-        "count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) / count(c:custom/page_click@none)",
-        Formula(
-            function_name=ArithmeticOperator.PLUS.value,
-            parameters=[
-                Timeseries(
-                    metric=Metric(mri="c:custom/page_click@none"), aggregate="count"
-                ),
-                Formula(
-                    function_name=ArithmeticOperator.DIVIDE.value,
-                    parameters=[
-                        Timeseries(
-                            metric=Metric(mri="d:custom/app_load@millisecond"),
-                            aggregate="max",
-                        ),
-                        Timeseries(
-                            metric=Metric(mri="c:custom/page_click@none"),
-                            aggregate="count",
-                        ),
-                    ],
-                ),
-            ],
-        ),
-        id="test expression with precedence",
-    ),
 ]
 
 
@@ -799,9 +774,9 @@ term_tests = [
         id="test terms with groupby 5",
     ),
     pytest.param(
-        '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} * sum(pop)) by transaction',
+        '((sum(foo{tag:"tag_value"}){tag2:"tag_value2"} / sum(bar)){tag3:"tag_value3"} + sum(pop)) by transaction',
         Formula(
-            function_name=ArithmeticOperator.MULTIPLY.value,
+            function_name=ArithmeticOperator.PLUS.value,
             parameters=[
                 Formula(
                     ArithmeticOperator.DIVIDE.value,
@@ -829,6 +804,31 @@ term_tests = [
             groupby=[Column("transaction")],
         ),
         id="test complex nested terms",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) / count(c:custom/page_click@none)",
+        Formula(
+            function_name=ArithmeticOperator.PLUS.value,
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"), aggregate="count"
+                ),
+                Formula(
+                    function_name=ArithmeticOperator.DIVIDE.value,
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(mri="d:custom/app_load@millisecond"),
+                            aggregate="max",
+                        ),
+                        Timeseries(
+                            metric=Metric(mri="c:custom/page_click@none"),
+                            aggregate="count",
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with precedence",
     ),
 ]
 
