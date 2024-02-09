@@ -29,7 +29,6 @@ class Metric:
     public_name: str | None = None
     mri: str | None = None
     id: int | None = None
-    entity: str | None = None
 
     def __post_init__(self) -> None:
         self.validate()
@@ -45,8 +44,6 @@ class Metric:
             raise InvalidTimeseriesError("mri must be a string")
         if self.id is not None and not isinstance(self.id, int):
             raise InvalidTimeseriesError("id must be an integer")
-        if self.entity is not None and not isinstance(self.entity, str):
-            raise InvalidTimeseriesError("entity must be a string")
 
         if all(v is None for v in (self.public_name, self.mri)):
             raise InvalidTimeseriesError(
@@ -67,11 +64,6 @@ class Metric:
         if not isinstance(id, int):
             raise InvalidExpressionError("id must be an int")
         return replace(self, id=id)
-
-    def set_entity(self, entity: str) -> Metric:
-        if not isinstance(entity, str):
-            raise InvalidExpressionError("entity must be an str")
-        return replace(self, entity=entity)
 
 
 @dataclass

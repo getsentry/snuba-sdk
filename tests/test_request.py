@@ -27,7 +27,6 @@ BASIC_METRICS_QUERY = MetricsQuery(
         metric=Metric(
             mri="d:transactions/duration@millisecond",
             id=11235813,
-            entity="generic_metrics_distributions",
         ),
         aggregate="max",
         aggregate_params=None,
@@ -77,9 +76,6 @@ tests = [
             "mql_context": {
                 "start": "2021-01-02T03:04:05.000006+00:00",
                 "end": "2021-01-16T03:04:05.000006+00:00",
-                "entity": {
-                    "d:transactions/duration@millisecond": "generic_metrics_distributions"
-                },
                 "indexer_mappings": {},
                 "limit": None,
                 "offset": None,

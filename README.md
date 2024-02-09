@@ -84,7 +84,6 @@ The other arguments to the `MetricsQuery` are meta data about how to run the que
                 Timeseries(
                     metric=Metric(
                         public_name="transaction.duration",
-                        entity="generic_metrics_distributions",
                     ),
                     aggregate="sum",
                 ),
