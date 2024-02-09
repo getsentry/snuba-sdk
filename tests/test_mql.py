@@ -830,6 +830,31 @@ term_tests = [
         ),
         id="test expression with precedence",
     ),
+pytest.param(
+        "count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) + count(c:custom/page_click@none)",
+        Formula(
+            function_name=ArithmeticOperator.PLUS.value,
+            parameters=[
+                Formula(
+                    function_name=ArithmeticOperator.PLUS.value,
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(mri="c:custom/page_click@none"),
+                            aggregate="count",
+                        ),
+                        Timeseries(
+                            metric=Metric(mri="d:custom/app_load@millisecond"),
+                            aggregate="max",
+                        ),
+                    ],
+                ),
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"), aggregate="count"
+                ),
+            ],
+        ),
+        id="test expression with associativity",
+    )
 ]
 
 

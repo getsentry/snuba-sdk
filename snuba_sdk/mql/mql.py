@@ -146,13 +146,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Top level node, simply returns the expression.
         """
-        expr, zero_or_more_others = children
-        assert isinstance(expr, (Formula, Timeseries, float, int, str))
+        term_left, zero_or_more_others = children
+        assert isinstance(term_left, (Formula, Timeseries, float, int, str))
 
         if zero_or_more_others:
-            _, expr_operator, _, coefficient, *_ = zero_or_more_others[0]
-            return Formula(expr_operator, [expr, coefficient])
-        return expr
+            for zero_or_more in zero_or_more_others:
+                _, expr_operator, _, term_right, *_ = zero_or_more
+                term_left = Formula(expr_operator, [term_left, term_right])
+
+        return term_left
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
         return EXPRESSION_OPERATORS[node.text]
@@ -164,13 +166,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator.
         """
-        term, zero_or_more_others = children
-        assert isinstance(term, (Formula, Timeseries, float, int, str))
+        coefficient_left, zero_or_more_others = children
+        assert isinstance(coefficient_left, (Formula, Timeseries, float, int, str))
 
         if zero_or_more_others:
-            _, term_operator, _, coefficient, *_ = zero_or_more_others[0]
-            return Formula(term_operator, [term, coefficient])
-        return term
+            for zero_or_more in zero_or_more_others:
+                _, term_operator, _, coefficient_right, *_ = zero_or_more
+                coefficient_left = Formula(term_operator, [coefficient_left, coefficient_right])
+
+        return coefficient_left
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
         return TERM_OPERATORS[node.text]
