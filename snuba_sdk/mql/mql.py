@@ -147,6 +147,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         Top level node, simply returns the expression.
         """
         expr, zero_or_more_others = children
+        assert isinstance(expr, (Formula, Timeseries, float, int, str))
+
+        if zero_or_more_others:
+            _, expr_operator, _, coefficient, *_ = zero_or_more_others[0]
+            return Formula(expr_operator, [expr, coefficient])
         return expr
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:

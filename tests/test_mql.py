@@ -574,6 +574,19 @@ base_tests = [
         ),
         id="test terms with crazy characters",
     ),
+    pytest.param(
+        'count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) / count(c:custom/page_click@none)',
+        Formula(function_name='plus',
+                parameters=[Timeseries(metric=Metric(mri='c:custom/page_click@none', ),
+                                       aggregate='count', ),
+                            Formula(function_name='divide',
+                                    parameters=[Timeseries(metric=Metric(mri='d:custom/app_load@millisecond', ),
+                                                           aggregate='max', ),
+                                                Timeseries(metric=Metric(
+                                                    mri='c:custom/page_click@none', ),
+                                                    aggregate='count', )], )], ),
+        id="test expression with precedence",
+    ),
 ]
 
 
@@ -977,7 +990,7 @@ arbitrary_function_tests = [
 
 @pytest.mark.parametrize("mql_string, metrics_query", arbitrary_function_tests)
 def test_parse_mql_arbitrary_functions(
-    mql_string: str, metrics_query: Formula | Timeseries
+        mql_string: str, metrics_query: Formula | Timeseries
 ) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
@@ -1132,7 +1145,7 @@ curried_arbitrary_function_tests = [
 
 @pytest.mark.parametrize("mql_string, metrics_query", curried_arbitrary_function_tests)
 def test_parse_mql_curried_arbitrary_functions(
-    mql_string: str, metrics_query: Formula | Timeseries
+        mql_string: str, metrics_query: Formula | Timeseries
 ) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
