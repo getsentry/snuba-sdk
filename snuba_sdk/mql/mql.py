@@ -142,7 +142,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         except Exception as e:
             raise e
 
-    def visit_expression(self, node: Node, children: Sequence[Any]) -> Any:
+    def visit_expression(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Formula, Timeseries, float, int, str]:
         """
         Top level node, simply returns the expression.
         """
@@ -154,7 +156,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
                 _, expr_operator, _, term_right, *_ = zero_or_more
                 term_left = Formula(expr_operator, [term_left, term_right])
 
-        return term_left
+        return cast(Union[Formula, Timeseries, float, int, str], term_left)
 
     def visit_expr_op(self, node: Node, children: Sequence[Any]) -> Any:
         return EXPRESSION_OPERATORS[node.text]
@@ -176,7 +178,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
                     term_operator, [coefficient_left, coefficient_right]
                 )
 
-        return coefficient_left
+        return cast(Union[Formula, Timeseries, float, int, str], coefficient_left)
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
         return TERM_OPERATORS[node.text]
