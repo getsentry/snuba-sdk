@@ -830,7 +830,7 @@ term_tests = [
         ),
         id="test expression with precedence",
     ),
-pytest.param(
+    pytest.param(
         "count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) + count(c:custom/page_click@none)",
         Formula(
             function_name=ArithmeticOperator.PLUS.value,
@@ -854,7 +854,7 @@ pytest.param(
             ],
         ),
         id="test expression with associativity",
-    )
+    ),
 ]
 
 

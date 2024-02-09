@@ -172,7 +172,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         if zero_or_more_others:
             for zero_or_more in zero_or_more_others:
                 _, term_operator, _, coefficient_right, *_ = zero_or_more
-                coefficient_left = Formula(term_operator, [coefficient_left, coefficient_right])
+                coefficient_left = Formula(
+                    term_operator, [coefficient_left, coefficient_right]
+                )
 
         return coefficient_left
 
