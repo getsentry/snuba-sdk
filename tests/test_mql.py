@@ -577,13 +577,13 @@ base_tests = [
     pytest.param(
         "count(c:custom/page_click@none) + max(d:custom/app_load@millisecond) / count(c:custom/page_click@none)",
         Formula(
-            function_name="plus",
+            function_name=ArithmeticOperator.PLUS.value,
             parameters=[
                 Timeseries(
                     metric=Metric(mri="c:custom/page_click@none"), aggregate="count"
                 ),
                 Formula(
-                    function_name="divide",
+                    function_name=ArithmeticOperator.DIVIDE.value,
                     parameters=[
                         Timeseries(
                             metric=Metric(mri="d:custom/app_load@millisecond"),
