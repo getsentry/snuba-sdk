@@ -10,6 +10,7 @@ from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
 from snuba_sdk.metrics_query import MetricsQuery
+from snuba_sdk.mql_context import MQLContext
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
 from snuba_sdk.relationships import Join, Relationship
