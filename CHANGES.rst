@@ -5,6 +5,8 @@ Changelog and versioning
 ------
 - Remove the entity field from the MQLContext
     - This also fixes a bug with using formulas in raw MQL
+- Update the CI to use 3.11 to stay compatible with Sentry
+- Remove references to tox, that is no longer used by CI
 
 
 2.0.26
