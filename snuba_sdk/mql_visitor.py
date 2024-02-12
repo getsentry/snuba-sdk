@@ -39,7 +39,7 @@ class MQLVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_query(self, query: Timeseries | None) -> Mapping[str, Any]:
+    def _visit_query(self, query: Timeseries | None) -> str:
         raise NotImplementedError
 
     @abstractmethod
@@ -84,10 +84,9 @@ class MQLPrinter(MQLVisitor):
     def _combine(
         self, query: main.MetricsQuery, returns: Mapping[str, Any]
     ) -> dict[str, Any]:
-        assert isinstance(returns["query"], Mapping)  # mypy
-        mql_string = returns["query"]["mql_string"]
+        assert isinstance(returns["query"], str)  # mypy
+        mql_string = returns["query"]
         mql_context = MQLContext(
-            entity=returns["query"]["entity"],
             start=returns["start"],
             end=returns["end"],
             rollup=returns["rollup"],
@@ -101,9 +100,7 @@ class MQLPrinter(MQLVisitor):
             "mql_context": asdict(mql_context),
         }
 
-    def _visit_query(
-        self, query: Timeseries | Formula | str | None
-    ) -> Mapping[str, str | Mapping[str, str]]:
+    def _visit_query(self, query: Timeseries | Formula | str | None) -> str:
         if query is None:
             raise InvalidMetricsQueryError("MetricQuery.query must not be None")
         elif isinstance(query, Formula):

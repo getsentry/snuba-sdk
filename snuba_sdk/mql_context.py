@@ -22,9 +22,6 @@ class MQLContext:
     should be created exclusively from a valid MetricsQuery object.
     """
 
-    entity: dict[
-        str, str
-    ]  # mapping between metric name (mri or public_name) and entity
     start: str
     end: str
     rollup: dict[str, str | int | None]
@@ -38,7 +35,7 @@ class MQLContext:
 
     def validate(self) -> None:
         # Simple assert that all the expected fields are present
-        fields = ["entity", "start", "end", "rollup", "scope", "indexer_mappings"]
+        fields = ["start", "end", "rollup", "scope", "indexer_mappings"]
         for field in fields:
             if getattr(self, field) is None:
                 raise InvalidMQLContextError(f"MQLContext.{field} is required")

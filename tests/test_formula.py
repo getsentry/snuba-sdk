@@ -25,7 +25,7 @@ tests = [
             ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 1,
@@ -41,7 +41,7 @@ tests = [
             ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 1,
@@ -57,7 +57,7 @@ tests = [
             ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 1,
@@ -73,11 +73,11 @@ tests = [
             ArithmeticOperator.PLUS.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 Timeseries(
-                    metric=Metric(public_name="bar", entity="metrics_sets"),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                 ),
             ],
@@ -92,12 +92,12 @@ tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                     groupby=[Column("transaction")],
                 ),
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="avg",
                     groupby=[Column("transaction")],
                 ),
@@ -111,7 +111,7 @@ tests = [
             42,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 1,
@@ -132,7 +132,7 @@ tests = [
             ArithmeticOperator.MULTIPLY.value,
             [
                 Timeseries(
-                    metric=Metric(public_name="foo", entity="metrics_sets"),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 "foo",
@@ -152,7 +152,6 @@ tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         1123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
@@ -163,40 +162,6 @@ tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         123,
-                        "metrics_distributions",
-                    ),
-                    aggregate="sum",
-                    filters=[Condition(Column("tags[referrer]"), Op.EQ, "bar")],
-                    groupby=[Column("tags[status_code]")],
-                ),
-            ],
-            [Condition(Column("tags[status_code]"), Op.EQ, 200)],
-            [Column("tags[release]")],
-        ),
-        InvalidFormulaError("Formulas must operate on a single entity"),
-        id="different entities",
-    ),
-    pytest.param(
-        formula(
-            ArithmeticOperator.PLUS.value,
-            [
-                Timeseries(
-                    metric=Metric(
-                        "transaction.duration",
-                        "d:transactions/duration@millisecond",
-                        1123,
-                        "metrics_sets",
-                    ),
-                    aggregate="sum",
-                    filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
-                    groupby=[Column("tags[status_code]")],
-                ),
-                Timeseries(
-                    metric=Metric(
-                        "transaction.duration",
-                        "d:transactions/duration@millisecond",
-                        123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "bar")],
@@ -216,7 +181,7 @@ tests = [
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             [Column("tags[release]")],
         ),
-        InvalidFormulaError("Formulas must operate on a single entity"),
+        InvalidFormulaError("Formulas must operate on at least one Timeseries"),
         id="no simple math",
     ),
 ]
@@ -246,7 +211,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         1123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
@@ -256,10 +220,7 @@ formula_mql_tests = [
             None,
             None,
         ),
-        {
-            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
-            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} * 100)',
-        },
+        '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} * 100)',
         None,
         id="basic formula",
     ),
@@ -272,7 +233,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         1123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
@@ -282,7 +242,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "bar")],
@@ -291,10 +250,7 @@ formula_mql_tests = [
             None,
             None,
         ),
-        {
-            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
-            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"})',
-        },
+        '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"})',
         None,
         id="basic timeseries formula",
     ),
@@ -307,7 +263,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         1123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
@@ -317,7 +272,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "bar")],
@@ -326,10 +280,7 @@ formula_mql_tests = [
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             None,
         ),
-        {
-            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
-            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"}){tags[status_code]:200}',
-        },
+        '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"}){tags[status_code]:200}',
         None,
         id="formula with filters",
     ),
@@ -342,7 +293,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         1123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "foo")],
@@ -353,7 +303,6 @@ formula_mql_tests = [
                         "transaction.duration",
                         "d:transactions/duration@millisecond",
                         123,
-                        "metrics_sets",
                     ),
                     aggregate="sum",
                     filters=[Condition(Column("tags[referrer]"), Op.EQ, "bar")],
@@ -363,10 +312,7 @@ formula_mql_tests = [
             [Condition(Column("tags[status_code]"), Op.EQ, 200)],
             [Column("tags[release]")],
         ),
-        {
-            "entity": {"d:transactions/duration@millisecond": "metrics_sets"},
-            "mql_string": '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} by (tags[status_code]) + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"} by (tags[status_code])){tags[status_code]:200} by (tags[release])',
-        },
+        '(sum(d:transactions/duration@millisecond){tags[referrer]:"foo"} by (tags[status_code]) + sum(d:transactions/duration@millisecond){tags[referrer]:"bar"} by (tags[status_code])){tags[status_code]:200} by (tags[release])',
         None,
         id="group bys",
     ),
@@ -379,7 +325,7 @@ TRANSLATOR = FormulaMQLPrinter()
 @pytest.mark.parametrize("formula_func, translated, exception", formula_mql_tests)
 def test_formula_translate(
     formula_func: Callable[[], Any],
-    translated: dict[str, str],
+    translated: str,
     exception: Optional[Exception],
 ) -> None:
     if exception is not None:

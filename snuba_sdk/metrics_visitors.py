@@ -16,7 +16,7 @@ TVisited = TypeVar("TVisited")
 
 
 class TimeseriesVisitor(ABC, Generic[TVisited]):
-    def visit(self, timeseries: Timeseries) -> Mapping[str, TVisited]:
+    def visit(self, timeseries: Timeseries) -> TVisited:
         fields = timeseries.get_fields()
         returns = {}
         for field in fields:
@@ -38,7 +38,7 @@ class TimeseriesVisitor(ABC, Generic[TVisited]):
         self,
         timeseries: Timeseries,
         returns: Mapping[str, TVisited | Mapping[str, TVisited]],
-    ) -> Mapping[str, TVisited]:
+    ) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -104,10 +104,8 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
         self,
         timeseries: Timeseries,
         returns: Mapping[str, str | Mapping[str, str]],
-    ) -> Mapping[str, str]:
-        metric_data = returns["metric"]
-        assert isinstance(metric_data, Mapping)
-        mql_string = metric_data["metric_name"]
+    ) -> str:
+        mql_string = returns["metric"]
         assert isinstance(mql_string, str)
         if returns["aggregate"]:
             aggregate = returns["aggregate"]
@@ -121,14 +119,9 @@ class TimeseriesMQLPrinter(TimeseriesVisitor[str]):
             groupby = str(returns["groupby"])
             mql_string += f"{groupby}"
 
-        return {
-            "mql_string": mql_string,
-            "entity": metric_data["entity"],
-        }
+        return mql_string
 
-    def _visit_metric(
-        self, metric: Metric
-    ) -> Mapping[str, str | Mapping[str, str | None]]:
+    def _visit_metric(self, metric: Metric) -> str:
         return self.metrics_visitor.visit(metric)
 
     def _visit_aggregate(
@@ -151,15 +144,13 @@ class FormulaMQLPrinter:
         self.timeseries_visitor = timeseries_visitor or TimeseriesMQLPrinter()
         self.expression_visitor = self.timeseries_visitor.expression_visitor
 
-    def _visit_parameter(
-        self, parameter: FormulaParameterGroup
-    ) -> Mapping[str, str | Mapping[str, str]]:
+    def _visit_parameter(self, parameter: FormulaParameterGroup) -> str:
         if isinstance(parameter, Timeseries):
             return self.timeseries_visitor.visit(parameter)
         elif isinstance(parameter, Formula):
             return self.visit(parameter)
 
-        return {"mql_string": str(parameter)}
+        return str(parameter)
 
     def _visit_aggregate_params(self, aggregate_params: list[Any] | None) -> str:
         if aggregate_params:
@@ -172,7 +163,7 @@ class FormulaMQLPrinter:
     def _visit_groupby(self, groupby: list[Column | AliasedExpression] | None) -> str:
         return _visit_mql_groupby(groupby, self.expression_visitor)
 
-    def visit(self, formula: Formula) -> Mapping[str, str | dict[str, str]]:
+    def visit(self, formula: Formula) -> str:
         assert formula.parameters is not None
 
         parameters = [self._visit_parameter(p) for p in formula.parameters]
@@ -183,8 +174,8 @@ class FormulaMQLPrinter:
         # as prefix functions.
         param_strings = []
         for p in parameters:
-            if isinstance(p["mql_string"], str):
-                param_strings.append(p["mql_string"])
+            if isinstance(p, str):
+                param_strings.append(p)
         if formula.function_name in PREFIX_TO_INFIX:
             separator = f" {PREFIX_TO_INFIX[formula.function_name]} "
             mql_string = f"({separator.join(param_strings)})"
@@ -194,18 +185,7 @@ class FormulaMQLPrinter:
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"
 
-        entities: dict[str, str] = {}
-        for p in parameters:
-            other_entities = p.get("entity")
-            if other_entities:
-                assert isinstance(other_entities, dict)
-                entities = {**entities, **other_entities}
-
-        assert len(entities) > 0
-        return {
-            "mql_string": mql_string,
-            "entity": entities,
-        }
+        return mql_string
 
 
 class MetricVisitor(ABC, Generic[TVisited]):
@@ -214,22 +194,17 @@ class MetricVisitor(ABC, Generic[TVisited]):
         raise NotImplementedError
 
 
-class MetricMQLPrinter(
-    MetricVisitor[Mapping[str, Union[str, Mapping[str, Union[str, None]]]]]
-):
-    def visit(self, metric: Metric) -> dict[str, str | dict[str, str | None]]:
-        if metric.mri is None and metric.public_name is None:
-            raise InvalidExpressionError(
-                "metric.mri or metric.public is required for serialization"
-            )
+class MetricMQLPrinter(MetricVisitor[str]):
+    def visit(self, metric: Metric) -> str:
+        if metric.mri is not None:
+            return metric.mri
 
-        if metric.mri:
-            return {"metric_name": metric.mri, "entity": {metric.mri: metric.entity}}
-        assert metric.public_name is not None
-        return {
-            "metric_name": metric.public_name,
-            "entity": {metric.public_name: metric.entity},
-        }
+        if metric.public_name is not None:
+            return metric.public_name
+
+        raise InvalidExpressionError(
+            "metric.mri or metric.public is required for serialization"
+        )
 
 
 class RollupVisitor(ABC, Generic[TVisited]):

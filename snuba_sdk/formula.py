@@ -44,13 +44,13 @@ class Formula:
 
     def __validate_consistency(self) -> None:
         """
-        Ensure that the entity and groupby columns are consistent across all Timeseries
+        Ensure that the groupby columns are consistent across all Timeseries
         and Formulas within this Formula."""
         if self.parameters is None:
             raise InvalidFormulaError("Formula must have parameters")
 
-        entities: set[str] = set()
         groupbys = set()
+        has_timeseries = False
 
         stack: list[FormulaParameterGroup] = [self]
         while stack:
@@ -62,13 +62,14 @@ class Formula:
                 if param.parameters:
                     stack.extend(param.parameters)
             elif isinstance(param, Timeseries):
-                if param.metric.entity is not None:
-                    entities.add(param.metric.entity)
+                has_timeseries = True
                 if param.groupby is not None:
                     groupbys.add(tuple(param.groupby))
 
-        if len(entities) != 1:
-            raise InvalidFormulaError("Formulas must operate on a single entity")
+        if not has_timeseries:
+            raise InvalidFormulaError(
+                "Formulas must operate on at least one Timeseries"
+            )
         if len(set(groupbys)) > 1:
             raise InvalidFormulaError(
                 "Formula parameters must group by the same columns"

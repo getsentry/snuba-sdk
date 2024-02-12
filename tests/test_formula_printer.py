@@ -15,9 +15,7 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 1000,
@@ -31,15 +29,11 @@ formula_tests = [
             ArithmeticOperator.MULTIPLY.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="max",
                 ),
             ],
@@ -55,17 +49,11 @@ formula_tests = [
                     ArithmeticOperator.MULTIPLY.value,
                     [
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                         ),
                         Timeseries(
-                            metric=Metric(
-                                public_name="bar",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="bar"),
                             aggregate="sum",
                         ),
                     ],
@@ -81,15 +69,11 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                 ),
             ],
@@ -103,16 +87,12 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                     filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                     filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
                 ),
@@ -126,15 +106,11 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                 ),
             ],
@@ -149,16 +125,12 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                     groupby=[Column("transaction")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                     groupby=[Column("transaction")],
                 ),
@@ -172,16 +144,12 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                     groupby=[Column("transaction")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                     groupby=[Column("transaction")],
                 ),
@@ -196,17 +164,13 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                     filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
                     groupby=[Column("transaction")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                     filters=[Condition(Column("tag"), Op.EQ, "tag_value")],
                     groupby=[Column("transaction")],
@@ -221,15 +185,11 @@ formula_tests = [
             ArithmeticOperator.DIVIDE.value,
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="bar", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="bar"),
                     aggregate="sum",
                 ),
             ],
@@ -247,10 +207,7 @@ formula_tests = [
                     ArithmeticOperator.DIVIDE.value,
                     [
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                             filters=[
                                 Condition(Column("tag2"), Op.EQ, "tag_value2"),
@@ -258,19 +215,14 @@ formula_tests = [
                             ],
                         ),
                         Timeseries(
-                            metric=Metric(
-                                public_name="bar",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="bar"),
                             aggregate="sum",
                         ),
                     ],
                     filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="pop", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="pop"),
                     aggregate="sum",
                 ),
             ],
@@ -287,10 +239,7 @@ formula_tests = [
                     ArithmeticOperator.DIVIDE.value,
                     [
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                             filters=[
                                 Condition(Column("tag2"), Op.EQ, "tag_value2"),
@@ -303,19 +252,14 @@ formula_tests = [
                             ],
                         ),
                         Timeseries(
-                            metric=Metric(
-                                public_name="bar",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="bar"),
                             aggregate="sum",
                         ),
                     ],
                     filters=[Condition(Column("tag3"), Op.EQ, "tag_value3")],
                 ),
                 Timeseries(
-                    metric=Metric(
-                        public_name="pop", entity="generic_metrics_distributions"
-                    ),
+                    metric=Metric(public_name="pop"),
                     aggregate="sum",
                 ),
             ],
@@ -329,10 +273,7 @@ formula_tests = [
             function_name="apdex",
             parameters=[
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo",
-                        entity="generic_metrics_distributions",
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 500,
@@ -351,17 +292,11 @@ formula_tests = [
                     function_name=ArithmeticOperator.DIVIDE.value,
                     parameters=[
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                         ),
                         Timeseries(
-                            metric=Metric(
-                                public_name="bar",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="bar"),
                             aggregate="sum",
                         ),
                     ],
@@ -379,10 +314,7 @@ formula_tests = [
             function_name="topK",
             parameters=[
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo",
-                        entity="generic_metrics_distributions",
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="sum",
                 ),
                 500,
@@ -404,10 +336,7 @@ formula_tests = [
                     "apdex",
                     [
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                         ),
                         500,
@@ -417,10 +346,7 @@ formula_tests = [
                     "apdex",
                     [
                         Timeseries(
-                            metric=Metric(
-                                public_name="foo",
-                                entity="generic_metrics_distributions",
-                            ),
+                            metric=Metric(public_name="foo"),
                             aggregate="sum",
                         ),
                         400,
@@ -438,10 +364,7 @@ formula_tests = [
             "apdex",
             [
                 Timeseries(
-                    metric=Metric(
-                        public_name="foo",
-                        entity="generic_metrics_distributions",
-                    ),
+                    metric=Metric(public_name="foo"),
                     aggregate="quantiles",
                     aggregate_params=[0.5],
                 ),
@@ -460,9 +383,7 @@ FORMULA_PRINTER = FormulaMQLPrinter()
 
 @pytest.mark.parametrize("formula, mql", formula_tests)
 def test_metrics_query_to_mql_formula(formula: Formula, mql: str) -> None:
-    output = FORMULA_PRINTER.visit(formula)
-    mql_string = output["mql_string"]
-    assert isinstance(mql_string, str)
+    mql_string = FORMULA_PRINTER.visit(formula)
     assert mql_string == mql
 
     # TODO: We can't simply assert the whole query, because we need an Entity in order to serialize the formula,
