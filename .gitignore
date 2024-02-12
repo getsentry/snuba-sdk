@@ -6,7 +6,6 @@
 .python-version
 .coverage*
 .DS_Store
-.tox
 pip-log.txt
 *.egg-info
 /build

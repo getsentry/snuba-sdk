@@ -13,7 +13,7 @@ help:
 	@false
 
 .venv:
-	virtualenv -ppython3.8 $(VENV_PATH)
+	virtualenv -ppython3.11 $(VENV_PATH)
 	. $(VENV_PATH)/bin/activate
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
@@ -25,7 +25,7 @@ make install-dev: .venv
 
 
 setup-git:
-	pip install 'pre-commit==2.16.0'
+	pip install 'pre-commit==3.6.0'
 	pre-commit install --install-hooks
 
 dist: .venv
@@ -57,9 +57,6 @@ lint: .venv
 	$(VENV_PATH)/bin/mypy --config-file mypy.ini --strict tests examples snuba_sdk
 
 .PHONY: lint
-
-test-all: .venv
-	tox
 
 apidocs: .venv
 	$(VENV_PATH)/bin/pip install -U -r ./docs-requirements.txt
