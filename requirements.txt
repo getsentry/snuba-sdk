@@ -1,1 +1,0 @@
-parsimonious>=0.10.0
