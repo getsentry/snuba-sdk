@@ -1,2 +1,0 @@
-parsimonious>=0.10.0
-types-parsimonious>=0.10.0.8
