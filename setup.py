@@ -37,7 +37,7 @@ setup(
     package_data={"snuba_sdk": ["py.typed"]},
     zip_safe=False,
     license="FSL-1.0-Apache-2.0",
-    install_requires=[],
+    install_requires=get_file_text("requirements.txt").splitlines(),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",

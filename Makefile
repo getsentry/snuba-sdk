@@ -15,6 +15,7 @@ help:
 .venv:
 	virtualenv -ppython3.11 $(VENV_PATH)
 	. $(VENV_PATH)/bin/activate
+	$(VENV_PATH)/bin/pip install -r requirements.txt
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
