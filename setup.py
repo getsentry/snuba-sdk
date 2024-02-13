@@ -39,7 +39,6 @@ setup(
     license="FSL-1.0-Apache-2.0",
     install_requires=[
         "parsimonious>=0.10.0",
-        "types-parsimonious>=0.10.0.8"
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

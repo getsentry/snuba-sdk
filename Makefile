@@ -15,15 +15,11 @@ help:
 .venv:
 	virtualenv -ppython3.11 $(VENV_PATH)
 	. $(VENV_PATH)/bin/activate
-	$(VENV_PATH)/bin/pip install -r test-requirements.txt
-	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
-	$(VENV_PATH)/bin/pip install -e .
+	$(VENV_PATH)/bin/pip install -r requirements.txt -r test-requirements.txt -r linter-requirements.txt
 
 
 make install-dev: .venv
-	$(VENV_PATH)/bin/pip install -r test-requirements.txt
-	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
-	$(VENV_PATH)/bin/pip install -e .
+	$(VENV_PATH)/bin/pip install -r requirements.txt -r test-requirements.txt -r linter-requirements.txt
 
 
 setup-git:
