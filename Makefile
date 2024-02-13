@@ -21,6 +21,7 @@ help:
 
 
 make install-dev: .venv
+	$(VENV_PATH)/bin/pip install -r requirements.txt
 	$(VENV_PATH)/bin/pip install -r test-requirements.txt
 	$(VENV_PATH)/bin/pip install -r linter-requirements.txt
 
