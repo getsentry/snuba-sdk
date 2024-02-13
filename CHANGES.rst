@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.28
+------
+- Fix a bug in how dependencies were defined to fix build bugs
+
+
 2.0.27
 ------
 - Remove the entity field from the MQLContext
