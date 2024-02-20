@@ -1022,6 +1022,50 @@ arbitrary_function_tests = [
         ),
         id="test arbitrary function as outer terms",
     ),
+    pytest.param(
+        "rate(count(g:custom/zone.domains@none))",
+        Formula(
+            function_name="rate",
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="g:custom/zone.domains@none"),
+                    aggregate="count",
+                ),
+            ],
+        ),
+        id="test arbitrary function with inner timeseries"
+    ),
+    pytest.param(
+        "rate(count(g:custom/zone.domains@none){hello:world})",
+        Formula(
+            function_name="rate",
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="g:custom/zone.domains@none"),
+                    aggregate="count",
+                    filters=[
+Condition(Column("hello"), Op.EQ, "world")
+                    ]
+                ),
+            ],
+        ),
+        id="test arbitrary function with inner timeseries with params"
+    ),
+    pytest.param(
+        "rate(count(g:custom/zone.domains@none), 10, \"hello\")",
+        Formula(
+            function_name="rate",
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="g:custom/zone.domains@none"),
+                    aggregate="count",
+                ),
+                10,
+                "hello"
+            ],
+        ),
+        id="test arbitrary function with inner timeseries and params"
+    ),
 ]
 
 
