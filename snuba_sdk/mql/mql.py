@@ -37,7 +37,7 @@ term_op = "*" / "/"
 coefficient = number / quoted_string / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
-filter = target open_brace? (_ filter_expr _ )? close_brace? (group_by)?
+filter = target (open_brace (_ filter_expr _ )? close_brace)? (group_by)?
 
 filter_expr = filter_term (_ or _ filter_term)*
 filter_term = filter_factor (_ joint_operator? _ filter_factor)*
@@ -76,7 +76,7 @@ group_by = _ "by" _ (group_by_name / group_by_name_tuple)
 group_by_name = ~r"[a-zA-Z0-9_.]+"
 group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ close_paren
 
-inner_filter = metric open_brace? (_ filter_expr _)? close_brace? (group_by)?
+inner_filter = metric (open_brace (_ filter_expr _)? close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
 unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{METRIC_NAMESPACE_REGEX}/{METRIC_NAME_REGEX}@{METRIC_UNIT_REGEX}"
@@ -197,7 +197,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Given a Formula or Timeseries target, set its children filters and groupbys.
         """
-        target, _, packed_filters, _, packed_groupbys, *_ = children
+        target, filters, packed_groupbys, *_ = children
+        packed_filters = None
+        if filters:
+            _, packed_filters, _ = filters[0]
+
         assert isinstance(target, Formula) or isinstance(target, Timeseries)
         if not packed_filters and not packed_groupbys:
             return target
@@ -437,7 +441,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         """
         Given a metric, set its children filters and groupbys, then return a Timeseries.
         """
-        metric, _, packed_filters, _, packed_groupbys, *_ = children
+        metric, filters, packed_groupbys, *_ = children
+        packed_filters = None
+        if filters:
+            _, packed_filters, _ = filters[0]
+
         metric = metric[0]
         assert isinstance(metric, Metric)
         timeseries = Timeseries(metric=metric, aggregate=AGGREGATE_PLACEHOLDER_NAME)

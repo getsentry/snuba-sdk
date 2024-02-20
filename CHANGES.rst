@@ -1,6 +1,10 @@
 Changelog and versioning
 ==========================
 
+2.0.29
+------
+- Fix filters grammar to avoid ambiguity
+
 2.0.28
 ------
 - Fix a bug in how dependencies were defined to fix build bugs
