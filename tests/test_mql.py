@@ -1033,7 +1033,7 @@ arbitrary_function_tests = [
                 ),
             ],
         ),
-        id="test arbitrary function with inner timeseries"
+        id="test arbitrary function with inner timeseries",
     ),
     pytest.param(
         "rate(count(g:custom/zone.domains@none){hello:world})",
@@ -1043,16 +1043,14 @@ arbitrary_function_tests = [
                 Timeseries(
                     metric=Metric(mri="g:custom/zone.domains@none"),
                     aggregate="count",
-                    filters=[
-Condition(Column("hello"), Op.EQ, "world")
-                    ]
+                    filters=[Condition(Column("hello"), Op.EQ, "world")],
                 ),
             ],
         ),
-        id="test arbitrary function with inner timeseries with params"
+        id="test arbitrary function with inner timeseries with params",
     ),
     pytest.param(
-        "rate(count(g:custom/zone.domains@none), 10, \"hello\")",
+        'rate(count(g:custom/zone.domains@none), 10, "hello")',
         Formula(
             function_name="rate",
             parameters=[
@@ -1061,10 +1059,10 @@ Condition(Column("hello"), Op.EQ, "world")
                     aggregate="count",
                 ),
                 10,
-                "hello"
+                "hello",
             ],
         ),
-        id="test arbitrary function with inner timeseries and params"
+        id="test arbitrary function with inner timeseries and params",
     ),
 ]
 
