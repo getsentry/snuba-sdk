@@ -32,8 +32,12 @@ MQL_GRAMMAR = Grammar(
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
 
-term = coefficient (_ term_op _ coefficient)*
+term = unary (_ term_op _ unary)*
 term_op = "*" / "/"
+
+unary = unary_op? coefficient
+unary_op = "-"
+
 coefficient = number / quoted_string / filter
 
 number = ~r"[0-9]+" ("." ~r"[0-9]+")?
@@ -109,6 +113,10 @@ TERM_OPERATORS: Mapping[str, str] = {
     "/": ArithmeticOperator.DIVIDE.value,
 }
 
+UNARY_OPERATORS: Mapping[str, str] = {
+    "-": ArithmeticOperator.MINUS.value,
+}
+
 
 def parse_mql(mql: str) -> Timeseries | Formula:
     """
@@ -168,20 +176,36 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         Checks if the current node contains two term children, if so
         then merge them into a single Formula with the operator.
         """
-        coefficient_left, zero_or_more_others = children
-        assert isinstance(coefficient_left, (Formula, Timeseries, float, int, str))
+        unary_left, zero_or_more_others = children
+        assert isinstance(unary_left, (Formula, Timeseries, float, int, str))
 
         if zero_or_more_others:
             for zero_or_more in zero_or_more_others:
-                _, term_operator, _, coefficient_right, *_ = zero_or_more
-                coefficient_left = Formula(
-                    term_operator, [coefficient_left, coefficient_right]
-                )
+                _, term_operator, _, unary_right, *_ = zero_or_more
+                unary_left = Formula(term_operator, [unary_left, unary_right])
 
-        return cast(Union[Formula, Timeseries, float, int, str], coefficient_left)
+        return cast(Union[Formula, Timeseries, float, int, str], unary_left)
 
     def visit_term_op(self, node: Node, children: Sequence[Any]) -> Any:
         return TERM_OPERATORS[node.text]
+
+    def visit_unary(
+        self, node: Node, children: Sequence[Any]
+    ) -> Union[Formula, Timeseries, float, int, str]:
+        unary_op, coefficient = children
+        if unary_op:
+            # We want to transform -1 in 0 - 1.
+            if isinstance(coefficient, float) or isinstance(coefficient, int):
+                return -coefficient
+            else:
+                raise InvalidMQLQueryError(
+                    "Unary expression only applicable on a numeric scalar"
+                )
+
+        return cast(Union[Formula, Timeseries, float, int, str], coefficient)
+
+    def visit_unary_op(self, node: Node, children: Sequence[Any]) -> Any:
+        return UNARY_OPERATORS[node.text]
 
     def visit_coefficient(
         self, node: Node, children: Sequence[Union[Timeseries, int, float]]
