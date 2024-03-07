@@ -194,12 +194,15 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     ) -> Union[Formula, Timeseries, float, int, str]:
         unary_op, coefficient = children
         if unary_op:
-            # We want to transform -1 in 0 - 1.
             if isinstance(coefficient, float) or isinstance(coefficient, int):
                 return -coefficient
+            elif isinstance(coefficient, Formula) or isinstance(
+                coefficient, Timeseries
+            ):
+                return Formula(function_name=unary_op[0], parameters=[0, coefficient])
             else:
                 raise InvalidMQLQueryError(
-                    "Unary expression only applicable on a numeric scalar"
+                    f"Unary expression not supported for type {type(coefficient)}"
                 )
 
         return cast(Union[Formula, Timeseries, float, int, str], coefficient)

@@ -870,7 +870,30 @@ term_tests = [
         id="test expression with unary",
     ),
     pytest.param(
-        "count(c:custom/page_click@none) + (-1 + max(d:custom/app_load@millisecond))",
+        "count(c:custom/page_click@none) + -max(d:custom/app_load@millisecond)",
+        Formula(
+            function_name=ArithmeticOperator.PLUS.value,
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+                Formula(
+                    function_name=ArithmeticOperator.MINUS.value,
+                    parameters=[
+                        0,
+                        Timeseries(
+                            metric=Metric(mri="d:custom/app_load@millisecond"),
+                            aggregate="max",
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with unary on metric",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) + (-1 + -max(d:custom/app_load@millisecond))",
         Formula(
             function_name=ArithmeticOperator.PLUS.value,
             parameters=[
@@ -882,9 +905,15 @@ term_tests = [
                     function_name=ArithmeticOperator.PLUS.value,
                     parameters=[
                         -1,
-                        Timeseries(
-                            metric=Metric(mri="d:custom/app_load@millisecond"),
-                            aggregate="max",
+                        Formula(
+                            function_name=ArithmeticOperator.MINUS.value,
+                            parameters=[
+                                0,
+                                Timeseries(
+                                    metric=Metric(mri="d:custom/app_load@millisecond"),
+                                    aggregate="max",
+                                ),
+                            ],
                         ),
                     ],
                 ),
