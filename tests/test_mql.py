@@ -856,9 +856,22 @@ term_tests = [
         id="test expression with associativity",
     ),
     pytest.param(
-        "count(c:custom/page_click@none) + -1",
+        "-count(c:custom/page_click@none)",
         Formula(
-            function_name=ArithmeticOperator.PLUS.value,
+            function_name="negate",
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+            ],
+        ),
+        id="test expression with single unary on metric",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) - -1",
+        Formula(
+            function_name=ArithmeticOperator.MINUS.value,
             parameters=[
                 Timeseries(
                     metric=Metric(mri="c:custom/page_click@none"),
@@ -879,9 +892,8 @@ term_tests = [
                     aggregate="count",
                 ),
                 Formula(
-                    function_name=ArithmeticOperator.MINUS.value,
+                    function_name="negate",
                     parameters=[
-                        0,
                         Timeseries(
                             metric=Metric(mri="d:custom/app_load@millisecond"),
                             aggregate="max",
@@ -906,9 +918,8 @@ term_tests = [
                     parameters=[
                         -1,
                         Formula(
-                            function_name=ArithmeticOperator.MINUS.value,
+                            function_name="negate",
                             parameters=[
-                                0,
                                 Timeseries(
                                     metric=Metric(mri="d:custom/app_load@millisecond"),
                                     aggregate="max",

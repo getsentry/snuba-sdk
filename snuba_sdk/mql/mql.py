@@ -114,7 +114,7 @@ TERM_OPERATORS: Mapping[str, str] = {
 }
 
 UNARY_OPERATORS: Mapping[str, str] = {
-    "-": ArithmeticOperator.MINUS.value,
+    "-": "negate",
 }
 
 
@@ -199,7 +199,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             elif isinstance(coefficient, Formula) or isinstance(
                 coefficient, Timeseries
             ):
-                return Formula(function_name=unary_op[0], parameters=[0, coefficient])
+                return Formula(function_name=unary_op[0], parameters=[coefficient])
             else:
                 raise InvalidMQLQueryError(
                     f"Unary expression not supported for type {type(coefficient)}"
