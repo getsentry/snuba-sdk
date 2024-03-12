@@ -8,7 +8,12 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, ConditionGroup
 from snuba_sdk.expressions import InvalidExpressionError
-from snuba_sdk.formula import PREFIX_TO_INFIX, Formula, FormulaParameterGroup
+from snuba_sdk.formula import (
+    PREFIX_ALIASES,
+    PREFIX_TO_INFIX,
+    Formula,
+    FormulaParameterGroup,
+)
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 from snuba_sdk.visitors import Translation
 
@@ -180,7 +185,10 @@ class FormulaMQLPrinter:
             separator = f" {PREFIX_TO_INFIX[formula.function_name]} "
             mql_string = f"({separator.join(param_strings)})"
         else:
-            mql_string = f"{formula.function_name}{self._visit_aggregate_params(formula.aggregate_params)}({', '.join(param_strings)})"
+            mql_string = (
+                f"{PREFIX_ALIASES.get(formula.function_name) or formula.function_name}"
+                f"{self._visit_aggregate_params(formula.aggregate_params)}({', '.join(param_strings)})"
+            )
 
         mql_string += f"{self._visit_filters(formula.filters)}"
         mql_string += f"{self._visit_groupby(formula.groupby)}"

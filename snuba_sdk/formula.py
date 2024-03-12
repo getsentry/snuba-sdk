@@ -33,6 +33,8 @@ PREFIX_TO_INFIX: dict[str, str] = {
     ArithmeticOperator.DIVIDE.value: "/",
 }
 
+PREFIX_ALIASES: dict[str, str] = {"negate": "-"}
+
 
 @dataclass(frozen=True)
 class Formula:

@@ -1,6 +1,11 @@
 Changelog and versioning
 ==========================
 
+2.0.31
+------
+
+- Add support for generating correct unary expressions in MQL.
+
 2.0.30
 ------
 
