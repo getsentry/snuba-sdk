@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.30
+------
+
+### Various fixes & improvements
+
+- feat(mql): Add support for unary operator (#179) by @iambriccardo
+
 2.0.29
 ------
 - Fix filters grammar to avoid ambiguity
