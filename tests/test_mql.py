@@ -855,6 +855,120 @@ term_tests = [
         ),
         id="test expression with associativity",
     ),
+    pytest.param(
+        "-count(c:custom/page_click@none)",
+        Formula(
+            function_name="negate",
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+            ],
+        ),
+        id="test expression with single unary on metric",
+    ),
+    pytest.param(
+        "-(-count(c:custom/page_click@none))",
+        Formula(
+            function_name="negate",
+            parameters=[
+                Formula(
+                    function_name="negate",
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(mri="c:custom/page_click@none"),
+                            aggregate="count",
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with nested unary on metric",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) - -1",
+        Formula(
+            function_name=ArithmeticOperator.MINUS.value,
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+                -1,
+            ],
+        ),
+        id="test expression with unary",
+    ),
+    pytest.param(
+        "-(count(c:custom/page_click@none) + -1)",
+        Formula(
+            function_name="negate",
+            parameters=[
+                Formula(
+                    function_name=ArithmeticOperator.PLUS.value,
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(mri="c:custom/page_click@none"),
+                            aggregate="count",
+                        ),
+                        -1,
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with unary on parenthesis expression",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) + -max(d:custom/app_load@millisecond)",
+        Formula(
+            function_name=ArithmeticOperator.PLUS.value,
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+                Formula(
+                    function_name="negate",
+                    parameters=[
+                        Timeseries(
+                            metric=Metric(mri="d:custom/app_load@millisecond"),
+                            aggregate="max",
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with unary on metric",
+    ),
+    pytest.param(
+        "count(c:custom/page_click@none) + (-1 + -max(d:custom/app_load@millisecond))",
+        Formula(
+            function_name=ArithmeticOperator.PLUS.value,
+            parameters=[
+                Timeseries(
+                    metric=Metric(mri="c:custom/page_click@none"),
+                    aggregate="count",
+                ),
+                Formula(
+                    function_name=ArithmeticOperator.PLUS.value,
+                    parameters=[
+                        -1,
+                        Formula(
+                            function_name="negate",
+                            parameters=[
+                                Timeseries(
+                                    metric=Metric(mri="d:custom/app_load@millisecond"),
+                                    aggregate="max",
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        id="test expression with complex unary",
+    ),
 ]
 
 
