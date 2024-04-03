@@ -5,7 +5,7 @@ import pytest
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
-from snuba_sdk.metrics_query_visitors import OrOptimizer
+from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.timeseries import Metric, Timeseries
 

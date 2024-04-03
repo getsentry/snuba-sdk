@@ -7,9 +7,10 @@ from typing import Any
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
-from snuba_sdk.metrics_query_visitors import OrOptimizer, Validator
+from snuba_sdk.metrics_query_visitors import Validator
 from snuba_sdk.mql_visitor import MQLPrinter
 from snuba_sdk.query import BaseQuery
+from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 
