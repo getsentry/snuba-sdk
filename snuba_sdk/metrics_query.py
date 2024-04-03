@@ -7,7 +7,7 @@ from typing import Any
 
 from snuba_sdk.expressions import Limit, Offset
 from snuba_sdk.formula import Formula
-from snuba_sdk.metrics_query_visitors import Validator
+from snuba_sdk.metrics_query_visitors import OrOptimizer, Validator
 from snuba_sdk.mql_visitor import MQLPrinter
 from snuba_sdk.query import BaseQuery
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -92,8 +92,17 @@ class MetricsQuery(BaseQuery):
 
     def serialize(self) -> str | dict[str, Any]:
         self.validate()
+        self._optimize()
         result = MQL_PRINTER.visit(self)
         return result
+
+    def _optimize(self) -> None:
+        if isinstance(self.query, str):
+            raise ValueError(
+                "Expected a Formula or Timeseries query, got a str. Hint: call validate before optimizing?"
+            )
+        if self.query is not None:
+            self.query = OrOptimizer().optimize(self.query)
 
 
 MQL_PRINTER = MQLPrinter()
