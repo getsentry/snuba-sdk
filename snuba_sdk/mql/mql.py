@@ -10,6 +10,7 @@ from parsimonious.exceptions import ParseError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import Node, NodeVisitor
 
+from snuba_sdk import Function
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
@@ -51,12 +52,14 @@ condition_op = "!"
 
 joint_operator = comma / and
 
-tag_key = ~r"[a-zA-Z0-9_.]+"
+tag_key = tag_key_str / (open_square_bracket _ tag_key_str (_ comma _ tag_key_str)* _ close_square_bracket)
+tag_key_str = ~r"[a-zA-Z0-9_.]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 unquoted_string = ~r'[^,\[\]\"}}{{\(\)\s]+'
-string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
+string_tuple = open_square_bracket _ tuple_value (_ comma _ tuple_value)* _ close_square_bracket
+tuple_value = string_tuple / quoted_string / unquoted_string
 
 target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
@@ -287,7 +290,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         else:
             condition_op, lhs, _, _, _, rhs = factor
             op = Op.EQ
-            if not condition_op and isinstance(rhs, list):
+            if not condition_op and (isinstance(rhs, list) or (isinstance(rhs, Function) and rhs.function == "tuple")):
                 op = Op.IN
             elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
                 if isinstance(rhs, str):
@@ -328,8 +331,22 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     def visit_condition_op(self, node: Node, children: Sequence[Any]) -> Op:
         return Op(node.text)
 
-    def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Column:
-        return Column(node.text)
+    def visit_tag_key(self, node: Node, children: Sequence[Any]) -> Function | Column:
+        tags_keys = children[0]
+        if isinstance(tags_keys, str):
+            return Column(tags_keys)
+
+        _, _, tag_key, other_tags_keys, *_ = tags_keys
+        tags_keys_columns = [Column(tag_key)]
+        if other_tags_keys:
+            for other_tag_key in other_tags_keys:
+                _, _, _, other_tag_key_value = other_tag_key
+                tags_keys_columns.append(Column(other_tag_key_value))
+
+        return Function("tuple", tags_keys_columns)
+
+    def visit_tag_key_str(self, node: Node, children: Sequence[Any]) -> Column:
+        return node.text
 
     def visit_tag_value(
         self, node: Node, children: Sequence[Union[str, Sequence[str]]]
@@ -350,9 +367,10 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         match = text.replace('\\"', '"')
         return match
 
-    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
+    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Function:
         _, _, first, zero_or_more_others, _, _ = children
-        return [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
+        string_tuple = [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
+        return Function("tuple", string_tuple)
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)

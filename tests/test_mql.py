@@ -582,6 +582,10 @@ def test_parse_mql_base(mql_string: str, metrics_query: Formula | Timeseries) ->
     result = parse_mql(mql_string)
     assert result == metrics_query
 
+def test():
+    result = parse_mql('sum(foo){transaction:[["1", "2"], ["3", "4"]]}')
+    assert result == []
+
 
 term_tests = [
     pytest.param(
