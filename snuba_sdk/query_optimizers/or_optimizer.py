@@ -22,7 +22,7 @@ class OrOptimizer:
                 new_filters.append(cond)
 
         if optimized:
-            replace(query, filters=new_filters)
+            return replace(query, filters=new_filters)
         return query
 
     def _optimize_condition(
