@@ -98,11 +98,7 @@ class MetricsQuery(BaseQuery):
         return result
 
     def _optimize(self) -> None:
-        if isinstance(self.query, str):
-            raise ValueError(
-                "Expected a Formula or Timeseries query, got a str. Hint: call validate before optimizing?"
-            )
-        if self.query is not None:
+        if isinstance(self.query, (Formula, Timeseries)):
             self.query = OrOptimizer().optimize(self.query)
 
 

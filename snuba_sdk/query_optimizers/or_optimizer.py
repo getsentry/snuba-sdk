@@ -1,15 +1,13 @@
-from snuba_sdk.conditions import (
-    BooleanCondition,
-    BooleanOp,
-    Condition,
-    Op,
-)
+from dataclasses import replace
+from typing import Union
+
+from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.formula import Formula
 from snuba_sdk.timeseries import Timeseries
 
 
 class OrOptimizer:
-    def optimize(self, query: Formula | Timeseries) -> Formula | Timeseries:
+    def optimize(self, query: Union[Formula, Timeseries]) -> Union[Formula, Timeseries]:
         if query.filters is None:
             return query
 
@@ -23,28 +21,13 @@ class OrOptimizer:
             else:
                 new_filters.append(cond)
 
-        if not optimized:
-            return query
-        elif isinstance(query, Timeseries):
-            return Timeseries(
-                metric=query.metric,
-                aggregate=query.aggregate,
-                aggregate_params=query.aggregate_params,
-                filters=new_filters,
-                groupby=query.groupby,
-            )
-        else:
-            return Formula(
-                function_name=query.function_name,
-                parameters=query.parameters,
-                aggregate_params=query.aggregate_params,
-                filters=new_filters,
-                groupby=query.groupby,
-            )
+        if optimized:
+            replace(query, filters=new_filters)
+        return query
 
     def _optimize_condition(
-        self, cond: BooleanCondition | Condition
-    ) -> BooleanCondition | Condition | None:
+        self, cond: Union[BooleanCondition, Condition]
+    ) -> Union[BooleanCondition, Condition, None]:
         """
         Given a condition, returns the optimized version, or None if it can't be optimized
         """
