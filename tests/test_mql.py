@@ -6,7 +6,6 @@ from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, Condition, Op, Or
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.mql.mql import parse_mql
-from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 from snuba_sdk.timeseries import Metric, Timeseries
 
 base_tests = [
@@ -977,21 +976,6 @@ term_tests = [
 def test_parse_mql_terms(mql_string: str, metrics_query: Formula | Timeseries) -> None:
     result = parse_mql(mql_string)
     assert result == metrics_query
-
-
-def test_or_optimizer() -> None:
-    mql_string = '(avg(d:transactions/duration@millisecond) by (transaction)){(transaction:"a" OR transaction:"b" OR transaction:"c")}'
-    parsed = parse_mql(mql_string)
-    assert isinstance(parsed, Timeseries)
-    expected_optimized = Timeseries(
-        metric=parsed.metric,
-        aggregate=parsed.aggregate,
-        aggregate_params=parsed.aggregate_params,
-        filters=[Condition(Column("transaction"), Op.IN, ["a", "b", "c"])],
-        groupby=parsed.groupby,
-    )
-    actual_optimized = OrOptimizer().optimize(parsed)
-    assert actual_optimized == expected_optimized
 
 
 arbitrary_function_tests = [

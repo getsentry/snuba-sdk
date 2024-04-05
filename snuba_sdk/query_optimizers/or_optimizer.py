@@ -1,7 +1,7 @@
 from dataclasses import replace
 from typing import Union
 
-from snuba_sdk.conditions import BooleanCondition, Condition, Op, Or
+from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
 from snuba_sdk.formula import Formula
 from snuba_sdk.timeseries import Timeseries
 
@@ -31,7 +31,7 @@ class OrOptimizer:
         """
         Given a condition, returns the optimized version, or None if it can't be optimized
         """
-        if not isinstance(cond, Or):
+        if not isinstance(cond, BooleanCondition) or cond.op != BooleanOp.OR:
             return None
         shared_lhs = None
         rhsides = []
