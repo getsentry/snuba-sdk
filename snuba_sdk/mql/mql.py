@@ -23,7 +23,7 @@ class InvalidMQLQueryError(Exception):
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 
 MQL_GRAMMAR = Grammar(
-    rf"""
+    r"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
 
