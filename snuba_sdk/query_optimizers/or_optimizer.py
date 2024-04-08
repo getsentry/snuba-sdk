@@ -8,6 +8,14 @@ from snuba_sdk.timeseries import Timeseries
 
 class OrOptimizer:
     def optimize(self, query: Union[Formula, Timeseries]) -> Union[Formula, Timeseries]:
+        """
+        Given a query, returns a new query with optimized or conditions.
+
+        Specifically, any condition in query.filters that have the form:
+        BooleanCondition(OR, [tag=val1,tag=val2, tag=val3, ...])
+        become
+        Condition(tag, IN, [tag=val1,tag=val2, tag=val3, ...])
+        """
         if query.filters is None:
             return query
 
