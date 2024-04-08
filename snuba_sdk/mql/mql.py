@@ -50,7 +50,7 @@ tag_key = ~r"[a-zA-Z0-9_.]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-unquoted_string = ~r'[^,\[\]\"}}{{\(\)\s]+'
+unquoted_string = ~r'[^,\[\]\"}{\(\)\s]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
@@ -78,7 +78,7 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 inner_filter = metric (open_brace (_ filter_expr _)? close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r'[^:\(\){{}}\[\]"`,]+:[^/\(\){{}}\[\]"`,]+/[^@\(\){{}}\[\]"`,]+@[^\(\){{}}\[\]"`,]+'
+unquoted_mri = ~r'[^:\(\){}\[\]"`,]+:[^/\(\){}\[\]"`,]+/[^@\(\){}\[\]"`,]+@[^\(\){}\[\]"`,]+'
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
@@ -86,8 +86,8 @@ open_paren = "("
 close_paren = ")"
 open_square_bracket = "["
 close_square_bracket = "]"
-open_brace = "{{"
-close_brace = "}}"
+open_brace = "{"
+close_brace = "}"
 comma = ","
 backtick = "`"
 colon = ":"
