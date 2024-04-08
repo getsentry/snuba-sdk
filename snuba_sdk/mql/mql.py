@@ -78,7 +78,7 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 inner_filter = metric (open_brace (_ filter_expr _)? close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
 quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r'[^:\(\){{}}\[\]"`]+:[^/\(\){{}}\[\]"`]+/[^@\(\){{}}\[\]"`]+@[^\(\){{}}\[\]"`]+'
+unquoted_mri = ~r'[^:\(\){{}}\[\]"`,]+:[^/\(\){{}}\[\]"`,]+/[^@\(\){{}}\[\]"`,]+@[^\(\){{}}\[\]"`,]+'
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
