@@ -38,9 +38,18 @@ class OrOptimizer:
         """
         if not isinstance(cond, BooleanCondition) or cond.op != BooleanOp.OR:
             return None
-        shared_lhs = None
-        rhsides = []
-        for curr in cond.conditions:
+
+        if len(cond.conditions) == 0:
+            return None
+
+        curr = cond.conditions[0]
+        if not isinstance(curr, Condition) or curr.op != Op.EQ:
+            # can't be optimized
+            return None
+        shared_lhs = curr.lhs
+        rhsides = [curr.rhs]
+        for i in range(1, len(cond.conditions)):
+            curr = cond.conditions[i]
             if (
                 not isinstance(curr, Condition)
                 or curr.op != Op.EQ
@@ -48,9 +57,5 @@ class OrOptimizer:
             ):
                 # can't be optimized
                 return None
-            if not shared_lhs:
-                shared_lhs = curr.lhs
             rhsides += [curr.rhs]
-        assert shared_lhs
-        assert rhsides
         return Condition(shared_lhs, Op.IN, rhsides)  # type: ignore
