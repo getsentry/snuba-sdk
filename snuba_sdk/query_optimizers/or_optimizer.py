@@ -5,7 +5,7 @@ from snuba_sdk.conditions import ConditionGroup
 
 
 class OrOptimizer:
-    def optimize(self, condition_group: ConditionGroup) -> ConditionGroup | None:
+    def optimize(self, condition_group: ConditionGroup) -> Union[ConditionGroup, None]:
         """
         Given a condition group, returns a new condition group with optimized or-conditions,
         or None if the conditions can't be optimized.

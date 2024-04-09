@@ -38,7 +38,7 @@ def test_unsupported() -> None:
         )
     ]
     actual = OrOptimizer().optimize(condition_group)
-    assert actual == None
+    assert actual is None
 
 
 def test_snql() -> None:
