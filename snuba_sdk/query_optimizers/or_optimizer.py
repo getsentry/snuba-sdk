@@ -1,28 +1,25 @@
-from dataclasses import replace
 from typing import Union
 
 from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
-from snuba_sdk.formula import Formula
-from snuba_sdk.timeseries import Timeseries
+from snuba_sdk.conditions import ConditionGroup
 
 
 class OrOptimizer:
-    def optimize(self, query: Union[Formula, Timeseries]) -> Union[Formula, Timeseries]:
+    def optimize(self, condition_group: ConditionGroup) -> ConditionGroup | None:
         """
-        Given a query, returns a new query with optimized or conditions.
+        Given a condition group, returns a new condition group with optimized or-conditions,
+        or None if the conditions can't be optimized.
 
-        Specifically, any condition in query.filters that have the form:
+        Specifically, any conditions that have the form:
         BooleanCondition(OR, [tag=val1,tag=val2, tag=val3, ...])
         become
         Condition(tag, IN, [tag=val1,tag=val2, tag=val3, ...])
         """
-        if query.filters is None:
-            return query
-
         optimized = False
         new_filters = []
-        for cond in query.filters:
+        for cond in condition_group:
             res = self._optimize_condition(cond)
+
             if res is not None:
                 optimized = True
                 new_filters.append(res)
@@ -30,8 +27,8 @@ class OrOptimizer:
                 new_filters.append(cond)
 
         if optimized:
-            return replace(query, filters=new_filters)
-        return query
+            return new_filters
+        return None
 
     def _optimize_condition(
         self, cond: Union[BooleanCondition, Condition]

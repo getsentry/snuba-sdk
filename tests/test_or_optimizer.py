@@ -1,43 +1,74 @@
 from snuba_sdk.column import Column
-from snuba_sdk.conditions import Condition, Op
-from snuba_sdk.formula import Formula
-from snuba_sdk.mql.mql import parse_mql
+from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
+from snuba_sdk.entity import Entity
+from snuba_sdk.query import Query
 from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
-from snuba_sdk.timeseries import Timeseries
 
 
-def test_timeseries() -> None:
-    mql_string = '(avg(d:transactions/duration@millisecond) by (transaction)){transaction:"a" OR transaction:"b" OR transaction:"c"}'
-    parsed = parse_mql(mql_string)
-    assert isinstance(parsed, Timeseries)
-    expected_optimized = Timeseries(
-        metric=parsed.metric,
-        aggregate=parsed.aggregate,
-        aggregate_params=parsed.aggregate_params,
-        filters=[Condition(Column("transaction"), Op.IN, ["a", "b", "c"])],
-        groupby=parsed.groupby,
-    )
-    actual_optimized = OrOptimizer().optimize(parsed)
-    assert actual_optimized == expected_optimized
-
-
-def test_formula() -> None:
-    mql_string = '(avg(d:transactions/duration@millisecond) / sum(d:transactions/duration@millisecond)){transaction:"a" OR transaction:"b" OR transaction:"c"}'
-    parsed = parse_mql(mql_string)
-    assert isinstance(parsed, Formula)
-    expected_optimized = Formula(
-        function_name=parsed.function_name,
-        parameters=parsed.parameters,
-        aggregate_params=parsed.aggregate_params,
-        filters=[Condition(Column("transaction"), Op.IN, ["a", "b", "c"])],
-        groupby=parsed.groupby,
-    )
-    actual_optimized = OrOptimizer().optimize(parsed)
-    assert actual_optimized == expected_optimized
+def test_basic() -> None:
+    condition_group = [
+        BooleanCondition(
+            BooleanOp.OR,
+            [
+                Condition(Column("transaction"), Op.EQ, "a"),
+                Condition(Column("transaction"), Op.EQ, "b"),
+                Condition(Column("transaction"), Op.EQ, "c"),
+            ],
+        )
+    ]
+    expected = [Condition(Column("transaction"), Op.IN, ["a", "b", "c"])]
+    actual = OrOptimizer().optimize(condition_group)
+    assert actual == expected
 
 
 def test_unsupported() -> None:
-    mql_string = '(avg(d:transactions/duration@millisecond) by (transaction)){transaction:"a" OR (transaction:"b" OR transaction:"c")}'
-    parsed = parse_mql(mql_string)
-    actual_optimized = OrOptimizer().optimize(parsed)
-    assert actual_optimized == parsed
+    condition_group = [
+        BooleanCondition(
+            BooleanOp.OR,
+            [
+                Condition(Column("transaction"), Op.EQ, "a"),
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(Column("transaction"), Op.EQ, "b"),
+                        Condition(Column("transaction"), Op.EQ, "c"),
+                    ],
+                ),
+            ],
+        )
+    ]
+    actual = OrOptimizer().optimize(condition_group)
+    assert actual == None
+
+
+def test_snql() -> None:
+    query = (
+        Query(Entity("events"))
+        .set_select([Column("event_id")])
+        .set_where(
+            [
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(Column("transaction"), Op.EQ, "a"),
+                        Condition(Column("transaction"), Op.EQ, "b"),
+                        Condition(Column("transaction"), Op.EQ, "c"),
+                    ],
+                ),
+            ]
+        )
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600)
+    )
+    expected = (
+        "MATCH (events)",
+        "SELECT event_id",
+        "WHERE transaction IN array('a', 'b', 'c')",
+        "LIMIT 10",
+        "OFFSET 1",
+        "GRANULARITY 3600",
+    )
+
+    actual = query.serialize()
+    assert " ".join(expected) == actual

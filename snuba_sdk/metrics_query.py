@@ -98,8 +98,13 @@ class MetricsQuery(BaseQuery):
         return result
 
     def _optimize(self) -> None:
-        if isinstance(self.query, (Formula, Timeseries)):
-            self.query = OrOptimizer().optimize(self.query)
+        if (
+            isinstance(self.query, (Formula, Timeseries))
+            and self.query.filters is not None
+        ):
+            new_filters = OrOptimizer().optimize(self.query.filters)
+            if new_filters is not None:
+                self.query = replace(self.query, filters=new_filters)
 
 
 MQL_PRINTER = MQLPrinter()
