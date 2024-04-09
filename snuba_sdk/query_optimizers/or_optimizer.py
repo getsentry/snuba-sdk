@@ -1,7 +1,12 @@
 from typing import Union
 
-from snuba_sdk.conditions import BooleanCondition, BooleanOp, Condition, Op
-from snuba_sdk.conditions import ConditionGroup
+from snuba_sdk.conditions import (
+    BooleanCondition,
+    BooleanOp,
+    Condition,
+    ConditionGroup,
+    Op,
+)
 
 
 class OrOptimizer:
