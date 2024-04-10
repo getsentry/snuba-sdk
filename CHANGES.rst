@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.32
+------
+
+### Various fixes & improvements
+
+- feat: OrOptimizer (#183) by @kylemumma
+
 2.0.31
 ------
 
