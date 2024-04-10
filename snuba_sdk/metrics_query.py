@@ -10,6 +10,7 @@ from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import Validator
 from snuba_sdk.mql_visitor import MQLPrinter
 from snuba_sdk.query import BaseQuery
+from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
 
@@ -92,8 +93,18 @@ class MetricsQuery(BaseQuery):
 
     def serialize(self) -> str | dict[str, Any]:
         self.validate()
+        self._optimize()
         result = MQL_PRINTER.visit(self)
         return result
+
+    def _optimize(self) -> None:
+        if (
+            isinstance(self.query, (Formula, Timeseries))
+            and self.query.filters is not None
+        ):
+            new_filters = OrOptimizer().optimize(self.query.filters)
+            if new_filters is not None:
+                self.query = replace(self.query, filters=new_filters)
 
 
 MQL_PRINTER = MQLPrinter()

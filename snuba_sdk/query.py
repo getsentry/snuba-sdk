@@ -14,6 +14,8 @@ from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQueryError, Printer, Validator
 from snuba_sdk.relationships import Join
 
+from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
+
 PRINTER = Printer()
 PRETTY_PRINTER = Printer(pretty=True)
 VALIDATOR = Validator()
@@ -167,8 +169,16 @@ class Query(BaseQuery):
 
     def serialize(self) -> str:
         self.validate()
-        return PRINTER.visit(self)
+        optimized = self._optimize()
+        return PRINTER.visit(optimized)
 
     def print(self) -> str:
         self.validate()
         return PRETTY_PRINTER.visit(self)
+
+    def _optimize(self) -> Query:
+        if self.where is not None:
+            new_where = OrOptimizer().optimize(self.where)
+            if new_where is not None:
+                return replace(self, where=new_where)
+        return self

@@ -581,6 +581,57 @@ metrics_query_timeseries_to_mql_tests = [
         },
         id="test_unary_negation",
     ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[
+                    BooleanCondition(
+                        BooleanOp.OR,
+                        [
+                            Condition(Column("transaction"), Op.EQ, "a"),
+                            Condition(Column("transaction"), Op.EQ, "b"),
+                            Condition(Column("transaction"), Op.EQ, "c"),
+                        ],
+                    )
+                ],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'max(d:transactions/duration@millisecond){transaction:["a", "b", "c"]}',
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {},
+            },
+        },
+        id="or_optimizer_query",
+    ),
 ]
 
 
@@ -1007,6 +1058,61 @@ metrics_query_formula_to_mql_tests = [
             },
         },
         id="test curried arbitrary function with inner arbitrary function",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Formula(
+                ArithmeticOperator.DIVIDE.value,
+                [
+                    Timeseries(
+                        metric=Metric(public_name="foo"),
+                        aggregate="sum",
+                    ),
+                    1000,
+                ],
+                filters=[
+                    BooleanCondition(
+                        BooleanOp.OR,
+                        [
+                            Condition(Column("transaction"), Op.EQ, "a"),
+                            Condition(Column("transaction"), Op.EQ, "b"),
+                            Condition(Column("transaction"), Op.EQ, "c"),
+                        ],
+                    )
+                ],
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            limit=Limit(100),
+            offset=Offset(5),
+            indexer_mappings={},
+        ),
+        {
+            "mql": '(sum(foo) / 1000){transaction:["a", "b", "c"]}',
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": 100,
+                "offset": 5,
+                "indexer_mappings": {},
+            },
+        },
+        id="test_or_optimized",
     ),
 ]
 
