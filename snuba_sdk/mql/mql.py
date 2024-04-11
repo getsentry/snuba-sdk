@@ -77,7 +77,8 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 
 inner_filter = metric (open_brace (_ filter_expr _)? close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
-quoted_mri = backtick unquoted_mri backtick
+quoted_mri = backtick lenient_mri backtick
+lenient_mri = ~r'[^:`]+:[^/`]+/[^@,`]+@[^`]+'
 unquoted_mri = ~r'[^:\(\){}\[\]"`,]+:[^/\(\){}\[\]"`,]+/[^@\(\){}\[\]"`,]+@[^\(\){}\[\]"`,]+'
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
@@ -526,6 +527,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text[1:-1]))
+
+    def visit_lenient_mri(self, node: Node, children: Sequence[Any]) -> Metric:
+        return Metric(mri=str(node.text))
 
     def visit_unquoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text))
