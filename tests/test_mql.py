@@ -26,6 +26,14 @@ base_tests = [
         id="test unquoted mri name",
     ),
     pytest.param(
+        "sum(`avg(d:transactions/Duration.Metric@{millisecond})`)",
+        Timeseries(
+            metric=Metric(mri="avg(d:transactions/Duration.Metric@{millisecond})"),
+            aggregate="sum",
+        ),
+        id="test weird mri name",
+    ),
+    pytest.param(
         "sum(`transactions.duration`)",
         Timeseries(metric=Metric(public_name="transactions.duration"), aggregate="sum"),
         id="test quoted public name 1",
