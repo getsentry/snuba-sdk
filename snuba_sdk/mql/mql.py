@@ -22,13 +22,8 @@ class InvalidMQLQueryError(Exception):
 
 AGGREGATE_PLACEHOLDER_NAME = "AGGREGATE_PLACEHOLDER"
 
-METRIC_TYPE_REGEX = r"(c|s|d|g|e)"
-METRIC_NAMESPACE_REGEX = r"[a-zA-Z0-9_]+"
-METRIC_NAME_REGEX = r"([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)"
-METRIC_UNIT_REGEX = r"([\w.]*)"
-
 MQL_GRAMMAR = Grammar(
-    rf"""
+    r"""
 expression = term (_ expr_op _ term)*
 expr_op = "+" / "-"
 
@@ -55,7 +50,7 @@ tag_key = ~r"[a-zA-Z0-9_.]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-unquoted_string = ~r'[^,\[\]\"}}{{\(\)\s]+'
+unquoted_string = ~r'[^,\[\]\"}{\(\)\s]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
@@ -82,8 +77,9 @@ group_by_name_tuple = open_paren _ group_by_name (_ comma _ group_by_name)* _ cl
 
 inner_filter = metric (open_brace (_ filter_expr _)? close_brace)? (group_by)?
 metric = quoted_mri / unquoted_mri / quoted_public_name / unquoted_public_name
-quoted_mri = backtick unquoted_mri backtick
-unquoted_mri = ~r"{METRIC_TYPE_REGEX}:{METRIC_NAMESPACE_REGEX}/{METRIC_NAME_REGEX}@{METRIC_UNIT_REGEX}"
+quoted_mri = backtick lenient_mri backtick
+lenient_mri = ~r'[^:`]+:[^/`]+/[^@,`]+@[^`]+'
+unquoted_mri = ~r'[^:\(\){}\[\]"`,]+:[^/\(\){}\[\]"`,]+/[^@\(\){}\[\]"`,]+@[^\(\){}\[\]"`,]+'
 quoted_public_name = backtick unquoted_public_name backtick
 unquoted_public_name = ~r"([a-z_]+(?:\.[a-z_]+)*)"
 
@@ -91,8 +87,8 @@ open_paren = "("
 close_paren = ")"
 open_square_bracket = "["
 close_square_bracket = "]"
-open_brace = "{{"
-close_brace = "}}"
+open_brace = "{"
+close_brace = "}"
 comma = ","
 backtick = "`"
 colon = ":"
@@ -531,6 +527,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_quoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text[1:-1]))
+
+    def visit_lenient_mri(self, node: Node, children: Sequence[Any]) -> Metric:
+        return Metric(mri=str(node.text))
 
     def visit_unquoted_mri(self, node: Node, children: Sequence[Any]) -> Metric:
         return Metric(mri=str(node.text))

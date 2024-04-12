@@ -10,20 +10,28 @@ from snuba_sdk.timeseries import Metric, Timeseries
 
 base_tests = [
     pytest.param(
-        "sum(`d:transactions/Duration.Metric@millisecond`)",
+        "sum(`d:transactions/Duration.Metric@{millisecond}`)",
         Timeseries(
-            metric=Metric(mri="d:transactions/Duration.Metric@millisecond"),
+            metric=Metric(mri="d:transactions/Duration.Metric@{millisecond}"),
             aggregate="sum",
         ),
         id="test quoted mri name",
     ),
     pytest.param(
-        "sum(d:transactions/Duration@millisecond)",
+        "sum(d:transactions/organizations.api.v1@millisecond)",
         Timeseries(
-            metric=Metric(mri="d:transactions/Duration@millisecond"),
+            metric=Metric(mri="d:transactions/organizations.api.v1@millisecond"),
             aggregate="sum",
         ),
         id="test unquoted mri name",
+    ),
+    pytest.param(
+        "sum(`avg(d:transactions/Duration.Metric@{millisecond})`)",
+        Timeseries(
+            metric=Metric(mri="avg(d:transactions/Duration.Metric@{millisecond})"),
+            aggregate="sum",
+        ),
+        id="test weird mri name",
     ),
     pytest.param(
         "sum(`transactions.duration`)",
