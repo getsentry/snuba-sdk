@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.33
+------
+
+### Various fixes & improvements
+
+- feat(ddm): Add lenient MRI regex (#184) by @iambriccardo
+
 2.0.32
 ------
 
