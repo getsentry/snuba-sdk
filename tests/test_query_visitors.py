@@ -13,6 +13,7 @@ from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import Direction, LimitBy, OrderBy
 from snuba_sdk.query import Query
+from snuba_sdk.storage import Storage
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 tests = [
@@ -32,6 +33,23 @@ tests = [
             "GRANULARITY 3600",
         ),
         id="basic query",
+    ),
+    pytest.param(
+        Query(Storage("events"))
+        .set_select([Column("event_id")])
+        .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
+        .set_limit(10)
+        .set_offset(1)
+        .set_granularity(3600),
+        (
+            "MATCH STORAGE(events)",
+            "SELECT event_id",
+            "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+        ),
+        id="basic storage query",
     ),
     pytest.param(
         Query(
@@ -94,6 +112,68 @@ tests = [
             "TOTALS True",
         ),
         id="query with all clauses",
+    ),
+    pytest.param(
+        Query(
+            match=Storage("events", 1000.0),
+            select=[
+                Column("title"),
+                Function("uniq", [Column("event_id")], "uniq_events"),
+                CurriedFunction("quantile", [0.5], [Column("duration")], "p50"),
+            ],
+            groupby=[Column("title")],
+            where=[
+                Condition(Column("timestamp"), Op.GT, NOW),
+                Condition(Function("toHour", [Column("timestamp")]), Op.LTE, NOW),
+                Condition(Column("project_id"), Op.IN, Function("tuple", [1, 2, 3])),
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(Column("event_id"), Op.EQ, "abc"),
+                        Condition(Column("duration"), Op.GT, 10),
+                    ],
+                ),
+            ],
+            having=[
+                Condition(Function("uniq", [Column("event_id")]), Op.GT, 1),
+                BooleanCondition(
+                    BooleanOp.OR,
+                    [
+                        Condition(Function("uniq", [Column("event_id")]), Op.GTE, 10),
+                        Condition(
+                            CurriedFunction("quantile", [0.5], [Column("duration")]),
+                            Op.GTE,
+                            99,
+                        ),
+                    ],
+                ),
+            ],
+            orderby=[OrderBy(Column("title"), Direction.ASC)],
+            limitby=LimitBy([Column("title")], 5),
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+            totals=Totals(True),
+        ),
+        (
+            "MATCH STORAGE(events SAMPLE 1000.0)",
+            "SELECT title, uniq(event_id) AS `uniq_events`, quantile(0.5)(duration) AS `p50`",
+            "BY title",
+            (
+                "WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006') "
+                "AND toHour(timestamp) <= toDateTime('2021-01-02T03:04:05.000006') "
+                "AND project_id IN tuple(1, 2, 3) "
+                "AND (event_id = 'abc' OR duration > 10)"
+            ),
+            "HAVING uniq(event_id) > 1 AND (uniq(event_id) >= 10 OR quantile(0.5)(duration) >= 99)",
+            "ORDER BY title ASC",
+            "LIMIT 5 BY title",
+            "LIMIT 10",
+            "OFFSET 1",
+            "GRANULARITY 3600",
+            "TOTALS True",
+        ),
+        id="storage query with all clauses",
     ),
     pytest.param(
         Query(Entity("events", None, 0.2))
