@@ -6,6 +6,7 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import And, BooleanCondition, BooleanOp, Condition, Op, Or
 from snuba_sdk.entity import Entity
+from snuba_sdk.storage import Storage
 from snuba_sdk.expressions import Granularity, Limit, Offset, Totals
 from snuba_sdk.formula import ArithmeticOperator, Formula
 from snuba_sdk.function import CurriedFunction, Function, Identifier, Lambda
@@ -49,6 +50,7 @@ __all__ = [
     "Relationship",
     "Request",
     "Rollup",
+    "Storage",
     "Timeseries",
     "Totals",
 ]

@@ -31,7 +31,7 @@ class ColumnSet:
 
 
 @dataclass(frozen=True, init=False)
-class EntityModel:
+class DataModel:
     column_set: ColumnSet
     required_time_column: Column
     required_columns: set[Column] = field(init=False, default_factory=set)

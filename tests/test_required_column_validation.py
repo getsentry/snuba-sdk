@@ -14,9 +14,9 @@ from snuba_sdk.query_validation import RequiredColumnError, validate_required_co
 from snuba_sdk.query_visitors import ExpressionSearcher
 from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.schema import Column as ColumnModel
-from snuba_sdk.schema import EntityModel
+from snuba_sdk.schema import DataModel
 
-SCHEMA = EntityModel(
+SCHEMA = DataModel(
     [
         ColumnModel("test1"),
         ColumnModel("test2"),

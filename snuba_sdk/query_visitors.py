@@ -9,6 +9,7 @@ from snuba_sdk import query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import ConditionGroup
 from snuba_sdk.entity import Entity
+from snuba_sdk.storage import Storage
 from snuba_sdk.expressions import Expression, Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
@@ -153,8 +154,8 @@ class Printer(QueryVisitor[str]):
 
         return formatted
 
-    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> str:
-        if isinstance(match, (Entity, Join)):
+    def _visit_match(self, match: Union[Entity, Storage, Join, main.Query]) -> str:
+        if isinstance(match, (Entity, Storage, Join)):
             return f"MATCH {self.translator.visit(match)}"
 
         # We need a separate translator that can recurse through the subqueries
@@ -301,7 +302,7 @@ class Validator(QueryVisitor[None]):
         if query.totals and query.totals.totals and not query.groupby:
             raise InvalidQueryError("totals is only valid with a groupby")
 
-    def _visit_match(self, match: Union[Entity, Join, main.Query]) -> None:
+    def _visit_match(self, match: Union[Entity, Storage, Join, main.Query]) -> None:
         match.validate()
 
     def __list_validate(self, values: Optional[Sequence[Expression]]) -> None:
