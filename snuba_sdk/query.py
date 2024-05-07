@@ -65,7 +65,7 @@ class Query(BaseQuery):
     """
 
     # These must be listed in the order that they must appear in the SnQL query.
-    match: Union[Entity, Join, Query]
+    match: Union[Entity, Storage, Join, Query]
     select: Optional[Sequence[SelectableExpression]] = None
     groupby: Optional[Sequence[SelectableExpression]] = None
     array_join: Optional[Sequence[Column]] = None
