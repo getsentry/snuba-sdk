@@ -1,6 +1,13 @@
 Changelog and versioning
 ==========================
 
+2.0.34
+------
+
+### Various fixes & improvements
+
+- feat: Add support for storage queries.
+
 2.0.33
 ------
 
