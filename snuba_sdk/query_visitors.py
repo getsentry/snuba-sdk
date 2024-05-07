@@ -9,13 +9,13 @@ from snuba_sdk import query as main
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import ConditionGroup
 from snuba_sdk.entity import Entity
-from snuba_sdk.storage import Storage
 from snuba_sdk.expressions import Expression, Granularity, Limit, Offset, Totals
 from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_validation import validate_match
 from snuba_sdk.relationships import Join
 from snuba_sdk.snuba import is_aggregation_function
+from snuba_sdk.storage import Storage
 from snuba_sdk.visitors import ExpressionFinder, Translation, entity_aliases
 
 

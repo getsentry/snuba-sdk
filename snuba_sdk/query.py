@@ -13,6 +13,7 @@ from snuba_sdk.function import CurriedFunction, Function
 from snuba_sdk.orderby import LimitBy, OrderBy
 from snuba_sdk.query_visitors import InvalidQueryError, Printer, Validator
 from snuba_sdk.relationships import Join
+from snuba_sdk.storage import Storage
 
 from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 
@@ -85,8 +86,10 @@ class Query(BaseQuery):
         right away since the select columns can be added later.
 
         """
-        if not isinstance(self.match, (Query, Join, Entity)):
-            raise InvalidQueryError("queries must have a valid Entity, Join or Query")
+        if not isinstance(self.match, (Query, Join, Entity, Storage)):
+            raise InvalidQueryError(
+                "queries must have a valid Entity, Storage, Join or Query"
+            )
 
         if isinstance(self.match, Query):
             try:
@@ -98,9 +101,11 @@ class Query(BaseQuery):
         new = replace(self, **{field: value})
         return new
 
-    def set_match(self, match: Union[Entity, Join, Query]) -> Query:
+    def set_match(self, match: Union[Entity, Storage, Join, Query]) -> Query:
         if not isinstance(match, (Entity, Join, Query)):
-            raise InvalidQueryError(f"{match} must be a valid Entity, Join or Query")
+            raise InvalidQueryError(
+                f"{match} must be a valid Entity, Storage, Join or Query"
+            )
         elif isinstance(match, Query):
             try:
                 match.validate()
