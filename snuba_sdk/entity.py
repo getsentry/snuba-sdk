@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from snuba_sdk.expressions import Expression
-from snuba_sdk.schema import EntityModel
+from snuba_sdk.schema import DataModel
 
 entity_name_re = re.compile(r"^[a-zA-Z_]+$")
 
@@ -17,7 +17,7 @@ class Entity(Expression):
     name: str
     alias: Optional[str] = None
     sample: Optional[float] = None
-    data_model: Optional[EntityModel] = field(hash=False, default=None)
+    data_model: Optional[DataModel] = field(hash=False, default=None)
 
     def validate(self) -> None:
         # TODO: There should be a whitelist of entity names at some point
@@ -35,10 +35,8 @@ class Entity(Expression):
                 raise InvalidEntityError(f"'{self.alias}' is not a valid alias")
 
         if self.data_model is not None:
-            if not isinstance(self.data_model, EntityModel):
-                raise InvalidEntityError(
-                    "data_model must be an instance of EntityModel"
-                )
+            if not isinstance(self.data_model, DataModel):
+                raise InvalidEntityError("data_model must be an instance of DataModel")
 
     def __repr__(self) -> str:
         alias = f", alias='{self.alias}'" if self.alias is not None else ""

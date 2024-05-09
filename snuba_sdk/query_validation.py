@@ -18,6 +18,7 @@ from snuba_sdk.expressions import Expression
 from snuba_sdk.function import CurriedFunction
 from snuba_sdk.relationships import Join
 from snuba_sdk.schema import Column as ColumnModel
+from snuba_sdk.storage import Storage
 
 
 class InvalidMatchError(Exception):
@@ -39,6 +40,8 @@ def validate_match(
         _validate_subquery(query.match, all_columns)
     elif isinstance(query.match, Join):
         _validate_join(query.match, all_columns)
+    elif isinstance(query.match, Storage):
+        _validate_storage(query.match, all_columns)
     else:
         _validate_entity(query.match, all_columns)
 
@@ -90,6 +93,20 @@ def _validate_join(match: Join, all_columns: set[Expression]) -> None:
             raise InvalidMatchError(
                 f"column '{c.name}' has incorrect alias for entity {c.entity}: '{c.entity.alias}'"
             )
+
+
+def _validate_storage(match: Storage, all_columns: set[Expression]) -> None:
+    """
+    Perform the checks to validate the match storage:
+
+    Ensure that all the columns referenced in the query are in the data model for that storage.
+
+    :param match: The Storage of the query.
+    :param all_columns: All the columns referenced in the query.
+    """
+    for column in all_columns:
+        assert isinstance(column, Column)
+        column.validate_data_model(match)
 
 
 def _validate_entity(match: Entity, all_columns: set[Expression]) -> None:

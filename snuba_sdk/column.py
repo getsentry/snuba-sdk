@@ -1,9 +1,10 @@
 import re
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Union
 
 from snuba_sdk.entity import Entity
 from snuba_sdk.expressions import Expression, InvalidExpressionError
+from snuba_sdk.storage import Storage
 
 
 class InvalidColumnError(InvalidExpressionError):
@@ -63,12 +64,12 @@ class Column(Expression):
             super().__setattr__("subscriptable", subscriptable)
             super().__setattr__("key", key)
 
-    def validate_data_model(self, entity: Entity) -> None:
-        if entity.data_model is None:
+    def validate_data_model(self, match: Union[Entity, Storage]) -> None:
+        if match.data_model is None:
             return
 
         to_check = self.subscriptable if self.subscriptable else self.name
-        if not entity.data_model.contains(to_check):
+        if not match.data_model.contains(to_check):
             raise InvalidColumnError(
-                f"entity '{entity.name}' does not support the column '{self.name}'"
+                f"'{match.name}' does not support the column '{self.name}'"
             )

@@ -14,11 +14,17 @@ from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import Query
 from snuba_sdk.query_visitors import InvalidQueryError
 from snuba_sdk.request import Flags, InvalidFlagError, InvalidRequestError, Request
+from snuba_sdk.storage import Storage
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
 
 NOW = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 BASIC_QUERY = (
     Query(Entity("events"))
+    .set_select([Column("event_id"), Column("title")])
+    .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
+)
+BASIC_STORAGE_QUERY = (
+    Query(Storage("events"))
     .set_select([Column("event_id"), Column("title")])
     .set_where([Condition(Column("timestamp"), Op.GT, NOW)])
 )
@@ -51,6 +57,28 @@ tests = [
         "s/g",
         {
             "query": "MATCH (events) SELECT event_id, title WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
+            "consistent": True,
+            "turbo": True,
+            "debug": True,
+            "dry_run": True,
+            "dataset": "events",
+            "app_id": "default",
+            "tenant_ids": {"organization_id": 1, "referrer": "default"},
+            "parent_api": "s/g",
+            "legacy": True,
+        },
+        None,
+        id="flags",
+    ),
+    pytest.param(
+        "events",
+        "default",
+        {"organization_id": 1, "referrer": "default"},
+        BASIC_STORAGE_QUERY,
+        Flags(consistent=True, turbo=True, dry_run=True, legacy=True, debug=True),
+        "s/g",
+        {
+            "query": "MATCH STORAGE(events) SELECT event_id, title WHERE timestamp > toDateTime('2021-01-02T03:04:05.000006')",
             "consistent": True,
             "turbo": True,
             "debug": True,

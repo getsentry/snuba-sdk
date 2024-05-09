@@ -19,6 +19,7 @@ from snuba_sdk import (
     Op,
     OrderBy,
     Query,
+    Storage,
 )
 from snuba_sdk.query_validation import InvalidMatchError
 from snuba_sdk.query_visitors import InvalidQueryError
@@ -36,6 +37,18 @@ tests = [
             granularity=Granularity(3600),
         ),
         id="basic query",
+    ),
+    pytest.param(
+        Query(
+            match=Storage("events"),
+            select=[Column("event_id")],
+            groupby=None,
+            where=[Condition(Column("timestamp"), Op.GT, NOW)],
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+        ),
+        id="basic storage query",
     ),
     pytest.param(
         Query(
@@ -59,6 +72,29 @@ tests = [
             granularity=Granularity(3600),
         ),
         id="complex query",
+    ),
+    pytest.param(
+        Query(
+            match=Storage("events", 0.2),
+            select=[
+                Column("title"),
+                Column("tags[release:1]"),
+                Function("uniq", [Column("event_id")], "uniq_events"),
+            ],
+            groupby=[Column("title"), Column("tags[release:1]")],
+            where=[
+                Condition(Column("timestamp"), Op.GT, NOW),
+                Condition(Function("toHour", [Column("timestamp")]), Op.LTE, NOW),
+                Condition(Column("project_id"), Op.IN, Function("tuple", [1, 2, 3])),
+            ],
+            having=[Condition(Function("uniq", [Column("event_id")]), Op.GT, 1)],
+            orderby=[OrderBy(Column("title"), Direction.ASC)],
+            limitby=LimitBy([Column("title"), Column("event_id")], 5),
+            limit=Limit(10),
+            offset=Offset(1),
+            granularity=Granularity(3600),
+        ),
+        id="complex storage query",
     ),
     pytest.param(
         Query(Entity("events", None, 0.2))
@@ -247,7 +283,7 @@ tests = [
 
 
 @pytest.mark.parametrize("query", tests)
-def test_query(query: Query) -> None:
+def test_entity_query(query: Query) -> None:
     query.validate()
 
 

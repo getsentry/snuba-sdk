@@ -13,9 +13,10 @@ from snuba_sdk.query_validation import InvalidMatchError, validate_match
 from snuba_sdk.query_visitors import ExpressionSearcher
 from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.schema import Column as ColumnModel
-from snuba_sdk.schema import EntityModel
+from snuba_sdk.schema import DataModel
+from snuba_sdk.storage import Storage
 
-SCHEMA = EntityModel(
+SCHEMA = DataModel(
     [
         ColumnModel("test1"),
         ColumnModel("test2"),
@@ -26,6 +27,7 @@ SCHEMA = EntityModel(
     required_time_column=ColumnModel("time"),
 )
 ENTITY = Entity("test", None, None, SCHEMA)
+STORAGE = Storage("test", None, SCHEMA)
 BEFORE = datetime(2021, 1, 2, 3, 4, 5, 5, timezone.utc)
 AFTER = datetime(2021, 1, 2, 3, 4, 5, 6, timezone.utc)
 SEARCHER = ExpressionSearcher(Column)
@@ -44,7 +46,7 @@ entity_match_tests = [
             match=ENTITY,
             select=[Column("test1"), Column("outside")],
         ),
-        InvalidColumnError("entity 'test' does not support the column 'outside'"),
+        InvalidColumnError("'test' does not support the column 'outside'"),
         id="some columns not in data model",
     ),
 ]
@@ -52,6 +54,44 @@ entity_match_tests = [
 
 @pytest.mark.parametrize("query, exception", entity_match_tests)
 def test_entity_validate_match(query: Query, exception: Optional[Exception]) -> None:
+    query = query.set_where(
+        [
+            Condition(Column("required1"), Op.IN, [1, 2, 3]),
+            Condition(Column("required2"), Op.EQ, 1),
+            Condition(Column("time"), Op.GTE, BEFORE),
+            Condition(Column("time"), Op.LT, AFTER),
+        ],
+    )
+
+    if exception is not None:
+        with pytest.raises(type(exception), match=re.escape(str(exception))):
+            validate_match(query, SEARCHER)
+    else:
+        validate_match(query, SEARCHER)
+
+
+storage_match_tests = [
+    pytest.param(
+        Query(
+            match=STORAGE,
+            select=[Column("test1"), Column("required1")],
+        ),
+        None,
+        id="all columns in data model",
+    ),
+    pytest.param(
+        Query(
+            match=STORAGE,
+            select=[Column("test1"), Column("outside")],
+        ),
+        InvalidColumnError("'test' does not support the column 'outside'"),
+        id="some columns not in data model",
+    ),
+]
+
+
+@pytest.mark.parametrize("query, exception", storage_match_tests)
+def test_storage_validate_match(query: Query, exception: Optional[Exception]) -> None:
     query = query.set_where(
         [
             Condition(Column("required1"), Op.IN, [1, 2, 3]),

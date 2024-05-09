@@ -9,6 +9,7 @@ from snuba_sdk.aliased_expression import AliasedExpression
 from snuba_sdk.column import Column
 from snuba_sdk.conditions import BooleanCondition, Condition, Op, is_unary
 from snuba_sdk.entity import Entity
+from snuba_sdk.storage import Storage
 from snuba_sdk.expressions import (
     Expression,
     Granularity,
@@ -41,6 +42,8 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
             return self._visit_lambda(node)
         elif isinstance(node, Entity):
             return self._visit_entity(node)
+        elif isinstance(node, Storage):
+            return self._visit_storage(node)
         elif isinstance(node, Relationship):
             return self._visit_relationship(node)
         elif isinstance(node, Join):
@@ -92,6 +95,10 @@ class ExpressionVisitor(ABC, Generic[TVisited]):
 
     @abstractmethod
     def _visit_entity(self, entity: Entity) -> TVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_storage(self, storage: Storage) -> TVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -246,6 +253,15 @@ class Translation(ExpressionVisitor[str]):
                 sample_clause = f" SAMPLE {entity.sample:f}"
         return f"({alias_clause}{entity.name}{sample_clause})"
 
+    def _visit_storage(self, storage: Storage) -> str:
+        sample_clause = ""
+        if storage.sample is not None:
+            if storage.sample % 1 == 0:
+                sample_clause = f" SAMPLE {storage.sample:.1f}"
+            else:
+                sample_clause = f" SAMPLE {storage.sample:f}"
+        return f"STORAGE({storage.name}{sample_clause})"
+
     def _visit_relationship(self, relationship: Relationship) -> str:
         return f"{self.visit(relationship.lhs)} -[{relationship.name}]-> {self.visit(relationship.rhs)}"
 
@@ -372,6 +388,11 @@ class ExpressionFinder(ExpressionVisitor[Set[Expression]]):
     def _visit_entity(self, entity: Entity) -> set[Expression]:
         if isinstance(entity, self.exp_type):
             return set([entity])
+        return set()
+
+    def _visit_storage(self, storage: Storage) -> set[Expression]:
+        if isinstance(storage, self.exp_type):
+            return set([storage])
         return set()
 
     def _visit_relationship(self, relationship: Relationship) -> set[Expression]:
