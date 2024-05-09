@@ -34,4 +34,4 @@ class Storage(Expression):
 
     def __repr__(self) -> str:
         sample = f", sample={self.sample}" if self.sample is not None else ""
-        return f"Storage('{self.name}'{sample})"
+        return f"STORAGE('{self.name}'{sample})"
