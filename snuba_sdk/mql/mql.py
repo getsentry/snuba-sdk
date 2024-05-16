@@ -40,7 +40,7 @@ filter = target (open_brace (_ filter_expr _ )? close_brace)? (group_by)?
 
 filter_expr = filter_term (_ or _ filter_term)*
 filter_term = filter_factor (_ joint_operator? _ filter_factor)*
-filter_factor = (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_expr
+filter_factor = (condition_op? (variable / tag_key) _ colon _ suffix_wildcard_tag_value) / (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_expr
 nested_expr = open_paren _ filter_expr _ close_paren
 condition_op = "!"
 
@@ -48,9 +48,10 @@ joint_operator = comma / and
 
 tag_key = ~r"[a-zA-Z0-9_.]+"
 tag_value = quoted_string / unquoted_string / string_tuple / variable
+suffix_wildcard_tag_value = unquoted_string wildcard
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-unquoted_string = ~r'[^,\[\]\"}{\(\)\s]+'
+unquoted_string = ~r'[^,\[\]\"}{\(\)\s\*]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
@@ -95,6 +96,7 @@ colon = ":"
 and = "AND" / "and"
 or = "OR" / "or"
 quote = "\""
+wildcard = "*"
 _ = ~r"\s*"
 """
 )
@@ -283,13 +285,19 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         else:
             condition_op, lhs, _, _, _, rhs = factor
             op = Op.EQ
-            if not condition_op and isinstance(rhs, list):
+            if not condition_op and isinstance(rhs, list) and node.text[-1]=='*':
+                op = Op.LIKE
+                rhs = f"{rhs[0]}%"
+
+            elif not condition_op and isinstance(rhs, list):
                 op = Op.IN
+
             elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
                 if isinstance(rhs, str):
                     op = Op.NEQ
                 elif isinstance(rhs, list):
                     op = Op.NOT_IN
+
             return Condition(lhs[0], op, rhs)
 
     def visit_nested_expr(
@@ -332,6 +340,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     ) -> Any:
         tag_value = children[0]
         return tag_value
+
+    def visit_tag_value_suffix_wildcard(self, node: Node) -> Any:
+        return node
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
