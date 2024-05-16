@@ -341,9 +341,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         tag_value = children[0]
         return tag_value
 
-    def visit_tag_value_suffix_wildcard(self, node: Node) -> Any:
-        return node
-
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
 
