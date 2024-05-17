@@ -285,7 +285,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         else:
             condition_op, lhs, _, _, _, rhs = factor
             op = Op.EQ
-            if not condition_op and isinstance(rhs, list) and node.text[-1]=='*':
+            if not condition_op and isinstance(rhs, list) and node.text[-1] == '*':
                 op = Op.LIKE
                 rhs = f"{rhs[0]}%"
 
