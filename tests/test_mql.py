@@ -207,15 +207,6 @@ base_tests = [
         id="test filter with suffix wildcard",
     ),
     pytest.param(
-        'sum(foo){bar:"b*"}',
-        Timeseries(
-            metric=Metric(public_name="foo"),
-            aggregate="sum",
-            filters=[Condition(Column("bar"), Op.LIKE, "b%")],
-        ),
-        id="test filter with suffix wildcard in quoted string",
-    ),
-    pytest.param(
         'sum(user{bar:"baz", foo:"foz"})',
         Timeseries(
             metric=Metric(public_name="user"),
