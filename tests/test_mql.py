@@ -198,14 +198,69 @@ base_tests = [
         id="test filter inside aggregate with unquoted value",
     ),
     pytest.param(
-        'sum(foo){bar:b*}',
+        'sum(foo){bar:before_wildcard_*}',
         Timeseries(
             metric=Metric(public_name="foo"),
             aggregate="sum",
-            filters=[Condition(Column("bar"), Op.LIKE, "b%")],
+            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%")],
         ),
         id="test filter with suffix wildcard",
     ),
+    pytest.param(
+        'sum(foo){bar:before_wildcard_* and foo:"before_other_wildcard_*"}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[
+                And(
+                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%"),
+                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_%")]
+                )
+            ],        ),
+        id="test filter with mixed quoted/unquoted suffix wildcard",
+    ),
+    pytest.param(
+        'sum(foo){bar:"before_wildcard_*"}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%")],
+        ),
+        id="test filter with quoted suffix wildcard",
+    ),
+    pytest.param(
+        'sum(foo){bar:"before_wildcard_*" and foo:"before_other_wildcard_*"}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[
+                And(
+                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%"),
+                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_%")]
+                )
+            ],
+        ),
+        id="test filter with multiple quoted suffix wildcards",
+    ),
+    pytest.param(
+        'sum(foo){bar:"*_after_wildcard"}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[Condition(Column("bar"), Op.EQ, "*_after_wildcard")],
+        ),
+        id="test prefix wildcard does not work",
+    ),
+    pytest.param(
+        'sum(foo){!bar:"before_wildcard_*"}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[Condition(Column("bar"), Op.NOT_LIKE, "before_wildcard_%")],
+        ),
+        id="test filter with negated quoted suffix wildcard",
+    ),
+
     pytest.param(
         'sum(user{bar:"baz", foo:"foz"})',
         Timeseries(

@@ -40,19 +40,25 @@ filter = target (open_brace (_ filter_expr _ )? close_brace)? (group_by)?
 
 filter_expr = filter_term (_ or _ filter_term)*
 filter_term = filter_factor (_ joint_operator? _ filter_factor)*
-filter_factor = (condition_op? (variable / tag_key) _ colon _ suffix_wildcard_tag_value) / (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_expr
+filter_factor = (condition_op? (variable / tag_key) _ colon _ tag_value) / nested_expr
 nested_expr = open_paren _ filter_expr _ close_paren
 condition_op = "!"
 
 joint_operator = comma / and
-
+ 
 tag_key = ~r"[a-zA-Z0-9_.]+"
-tag_value = quoted_string / unquoted_string / string_tuple / variable
+tag_value = quoted_suffix_wildcard_tag_value / suffix_wildcard_tag_value / quoted_string_filter / unquoted_string_filter / string_tuple / variable 
 suffix_wildcard_tag_value = unquoted_string wildcard
+quoted_suffix_wildcard_tag_value = quote unquoted_string wildcard quote
+
+quoted_string_filter = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
+unquoted_string_filter = ~r'[^,\[\]\"}{\(\)\s\*]+'
+string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
+
+
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 unquoted_string = ~r'[^,\[\]\"}{\(\)\s\*]+'
-string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
@@ -284,19 +290,22 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             return factor
         else:
             condition_op, lhs, _, _, _, rhs = factor
+            contains_wildcard, rhs = rhs
             op = Op.EQ
-            if not condition_op and isinstance(rhs, list) and node.text[-1] == '*':
-                op = Op.LIKE
-                rhs = f"{rhs[0]}%"
+            if not condition_op and contains_wildcard and isinstance(rhs, str):
+                if contains_wildcard:
+                    op = Op.LIKE
 
             elif not condition_op and isinstance(rhs, list):
                 op = Op.IN
 
             elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
-                if isinstance(rhs, str):
+                if not contains_wildcard and isinstance(rhs, str):
                     op = Op.NEQ
-                elif isinstance(rhs, list):
+                elif not contains_wildcard and isinstance(rhs, list):
                     op = Op.NOT_IN
+                elif contains_wildcard and isinstance(rhs, str):
+                    op = Op.NOT_LIKE
 
             return Condition(lhs[0], op, rhs)
 
@@ -336,10 +345,29 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return Column(node.text)
 
     def visit_tag_value(
-        self, node: Node, children: Sequence[Union[str, Sequence[str]]]
+        self, node: Node, children: Sequence[tuple[bool, Union[str, Sequence[str]]]]
     ) -> Any:
-        tag_value = children[0]
-        return tag_value
+        contains_wildcard, tag_value = children[0]
+        return contains_wildcard, tag_value
+
+    def visit_quoted_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]):
+        _, text_before_wildcard, _, _ = children
+        rhs = f"{text_before_wildcard}%"
+        return True, rhs
+
+    def visit_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]):
+        text_before_wildcard, _ = children
+        rhs = f"{text_before_wildcard}%"
+        return True, rhs
+
+    def visit_quoted_string_filter(self, node:Node, children:Sequence[Any])-> Any:
+        text = str(node.text[1:-1])
+        match = text.replace('\\"', '"')
+        return False, match
+
+    def visit_unquoted_string_filter(self, node:Node, children:Sequence[Any])->Any:
+        return False, str(node.text)
+
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
@@ -356,7 +384,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
         _, _, first, zero_or_more_others, _, _ = children
-        return [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
+        return False, [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
