@@ -353,14 +353,14 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         self, node: Node, children: Sequence[Any]
     ) -> tuple[bool, str]:
         _, text_before_wildcard, _, _ = children
-        rhs = f"{text_before_wildcard}%"
+        rhs = f"{text_before_wildcard}*"
         return True, rhs
 
     def visit_suffix_wildcard_tag_value(
         self, node: Node, children: Sequence[Any]
     ) -> tuple[bool, str]:
         text_before_wildcard, _ = children
-        rhs = f"{text_before_wildcard}%"
+        rhs = f"{text_before_wildcard}*"
         return True, rhs
 
     def visit_quoted_string_filter(

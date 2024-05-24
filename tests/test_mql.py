@@ -202,7 +202,7 @@ base_tests = [
         Timeseries(
             metric=Metric(public_name="foo"),
             aggregate="sum",
-            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%")],
+            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*")],
         ),
         id="test filter with suffix wildcard",
     ),
@@ -213,8 +213,8 @@ base_tests = [
             aggregate="sum",
             filters=[
                 And(
-                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%"),
-                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_%")]
+                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
+                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*")]
                 )
             ],        ),
         id="test filter with mixed quoted/unquoted suffix wildcard",
@@ -224,7 +224,7 @@ base_tests = [
         Timeseries(
             metric=Metric(public_name="foo"),
             aggregate="sum",
-            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%")],
+            filters=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*")],
         ),
         id="test filter with quoted suffix wildcard",
     ),
@@ -235,8 +235,8 @@ base_tests = [
             aggregate="sum",
             filters=[
                 And(
-                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_%"),
-                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_%")]
+                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
+                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*")]
                 )
             ],
         ),
@@ -256,7 +256,7 @@ base_tests = [
         Timeseries(
             metric=Metric(public_name="foo"),
             aggregate="sum",
-            filters=[Condition(Column("bar"), Op.NOT_LIKE, "before_wildcard_%")],
+            filters=[Condition(Column("bar"), Op.NOT_LIKE, "before_wildcard_*")],
         ),
         id="test filter with negated quoted suffix wildcard",
     ),
