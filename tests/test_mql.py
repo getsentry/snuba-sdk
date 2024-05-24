@@ -198,7 +198,7 @@ base_tests = [
         id="test filter inside aggregate with unquoted value",
     ),
     pytest.param(
-        'sum(foo){bar:before_wildcard_*}',
+        "sum(foo){bar:before_wildcard_*}",
         Timeseries(
             metric=Metric(public_name="foo"),
             aggregate="sum",
@@ -213,10 +213,13 @@ base_tests = [
             aggregate="sum",
             filters=[
                 And(
-                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
-                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*")]
+                    conditions=[
+                        Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
+                        Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*"),
+                    ]
                 )
-            ],        ),
+            ],
+        ),
         id="test filter with mixed quoted/unquoted suffix wildcard",
     ),
     pytest.param(
@@ -235,8 +238,10 @@ base_tests = [
             aggregate="sum",
             filters=[
                 And(
-                    conditions=[Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
-                                Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*")]
+                    conditions=[
+                        Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
+                        Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*"),
+                    ]
                 )
             ],
         ),
@@ -260,7 +265,6 @@ base_tests = [
         ),
         id="test filter with negated quoted suffix wildcard",
     ),
-
     pytest.param(
         'sum(user{bar:"baz", foo:"foz"})',
         Timeseries(

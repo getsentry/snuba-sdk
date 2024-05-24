@@ -46,9 +46,9 @@ nested_expr = open_paren _ filter_expr _ close_paren
 condition_op = "!"
 
 joint_operator = comma / and
- 
+
 tag_key = ~r"[a-zA-Z0-9_.]+"
-tag_value = quoted_suffix_wildcard_tag_value / suffix_wildcard_tag_value / quoted_string_filter / unquoted_string_filter / string_tuple / variable 
+tag_value = quoted_suffix_wildcard_tag_value / suffix_wildcard_tag_value / quoted_string_filter / unquoted_string_filter / string_tuple / variable
 suffix_wildcard_tag_value = unquoted_string wildcard
 quoted_suffix_wildcard_tag_value = quote unquoted_string wildcard quote
 
