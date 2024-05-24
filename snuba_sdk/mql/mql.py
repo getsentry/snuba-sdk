@@ -55,8 +55,6 @@ quoted_string_filter = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 unquoted_string_filter = ~r'[^,\[\]\"}{\(\)\s\*]+'
 string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
-
-
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
 unquoted_string = ~r'[^,\[\]\"}{\(\)\s\*]+'
 
@@ -346,26 +344,26 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_tag_value(
         self, node: Node, children: Sequence[tuple[bool, Union[str, Sequence[str]]]]
-    ) -> Any:
+    ) -> tuple[bool, Any]:
         contains_wildcard, tag_value = children[0]
         return contains_wildcard, tag_value
 
-    def visit_quoted_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]):
+    def visit_quoted_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]) -> tuple[bool, str]:
         _, text_before_wildcard, _, _ = children
         rhs = f"{text_before_wildcard}%"
         return True, rhs
 
-    def visit_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]):
+    def visit_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]) ->  tuple[bool, str]:
         text_before_wildcard, _ = children
         rhs = f"{text_before_wildcard}%"
         return True, rhs
 
-    def visit_quoted_string_filter(self, node:Node, children:Sequence[Any])-> Any:
+    def visit_quoted_string_filter(self, node:Node, children:Sequence[Any])->  tuple[bool, str]:
         text = str(node.text[1:-1])
         match = text.replace('\\"', '"')
         return False, match
 
-    def visit_unquoted_string_filter(self, node:Node, children:Sequence[Any])->Any:
+    def visit_unquoted_string_filter(self, node:Node, children:Sequence[Any])-> tuple[bool, str]:
         return False, str(node.text)
 
 
@@ -382,7 +380,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         match = text.replace('\\"', '"')
         return match
 
-    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
+    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> tuple[bool, Sequence[str]]:
         _, _, first, zero_or_more_others, _, _ = children
         return False, [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
 
