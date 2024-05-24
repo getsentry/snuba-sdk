@@ -2,6 +2,7 @@
 Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
+
 from __future__ import annotations
 
 from typing import Any, Mapping, Sequence, Union, cast
@@ -348,24 +349,31 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         contains_wildcard, tag_value = children[0]
         return contains_wildcard, tag_value
 
-    def visit_quoted_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]) -> tuple[bool, str]:
+    def visit_quoted_suffix_wildcard_tag_value(
+        self, node: Node, children: Sequence[Any]
+    ) -> tuple[bool, str]:
         _, text_before_wildcard, _, _ = children
         rhs = f"{text_before_wildcard}%"
         return True, rhs
 
-    def visit_suffix_wildcard_tag_value(self, node:Node, children: Sequence[Any]) ->  tuple[bool, str]:
+    def visit_suffix_wildcard_tag_value(
+        self, node: Node, children: Sequence[Any]
+    ) -> tuple[bool, str]:
         text_before_wildcard, _ = children
         rhs = f"{text_before_wildcard}%"
         return True, rhs
 
-    def visit_quoted_string_filter(self, node:Node, children:Sequence[Any])->  tuple[bool, str]:
+    def visit_quoted_string_filter(
+        self, node: Node, children: Sequence[Any]
+    ) -> tuple[bool, str]:
         text = str(node.text[1:-1])
         match = text.replace('\\"', '"')
         return False, match
 
-    def visit_unquoted_string_filter(self, node:Node, children:Sequence[Any])-> tuple[bool, str]:
+    def visit_unquoted_string_filter(
+        self, node: Node, children: Sequence[Any]
+    ) -> tuple[bool, str]:
         return False, str(node.text)
-
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
@@ -380,7 +388,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         match = text.replace('\\"', '"')
         return match
 
-    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> tuple[bool, Sequence[str]]:
+    def visit_string_tuple(
+        self, node: Node, children: Sequence[Any]
+    ) -> tuple[bool, Sequence[str]]:
         _, _, first, zero_or_more_others, _, _ = children
         return False, [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
 
