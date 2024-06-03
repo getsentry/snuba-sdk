@@ -391,7 +391,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         self, node: Node, children: Sequence[Any]
     ) -> FilterFactorValue:
         _, _, first, zero_or_more_others, _, _ = children
-        return FilterFactorValue([first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False)
+        return FilterFactorValue(
+            [first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False
+        )
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
@@ -589,6 +591,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     def generic_visit(self, node: Node, children: Sequence[Any]) -> Any:
         """The generic visit method."""
         return children
+
 
 @dataclass
 class FilterFactorValue(object):

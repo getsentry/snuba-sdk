@@ -259,14 +259,12 @@ base_tests = [
                         Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*"),
                         Condition(Column("baz"), Op.EQ, "hello"),
                         Condition(Column("barbaz"), Op.NEQ, "foo"),
-
                     ]
                 )
             ],
         ),
         id="test filter with multiple quoted suffix wildcards and non-wildcard filters",
     ),
-
     pytest.param(
         'sum(foo){bar:"*_after_wildcard"}',
         Timeseries(

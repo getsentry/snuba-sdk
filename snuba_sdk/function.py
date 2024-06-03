@@ -114,6 +114,7 @@ class Function(CurriedFunction):
         init=False, default=None
     )
 
+
 identifier_re = re.compile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
