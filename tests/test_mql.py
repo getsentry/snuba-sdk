@@ -248,6 +248,26 @@ base_tests = [
         id="test filter with multiple quoted suffix wildcards",
     ),
     pytest.param(
+        'sum(foo){bar:"before_wildcard_*" and foo:"before_other_wildcard_*" and baz:hello and !barbaz:foo}',
+        Timeseries(
+            metric=Metric(public_name="foo"),
+            aggregate="sum",
+            filters=[
+                And(
+                    conditions=[
+                        Condition(Column("bar"), Op.LIKE, "before_wildcard_*"),
+                        Condition(Column("foo"), Op.LIKE, "before_other_wildcard_*"),
+                        Condition(Column("baz"), Op.EQ, "hello"),
+                        Condition(Column("barbaz"), Op.NEQ, "foo"),
+
+                    ]
+                )
+            ],
+        ),
+        id="test filter with multiple quoted suffix wildcards and non-wildcard filters",
+    ),
+
+    pytest.param(
         'sum(foo){bar:"*_after_wildcard"}',
         Timeseries(
             metric=Metric(public_name="foo"),

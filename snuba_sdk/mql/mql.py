@@ -5,6 +5,7 @@ Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence, Union, cast
 
 from parsimonious.exceptions import ParseError
@@ -288,8 +289,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             # If we have a parenthesized expression, we just return it.
             return factor
         else:
-            condition_op, lhs, _, _, _, rhs = factor
-            contains_wildcard, rhs = rhs
+            condition_op, lhs, _, _, _, filter_factor_value = factor
+            contains_wildcard = filter_factor_value.contains_wildcard
+            rhs = filter_factor_value.value
             op = Op.EQ
             if not condition_op and contains_wildcard and isinstance(rhs, str):
                 if contains_wildcard:
@@ -344,36 +346,33 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return Column(node.text)
 
     def visit_tag_value(
-        self, node: Node, children: Sequence[tuple[bool, Union[str, Sequence[str]]]]
-    ) -> tuple[bool, Any]:
-        contains_wildcard, tag_value = children[0]
-        return contains_wildcard, tag_value
+        self, node: Node, children: Sequence[FilterFactorValue]
+    ) -> FilterFactorValue:
+        return children[0]
 
     def visit_quoted_suffix_wildcard_tag_value(
         self, node: Node, children: Sequence[Any]
-    ) -> tuple[bool, str]:
+    ) -> FilterFactorValue:
         _, text_before_wildcard, _, _ = children
-        rhs = f"{text_before_wildcard}*"
-        return True, rhs
+        return FilterFactorValue(f"{text_before_wildcard}*", True)
 
     def visit_suffix_wildcard_tag_value(
         self, node: Node, children: Sequence[Any]
-    ) -> tuple[bool, str]:
+    ) -> FilterFactorValue:
         text_before_wildcard, _ = children
-        rhs = f"{text_before_wildcard}*"
-        return True, rhs
+        return FilterFactorValue(f"{text_before_wildcard}*", True)
 
     def visit_quoted_string_filter(
         self, node: Node, children: Sequence[Any]
-    ) -> tuple[bool, str]:
+    ) -> FilterFactorValue:
         text = str(node.text[1:-1])
         match = text.replace('\\"', '"')
-        return False, match
+        return FilterFactorValue(match, False)
 
     def visit_unquoted_string_filter(
         self, node: Node, children: Sequence[Any]
-    ) -> tuple[bool, str]:
-        return False, str(node.text)
+    ) -> FilterFactorValue:
+        return FilterFactorValue(str(node.text), False)
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
@@ -390,9 +389,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_string_tuple(
         self, node: Node, children: Sequence[Any]
-    ) -> tuple[bool, Sequence[str]]:
+    ) -> FilterFactorValue:
         _, _, first, zero_or_more_others, _, _ = children
-        return False, [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
+        return FilterFactorValue([first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False)
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
@@ -590,3 +589,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     def generic_visit(self, node: Node, children: Sequence[Any]) -> Any:
         """The generic visit method."""
         return children
+
+@dataclass
+class FilterFactorValue(object):
+    value: str | Sequence[str] | Condition | BooleanCondition
+    contains_wildcard: bool
