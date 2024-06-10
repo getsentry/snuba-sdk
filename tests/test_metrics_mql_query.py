@@ -364,10 +364,15 @@ metrics_query_timeseries_to_mql_tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
-                filters=[BooleanCondition(op=BooleanOp.AND, conditions=[
-                         Condition(Column("bar"), Op.NOT_LIKE, "baz*"),
-                        Condition(Column("foo"), Op.LIKE, "prefix*")
-                ])],
+                filters=[
+                    BooleanCondition(
+                        op=BooleanOp.AND,
+                        conditions=[
+                            Condition(Column("bar"), Op.NOT_LIKE, "baz*"),
+                            Condition(Column("foo"), Op.LIKE, "prefix*"),
+                        ],
+                    )
+                ],
                 groupby=None,
             ),
             start=NOW,
