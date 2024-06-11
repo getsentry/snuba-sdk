@@ -295,11 +295,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             contains_wildcard = filter_factor_value.contains_wildcard
             rhs = filter_factor_value.value
             op = Op.EQ
-            if (
-                not condition_op
-                and contains_wildcard
-                and isinstance(rhs, str)
-            ):
+            if not condition_op and contains_wildcard and isinstance(rhs, str):
                 op = Op.LIKE
 
             elif not condition_op and isinstance(rhs, list):
