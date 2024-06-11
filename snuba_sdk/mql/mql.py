@@ -295,9 +295,8 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             contains_wildcard = filter_factor_value.contains_wildcard
             rhs = filter_factor_value.value
             op = Op.EQ
-            if not condition_op and contains_wildcard and isinstance(rhs, str):
-                if contains_wildcard:
-                    op = Op.LIKE
+            if not condition_op and contains_wildcard and isinstance(rhs, str) and contains_wildcard:
+                op = Op.LIKE
 
             elif not condition_op and isinstance(rhs, list):
                 op = Op.IN
@@ -348,33 +347,33 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return Column(node.text)
 
     def visit_tag_value(
-        self, node: Node, children: Sequence[FilterFactorValue]
-    ) -> FilterFactorValue:
+        self, node: Node, children: Sequence[FilterFactor]
+    ) -> FilterFactor:
         return children[0]
 
     def visit_quoted_suffix_wildcard_tag_value(
         self, node: Node, children: Sequence[Any]
-    ) -> FilterFactorValue:
+    ) -> FilterFactor:
         _, text_before_wildcard, _, _ = children
-        return FilterFactorValue(f"{text_before_wildcard}*", True)
+        return FilterFactor(f"{text_before_wildcard}*", True)
 
     def visit_suffix_wildcard_tag_value(
         self, node: Node, children: Sequence[Any]
-    ) -> FilterFactorValue:
+    ) -> FilterFactor:
         text_before_wildcard, _ = children
-        return FilterFactorValue(f"{text_before_wildcard}*", True)
+        return FilterFactor(f"{text_before_wildcard}*", True)
 
     def visit_quoted_string_filter(
         self, node: Node, children: Sequence[Any]
-    ) -> FilterFactorValue:
+    ) -> FilterFactor:
         text = str(node.text[1:-1])
         match = text.replace('\\"', '"')
-        return FilterFactorValue(match, False)
+        return FilterFactor(match, False)
 
     def visit_unquoted_string_filter(
         self, node: Node, children: Sequence[Any]
-    ) -> FilterFactorValue:
-        return FilterFactorValue(str(node.text), False)
+    ) -> FilterFactor:
+        return FilterFactor(str(node.text), False)
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
@@ -391,9 +390,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
     def visit_string_tuple(
         self, node: Node, children: Sequence[Any]
-    ) -> FilterFactorValue:
+    ) -> FilterFactor:
         _, _, first, zero_or_more_others, _, _ = children
-        return FilterFactorValue(
+        return FilterFactor(
             [first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False
         )
 
@@ -596,6 +595,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
 
 
 @dataclass
-class FilterFactorValue(object):
+class FilterFactor(object):
     value: str | Sequence[str] | Condition | BooleanCondition
     contains_wildcard: bool
