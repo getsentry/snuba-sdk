@@ -299,7 +299,6 @@ class MQLVisitor(NodeVisitor):  # type: ignore
                 not condition_op
                 and contains_wildcard
                 and isinstance(rhs, str)
-                and contains_wildcard
             ):
                 op = Op.LIKE
 
