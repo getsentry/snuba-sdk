@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any, Mapping
+from typing import Mapping
 
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
