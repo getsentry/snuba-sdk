@@ -72,7 +72,7 @@ class Request:
         if self.flags is not None:
             self.flags.validate()
 
-    def to_dict(self) -> dict[str, bool | str | dict[str, Any]]:
+    def to_dict(self) -> dict[str, object]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
 
@@ -85,7 +85,7 @@ class Request:
         else:
             query = str(self.query.serialize())
 
-        ret: dict[str, bool | str | dict[str, Any]] = {
+        ret: dict[str, object] = {
             **flags,
             "query": query,
             "dataset": self.dataset,
