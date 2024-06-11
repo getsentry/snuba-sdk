@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any
+from typing import Any, Mapping
 
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
@@ -49,7 +49,7 @@ class Request:
     query: BaseQuery
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
-    tenant_ids: dict[str, str | int] = field(default_factory=dict)
+    tenant_ids: Mapping[str, str | int] = field(default_factory=dict)
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
