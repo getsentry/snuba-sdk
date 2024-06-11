@@ -295,7 +295,12 @@ class MQLVisitor(NodeVisitor):  # type: ignore
             contains_wildcard = filter_factor_value.contains_wildcard
             rhs = filter_factor_value.value
             op = Op.EQ
-            if not condition_op and contains_wildcard and isinstance(rhs, str) and contains_wildcard:
+            if (
+                not condition_op
+                and contains_wildcard
+                and isinstance(rhs, str)
+                and contains_wildcard
+            ):
                 op = Op.LIKE
 
             elif not condition_op and isinstance(rhs, list):
@@ -388,9 +393,7 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         match = text.replace('\\"', '"')
         return match
 
-    def visit_string_tuple(
-        self, node: Node, children: Sequence[Any]
-    ) -> FilterFactor:
+    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> FilterFactor:
         _, _, first, zero_or_more_others, _, _ = children
         return FilterFactor(
             [first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False
