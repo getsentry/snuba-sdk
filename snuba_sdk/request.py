@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any
+from typing import Mapping
 
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
@@ -49,7 +49,7 @@ class Request:
     query: BaseQuery
     flags: Flags = field(default_factory=Flags)
     parent_api: str = "<unknown>"
-    tenant_ids: dict[str, str | int] = field(default_factory=dict)
+    tenant_ids: Mapping[str, str | int] = field(default_factory=dict)
 
     def validate(self) -> None:
         if not self.dataset or not isinstance(self.dataset, str):
@@ -72,7 +72,7 @@ class Request:
         if self.flags is not None:
             self.flags.validate()
 
-    def to_dict(self) -> dict[str, bool | str | dict[str, Any]]:
+    def to_dict(self) -> dict[str, object]:
         self.validate()
         flags = self.flags.to_dict() if self.flags is not None else {}
 
@@ -85,7 +85,7 @@ class Request:
         else:
             query = str(self.query.serialize())
 
-        ret: dict[str, bool | str | dict[str, Any]] = {
+        ret: dict[str, object] = {
             **flags,
             "query": query,
             "dataset": self.dataset,
