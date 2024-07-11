@@ -2,8 +2,10 @@
 Contains the definition of MQL, the Metrics Query Language.
 Use `parse_mql()` to parse an MQL string into a MetricsQuery.
 """
+
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence, Union, cast
 
 from parsimonious.exceptions import ParseError
@@ -47,11 +49,16 @@ condition_op = "!"
 joint_operator = comma / and
 
 tag_key = ~r"[a-zA-Z0-9_.]+"
-tag_value = quoted_string / unquoted_string / string_tuple / variable
+tag_value = quoted_suffix_wildcard_tag_value / suffix_wildcard_tag_value / quoted_string_filter / unquoted_string_filter / string_tuple / variable
+suffix_wildcard_tag_value = unquoted_string wildcard
+quoted_suffix_wildcard_tag_value = quote unquoted_string wildcard quote
+
+quoted_string_filter = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
+unquoted_string_filter = ~r'[^,\[\]\"}{\(\)\s\*]+'
+string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
 
 quoted_string = ~r'"([^"\\]*(?:\\.[^"\\]*)*)"'
-unquoted_string = ~r'[^,\[\]\"}{\(\)\s]+'
-string_tuple = open_square_bracket _ (quoted_string / unquoted_string) (_ comma _ (quoted_string / unquoted_string))* _ close_square_bracket
+unquoted_string = ~r'[^,\[\]\"}{\(\)\s\*]+'
 
 target = variable / nested_expression / function / metric
 variable = "$" ~r"[a-zA-Z0-9_.]+"
@@ -95,6 +102,7 @@ colon = ":"
 and = "AND" / "and"
 or = "OR" / "or"
 quote = "\""
+wildcard = "*"
 _ = ~r"\s*"
 """
 )
@@ -276,20 +284,31 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         self, node: Node, children: Sequence[Any]
     ) -> Union[Condition, BooleanCondition]:
         factor, *_ = children
+
         # A nested filter can be both a boolean condition but also a single condition, since we allow `(condition)`.
         if isinstance(factor, BooleanCondition) or isinstance(factor, Condition):
             # If we have a parenthesized expression, we just return it.
             return factor
         else:
-            condition_op, lhs, _, _, _, rhs = factor
+            # condition_op, (variable or tag_key), space, colon, space, tag_value
+            condition_op, lhs, _, _, _, filter_factor_value = factor
+            contains_wildcard = filter_factor_value.contains_wildcard
+            rhs = filter_factor_value.value
             op = Op.EQ
-            if not condition_op and isinstance(rhs, list):
+            if not condition_op and contains_wildcard and isinstance(rhs, str):
+                op = Op.LIKE
+
+            elif not condition_op and isinstance(rhs, list):
                 op = Op.IN
+
             elif len(condition_op) == 1 and condition_op[0] == Op.NOT:
-                if isinstance(rhs, str):
+                if not contains_wildcard and isinstance(rhs, str):
                     op = Op.NEQ
-                elif isinstance(rhs, list):
+                elif not contains_wildcard and isinstance(rhs, list):
                     op = Op.NOT_IN
+                elif contains_wildcard and isinstance(rhs, str):
+                    op = Op.NOT_LIKE
+
             return Condition(lhs[0], op, rhs)
 
     def visit_nested_expr(
@@ -328,10 +347,33 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         return Column(node.text)
 
     def visit_tag_value(
-        self, node: Node, children: Sequence[Union[str, Sequence[str]]]
-    ) -> Any:
-        tag_value = children[0]
-        return tag_value
+        self, node: Node, children: Sequence[FilterFactor]
+    ) -> FilterFactor:
+        return children[0]
+
+    def visit_quoted_suffix_wildcard_tag_value(
+        self, node: Node, children: Sequence[Any]
+    ) -> FilterFactor:
+        _, text_before_wildcard, _, _ = children
+        return FilterFactor(f"{text_before_wildcard}*", True)
+
+    def visit_suffix_wildcard_tag_value(
+        self, node: Node, children: Sequence[Any]
+    ) -> FilterFactor:
+        text_before_wildcard, _ = children
+        return FilterFactor(f"{text_before_wildcard}*", True)
+
+    def visit_quoted_string_filter(
+        self, node: Node, children: Sequence[Any]
+    ) -> FilterFactor:
+        text = str(node.text[1:-1])
+        match = text.replace('\\"', '"')
+        return FilterFactor(match, False)
+
+    def visit_unquoted_string_filter(
+        self, node: Node, children: Sequence[Any]
+    ) -> FilterFactor:
+        return FilterFactor(str(node.text), False)
 
     def visit_unquoted_string(self, node: Node, children: Sequence[Any]) -> str:
         return str(node.text)
@@ -346,9 +388,11 @@ class MQLVisitor(NodeVisitor):  # type: ignore
         match = text.replace('\\"', '"')
         return match
 
-    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> Sequence[str]:
+    def visit_string_tuple(self, node: Node, children: Sequence[Any]) -> FilterFactor:
         _, _, first, zero_or_more_others, _, _ = children
-        return [first[0], *(v[0] for _, _, _, v in zero_or_more_others)]
+        return FilterFactor(
+            [first[0], *(v[0] for _, _, _, v in zero_or_more_others)], False
+        )
 
     def visit_group_by_name(self, node: Node, children: Sequence[Any]) -> Column:
         return Column(node.text)
@@ -546,3 +590,9 @@ class MQLVisitor(NodeVisitor):  # type: ignore
     def generic_visit(self, node: Node, children: Sequence[Any]) -> Any:
         """The generic visit method."""
         return children
+
+
+@dataclass
+class FilterFactor(object):
+    value: str | Sequence[str] | Condition | BooleanCondition
+    contains_wildcard: bool

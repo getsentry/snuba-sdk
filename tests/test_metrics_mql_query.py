@@ -280,6 +280,140 @@ metrics_query_timeseries_to_mql_tests = [
                 ),
                 aggregate="max",
                 aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.LIKE, "baz*")],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'max(d:transactions/duration@millisecond){bar:"baz*"}',
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {},
+            },
+        },
+        id="wildcard filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[Condition(Column("bar"), Op.NOT_LIKE, "baz*")],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'max(d:transactions/duration@millisecond){!bar:"baz*"}',
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {},
+            },
+        },
+        id="negated wildcard filter query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
+                filters=[
+                    BooleanCondition(
+                        op=BooleanOp.AND,
+                        conditions=[
+                            Condition(Column("bar"), Op.NOT_LIKE, "baz*"),
+                            Condition(Column("foo"), Op.LIKE, "prefix*"),
+                        ],
+                    )
+                ],
+                groupby=None,
+            ),
+            start=NOW,
+            end=NOW + timedelta(days=14),
+            rollup=Rollup(interval=3600, totals=None, granularity=3600),
+            scope=MetricsScope(
+                org_ids=[1], project_ids=[11], use_case_id="transactions"
+            ),
+            indexer_mappings={},
+        ),
+        {
+            "mql": 'max(d:transactions/duration@millisecond){(!bar:"baz*" AND foo:"prefix*")}',
+            "mql_context": {
+                "start": "2023-01-02T03:04:05+00:00",
+                "end": "2023-01-16T03:04:05+00:00",
+                "rollup": {
+                    "orderby": None,
+                    "granularity": 3600,
+                    "interval": 3600,
+                    "with_totals": None,
+                },
+                "scope": {
+                    "org_ids": [1],
+                    "project_ids": [11],
+                    "use_case_id": "transactions",
+                },
+                "limit": None,
+                "offset": None,
+                "indexer_mappings": {},
+            },
+        },
+        id="multiple wildcard filters query",
+    ),
+    pytest.param(
+        MetricsQuery(
+            query=Timeseries(
+                metric=Metric(
+                    mri="d:transactions/duration@millisecond",
+                ),
+                aggregate="max",
+                aggregate_params=None,
                 filters=[
                     Condition(Column("bar"), Op.EQ, "baz"),
                     Condition(Column("foo"), Op.EQ, "foz"),

@@ -306,7 +306,7 @@ class Translation(ExpressionVisitor[str]):
 
         assert rhs is not None
         op = ""
-        if cond.op == Op.NEQ or cond.op == Op.NOT_IN:
+        if cond.op == Op.NEQ or cond.op == Op.NOT_IN or cond.op == Op.NOT_LIKE:
             op = "!"
         return f"{op}{self.visit(cond.lhs)}:{rhs}"
 
