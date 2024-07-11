@@ -1,6 +1,14 @@
 Changelog and versioning
 ==========================
 
+2.0.35
+------
+
+### Various fixes & improvements
+
+- feat(metrics): add suffix wildcards & corresponding tests to filters in MQL grammar (#187) by @shellmayr
+- type tenant_ids as Mapping for variance (#188) by @asottile-sentry
+
 2.0.34
 ------
 
