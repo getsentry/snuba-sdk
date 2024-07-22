@@ -199,7 +199,7 @@ class Rollup:
             if not isinstance(self.totals, bool):
                 raise InvalidExpressionError("totals must be a boolean")
 
-        if self.interval is None and self.totals is None:
+        if self.interval is None and self.totals in (None, False):
             raise InvalidExpressionError(
                 "Rollup must have at least one of interval or totals"
             )

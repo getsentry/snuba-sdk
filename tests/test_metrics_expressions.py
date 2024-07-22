@@ -40,6 +40,15 @@ rollup_tests = [
     ),
     pytest.param(
         None,
+        False,
+        None,
+        60,
+        None,
+        InvalidExpressionError("Rollup must have at least one of interval or totals"),
+        id="3",
+    ),
+    pytest.param(
+        None,
         True,
         Direction.ASC,
         60,
