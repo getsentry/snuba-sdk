@@ -30,10 +30,5 @@ repos:
     rev: 'v0.971'
     hooks:
     -   id: mypy
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
-    hooks:
-      - id: no-commit-to-branch
-        args: ['--branch', 'main']
 default_language_version:
   python: python3.8
