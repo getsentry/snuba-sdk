@@ -5,6 +5,10 @@ from typing import Any, Dict, List, Union
 from snuba_sdk.query import BaseQuery
 
 
+class InvalidDeleteQueryError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class DeleteQuery(BaseQuery):
     """
@@ -24,15 +28,15 @@ class DeleteQuery(BaseQuery):
     """
 
     storage_name: str
-    column_conditions: Dict[str, List[Any]]
+    column_conditions: Dict[str, List[Union[str, int]]]
 
     def validate(self) -> None:
-        """
-        i dont think we need to do any input validation at the sdk
-        level bc inputs will be validated at the endpoint and the proper
-        response code returned.
-        """
-        return
+        if "project_id" not in self.column_conditions:
+            raise InvalidDeleteQueryError(
+                "missing required column condition on 'project_id'"
+            )
+        elif len(self.column_conditions["project_id"]) == 0:
+            raise InvalidDeleteQueryError("column condition on 'project_id' is empty")
 
     def serialize(self) -> Union[str, Dict[str, Any]]:
         # the body of the request

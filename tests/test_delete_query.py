@@ -2,30 +2,37 @@ import json
 
 import pytest
 
-from snuba_sdk.delete_query import DeleteQuery
-
-queries = [
-    pytest.param(
-        DeleteQuery(
-            storage_name="search_issues",
-            column_conditions={"project_id": [1], "occurrence_id": ["1234"]},
-        ),
-        '{"columns":{"project_id": [1], "occurrence_id": ["1234"]}}',
-    ),
-    pytest.param(
-        DeleteQuery(
-            storage_name="non-real-storage",
-            column_conditions={},
-        ),
-        '{"columns":{}}',
-    ),
-]
+from snuba_sdk.delete_query import DeleteQuery, InvalidDeleteQueryError
 
 
-@pytest.mark.parametrize("query, expected", queries)
-def test_serializes_properly(query: DeleteQuery, expected: str) -> None:
+def test_serialize() -> None:
     # im doing the json.loads to ignore things like formatting
-    actual = query.serialize()
-    if not isinstance(actual, str):
-        actual = json.dumps(actual)
-    assert json.loads(actual) == json.loads(expected)
+    query = DeleteQuery(
+        storage_name="search_issues",
+        column_conditions={"project_id": [1], "occurrence_id": ["1234"]},
+    )
+    expected = '{"columns":{"project_id": [1], "occurrence_id": ["1234"]}}'
+    serialize = query.serialize()
+    assert isinstance(serialize, str)
+    # json.loads is so whitespace and stuff is ignored
+    assert json.loads(serialize) == json.loads(expected)
+
+
+def test_missing_project_id() -> None:
+    query = DeleteQuery(
+        storage_name="non-real-storage",
+        column_conditions={},
+    )
+    with pytest.raises(InvalidDeleteQueryError) as e:
+        query.serialize()
+        assert e.value == "missing required column condition on 'project_id'"
+
+
+def test_empty_project_id() -> None:
+    query = DeleteQuery(
+        storage_name="search_issues",
+        column_conditions={"project_id": []},
+    )
+    with pytest.raises(InvalidDeleteQueryError) as e:
+        query.serialize()
+        assert e.value == "column condition on 'project_id' is empty"
