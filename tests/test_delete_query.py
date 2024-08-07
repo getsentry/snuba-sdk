@@ -23,9 +23,11 @@ def test_missing_project_id() -> None:
         storage_name="non-real-storage",
         column_conditions={},
     )
-    with pytest.raises(InvalidDeleteQueryError) as e:
+    with pytest.raises(
+        InvalidDeleteQueryError,
+        match="missing required column condition on 'project_id'",
+    ):
         query.serialize()
-        assert e.value == "missing required column condition on 'project_id'"
 
 
 def test_empty_project_id() -> None:
@@ -33,6 +35,7 @@ def test_empty_project_id() -> None:
         storage_name="search_issues",
         column_conditions={"project_id": []},
     )
-    with pytest.raises(InvalidDeleteQueryError) as e:
+    with pytest.raises(
+        InvalidDeleteQueryError, match="column condition on 'project_id' is empty"
+    ):
         query.serialize()
-        assert e.value == "column condition on 'project_id' is empty"
