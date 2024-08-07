@@ -1,6 +1,17 @@
 Changelog and versioning
 ==========================
 
+3.0.36
+------
+
+### Various fixes & improvements
+
+- feat: new BaseQuery, DeleteQuery which will be used to make delete queries (#192) by @kylemumma
+- revert: sdfdsf (daf5d527) by @kylemumma
+- sdfdsf (bf73f803) by @kylemumma
+- revert: new DeleteQuery BaseQuery (0e5a47dc) by @kylemumma
+- new DeleteQuery BaseQuery (0fffebf4) by @kylemumma
+
 2.0.35
 ------
 
