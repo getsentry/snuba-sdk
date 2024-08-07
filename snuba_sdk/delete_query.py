@@ -31,12 +31,14 @@ class DeleteQuery(BaseQuery):
     column_conditions: Dict[str, List[Union[str, int]]]
 
     def validate(self) -> None:
-        if "project_id" not in self.column_conditions:
-            raise InvalidDeleteQueryError(
-                "missing required column condition on 'project_id'"
-            )
-        elif len(self.column_conditions["project_id"]) == 0:
-            raise InvalidDeleteQueryError("column condition on 'project_id' is empty")
+        if self.column_conditions == {}:
+            raise InvalidDeleteQueryError("column conditions cannot be empty")
+
+        for col, values in self.column_conditions.items():
+            if len(values) == 0:
+                raise InvalidDeleteQueryError(
+                    f"column condition '{col}' cannot be empty"
+                )
 
     def serialize(self) -> Union[str, Dict[str, Any]]:
         # the body of the request
