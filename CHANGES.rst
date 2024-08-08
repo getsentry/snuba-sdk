@@ -1,6 +1,18 @@
 Changelog and versioning
 ==========================
 
+2.0.37
+------
+
+### Various fixes & improvements
+
+- fix: add DeleteQuery to __init__ (#193) by @kylemumma
+- feat: new BaseQuery, DeleteQuery which will be used to make delete queries (#192) by @kylemumma
+- revert: sdfdsf (daf5d527) by @kylemumma
+- sdfdsf (bf73f803) by @kylemumma
+- revert: new DeleteQuery BaseQuery (0e5a47dc) by @kylemumma
+- new DeleteQuery BaseQuery (0fffebf4) by @kylemumma
+
 2.0.35
 ------
 
