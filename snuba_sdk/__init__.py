@@ -17,6 +17,7 @@ from snuba_sdk.query import Query
 from snuba_sdk.relationships import Join, Relationship
 from snuba_sdk.request import Flags, Request
 from snuba_sdk.timeseries import Metric, MetricsScope, Rollup, Timeseries
+from snuba_sdk.delete_query import DeleteQuery
 
 __all__ = [
     "AliasedExpression",
@@ -53,4 +54,5 @@ __all__ = [
     "Storage",
     "Timeseries",
     "Totals",
+    "DeleteQuery",
 ]
