@@ -82,7 +82,7 @@ class Request:
             serialized_mql = self.query.serialize()
             assert isinstance(serialized_mql, dict)  # mypy
             mql_context = serialized_mql["mql_context"]
-            query: Union[str, Dict[str, Any]] = str(serialized_mql["mql"])
+            query = str(serialized_mql["mql"])
         elif isinstance(self.query, DeleteQuery):
             return {
                 **flags,
