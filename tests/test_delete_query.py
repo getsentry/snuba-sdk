@@ -28,7 +28,6 @@ def test_serialize_request() -> None:
     )
     expected = {
         "query": {"columns": {"project_id": [1], "occurrence_id": ["1234"]}},
-        "dataset": "search_issues",
         "app_id": "myapp",
         "tenant_ids": {},
         "parent_api": "<unknown>",
