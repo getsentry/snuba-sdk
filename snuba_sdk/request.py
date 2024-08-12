@@ -5,6 +5,7 @@ import re
 from dataclasses import asdict, dataclass, field, fields
 from typing import Any, Dict, Mapping, Union
 
+from snuba_sdk.delete_query import DeleteQuery
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
 
@@ -82,8 +83,16 @@ class Request:
             assert isinstance(serialized_mql, dict)  # mypy
             mql_context = serialized_mql["mql_context"]
             query: Union[str, Dict[str, Any]] = str(serialized_mql["mql"])
+        elif isinstance(self.query, DeleteQuery):
+            return {
+                **flags,
+                "query": self.query.serialize(),
+                "app_id": self.app_id,
+                "tenant_ids": self.tenant_ids,
+                "parent_api": self.parent_api,
+            }
         else:
-            query = self.query.serialize()
+            query = str(self.query.serialize())
 
         ret: dict[str, object] = {
             **flags,
