@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field, fields
-from typing import Mapping
+from typing import Any, Dict, Mapping, Union
 
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
@@ -81,9 +81,9 @@ class Request:
             serialized_mql = self.query.serialize()
             assert isinstance(serialized_mql, dict)  # mypy
             mql_context = serialized_mql["mql_context"]
-            query = str(serialized_mql["mql"])
+            query: Union[str, Dict[str, Any]] = str(serialized_mql["mql"])
         else:
-            query = str(self.query.serialize())
+            query = self.query.serialize()
 
         ret: dict[str, object] = {
             **flags,
