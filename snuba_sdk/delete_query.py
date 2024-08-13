@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
@@ -43,7 +42,7 @@ class DeleteQuery(BaseQuery):
     def serialize(self) -> Union[str, Dict[str, Any]]:
         # the body of the request
         self.validate()
-        return json.dumps({"columns": self.column_conditions})
+        return {"columns": self.column_conditions}
 
     def print(self) -> str:
         return repr(self)

@@ -3,6 +3,7 @@ import json
 import pytest
 
 from snuba_sdk.delete_query import DeleteQuery, InvalidDeleteQueryError
+from snuba_sdk.request import Request
 
 
 def test_serialize() -> None:
@@ -11,11 +12,27 @@ def test_serialize() -> None:
         storage_name="non-real-storage",
         column_conditions={"project_id": [1], "occurrence_id": ["1234"]},
     )
-    expected = '{"columns":{"project_id": [1], "occurrence_id": ["1234"]}}'
+    expected = {"columns": {"project_id": [1], "occurrence_id": ["1234"]}}
     serialize = query.serialize()
-    assert isinstance(serialize, str)
-    # json.loads is so whitespace and stuff is ignored
-    assert json.loads(serialize) == json.loads(expected)
+    assert serialize == expected
+
+
+def test_serialize_request() -> None:
+    req = Request(
+        dataset="search_issues",
+        app_id="myapp",
+        query=DeleteQuery(
+            storage_name="search_issues",
+            column_conditions={"project_id": [1], "occurrence_id": ["1234"]},
+        ),
+    )
+    expected = {
+        "query": {"columns": {"project_id": [1], "occurrence_id": ["1234"]}},
+        "app_id": "myapp",
+        "tenant_ids": {},
+        "parent_api": "<unknown>",
+    }
+    assert json.loads(req.serialize()) == expected
 
 
 def test_empty_column_conditions() -> None:

@@ -5,6 +5,7 @@ import re
 from dataclasses import asdict, dataclass, field, fields
 from typing import Mapping
 
+from snuba_sdk.delete_query import DeleteQuery
 from snuba_sdk.metrics_query import MetricsQuery
 from snuba_sdk.query import BaseQuery
 
@@ -82,6 +83,18 @@ class Request:
             assert isinstance(serialized_mql, dict)  # mypy
             mql_context = serialized_mql["mql_context"]
             query = str(serialized_mql["mql"])
+        elif isinstance(self.query, DeleteQuery):
+            """
+            for a DeleteQuery, the query is not a snql/mql string,
+            it is a dict
+            """
+            return {
+                **flags,
+                "query": self.query.serialize(),
+                "app_id": self.app_id,
+                "tenant_ids": self.tenant_ids,
+                "parent_api": self.parent_api,
+            }
         else:
             query = str(self.query.serialize())
 
