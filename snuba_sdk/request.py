@@ -84,6 +84,10 @@ class Request:
             mql_context = serialized_mql["mql_context"]
             query = str(serialized_mql["mql"])
         elif isinstance(self.query, DeleteQuery):
+            """
+            for a DeleteQuery, the query is not a snql/mql string,
+            it is a dict
+            """
             return {
                 **flags,
                 "query": self.query.serialize(),
