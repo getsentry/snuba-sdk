@@ -73,7 +73,7 @@ class MQLVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _visit_extrapolate(self, extrapolate: bool | None) -> bool | None:
+    def _visit_extrapolate(self, extrapolate: Extrapolate | None) -> bool | None:
         raise NotImplementedError
 
 
