@@ -29,6 +29,7 @@ class MQLContext:
     indexer_mappings: dict[str, str | int]
     limit: int | None = None
     offset: int | None = None
+    extrapolate: bool | None = None
 
     def __post_init__(self) -> None:
         self.validate()

@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
-from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.expressions import Extrapolate, Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import Validator
 from snuba_sdk.mql_visitor import MQLPrinter
@@ -35,6 +35,7 @@ class MetricsQuery(BaseQuery):
     scope: MetricsScope | None = None
     limit: Limit | None = None
     offset: Offset | None = None
+    extrapolate: Extrapolate | None = None
     indexer_mappings: dict[str, str | int] | None = None
 
     def _replace(self, field: str, value: Any) -> MetricsQuery:
@@ -73,6 +74,9 @@ class MetricsQuery(BaseQuery):
 
     def set_offset(self, offset: int) -> MetricsQuery:
         return self._replace("offset", Offset(offset))
+
+    def set_extrapolate(self, extrapolate: bool) -> MetricsQuery:
+        return self._replace("extrapolate", Extrapolate(extrapolate))
 
     def set_indexer_mappings(
         self, indexer_mappings: dict[str, str | int]
