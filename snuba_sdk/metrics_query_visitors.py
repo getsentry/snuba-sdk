@@ -7,7 +7,7 @@ from typing import Generic, Mapping, Optional, TypeVar
 # Import the module due to sphinx autodoc problems
 # https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 from snuba_sdk import metrics_query as main
-from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.expressions import Extrapolate, Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.mql.mql import parse_mql
 from snuba_sdk.timeseries import MetricsScope, Rollup, Timeseries
@@ -67,6 +67,10 @@ class MetricsQueryVisitor(ABC, Generic[QVisited]):
 
     @abstractmethod
     def _visit_offset(self, offset: Offset | None) -> QVisited:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _visit_extrapolate(self, extrapolate: Extrapolate | None) -> QVisited:
         raise NotImplementedError
 
     @abstractmethod
@@ -150,6 +154,14 @@ class Validator(MetricsQueryVisitor[None]):
             raise InvalidMetricsQueryError("offset must be a Offset object")
 
         offset.validate()
+
+    def _visit_extrapolate(self, extrapolate: Extrapolate | None) -> None:
+        if extrapolate is None:
+            return
+        elif not isinstance(extrapolate, Extrapolate):
+            raise InvalidMetricsQueryError("extrapolate must be a Extrapolate object")
+
+        extrapolate.validate()
 
     def _visit_indexer_mappings(
         self, indexer_mappings: dict[str, str | int] | None

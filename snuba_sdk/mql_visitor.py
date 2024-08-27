@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Mapping
 
 from snuba_sdk import metrics_query as main
-from snuba_sdk.expressions import Limit, Offset
+from snuba_sdk.expressions import Extrapolate, Limit, Offset
 from snuba_sdk.formula import Formula
 from snuba_sdk.metrics_query_visitors import InvalidMetricsQueryError
 from snuba_sdk.metrics_visitors import (
@@ -72,6 +72,10 @@ class MQLVisitor(ABC):
     def _visit_offset(self, offset: Offset | None) -> int | None:
         raise NotImplementedError
 
+    @abstractmethod
+    def _visit_extrapolate(self, extrapolate: Extrapolate | None) -> bool | None:
+        raise NotImplementedError
+
 
 class MQLPrinter(MQLVisitor):
     def __init__(self) -> None:
@@ -93,6 +97,7 @@ class MQLPrinter(MQLVisitor):
             scope=returns["scope"],
             limit=returns["limit"],
             offset=returns["offset"],
+            extrapolate=returns["extrapolate"],
             indexer_mappings=returns["indexer_mappings"],
         )
         return {
@@ -140,6 +145,9 @@ class MQLPrinter(MQLVisitor):
 
     def _visit_offset(self, offset: Offset | None) -> int | None:
         return offset.offset if offset is not None else None
+
+    def _visit_extrapolate(self, extrapolate: Extrapolate | None) -> bool | None:
+        return extrapolate.extrapolate if extrapolate is not None else None
 
     def _visit_indexer_mappings(
         self, indexer_mappings: dict[str, str | int]
