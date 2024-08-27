@@ -535,6 +535,7 @@ metrics_query_timeseries_to_mql_tests = [
             scope=MetricsScope(
                 org_ids=[1], project_ids=[11], use_case_id="transactions"
             ),
+            extrapolate=Extrapolate(False),
             indexer_mappings={"d:transactions/duration@millisecond": 11235813},
         ),
         {
@@ -555,7 +556,7 @@ metrics_query_timeseries_to_mql_tests = [
                 },
                 "limit": None,
                 "offset": None,
-                "extrapolate": None,
+                "extrapolate": False,
                 "indexer_mappings": {"d:transactions/duration@millisecond": 11235813},
             },
         },
