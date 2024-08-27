@@ -1,6 +1,20 @@
 Changelog and versioning
 ==========================
 
+3.0.39
+------
+
+### Various fixes & improvements
+
+- feat(mql): Add extrapolate flag to MQL context (#195) by @enochtangg
+- fix: DeleteQuery, send query as a dict (#194) by @kylemumma
+- fix: add DeleteQuery to __init__ (#193) by @kylemumma
+- feat: new BaseQuery, DeleteQuery which will be used to make delete queries (#192) by @kylemumma
+- revert: sdfdsf (daf5d527) by @kylemumma
+- sdfdsf (bf73f803) by @kylemumma
+- revert: new DeleteQuery BaseQuery (0e5a47dc) by @kylemumma
+- new DeleteQuery BaseQuery (0fffebf4) by @kylemumma
+
 2.0.35
 ------
 
