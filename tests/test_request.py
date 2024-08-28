@@ -107,6 +107,7 @@ tests = [
                 "indexer_mappings": {},
                 "limit": None,
                 "offset": None,
+                "extrapolate": None,
                 "rollup": {
                     "granularity": 3600,
                     "interval": 3600,

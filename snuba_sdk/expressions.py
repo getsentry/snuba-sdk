@@ -118,3 +118,12 @@ class Totals(Expression):
     def validate(self) -> None:
         if not isinstance(self.totals, bool):
             raise InvalidExpressionError("totals must be a boolean")
+
+
+@dataclass(frozen=True)
+class Extrapolate(Expression):
+    extrapolate: bool
+
+    def validate(self) -> None:
+        if not isinstance(self.extrapolate, bool):
+            raise InvalidExpressionError("extrapolate must be a boolean")
