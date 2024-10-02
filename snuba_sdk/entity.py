@@ -47,17 +47,17 @@ class Entity(Expression):
 # TODO: This should be handled by the users of the SDK, not the SDK itself.
 ENTITY_TIME_COLUMNS = {
     "discover": "timestamp",
+    "discover_events": "timestamp",
+    "discover_transactions": "finish_ts",
     "errors": "timestamp",
     "events": "timestamp",
-    "discover_events": "timestamp",
     "outcomes": "timestamp",
     "outcomes_raw": "timestamp",
-    "sessions": "started",
-    "transactions": "finish_ts",
-    "discover_transactions": "finish_ts",
-    "discover_events": "timestamp",
-    "spans": "finish_ts",
+    "replays": "timestamp",
     "search_issues": "timestamp",
+    "sessions": "started",
+    "spans": "finish_ts",
+    "transactions": "finish_ts",
 }
 
 
