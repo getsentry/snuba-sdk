@@ -17,8 +17,6 @@ from snuba_sdk.storage import Storage
 
 from snuba_sdk.query_optimizers.or_optimizer import OrOptimizer
 
-PRINTER = Printer()
-PRETTY_PRINTER = Printer(pretty=True)
 VALIDATOR = Validator()
 
 
@@ -175,11 +173,11 @@ class Query(BaseQuery):
     def serialize(self) -> str:
         self.validate()
         optimized = self._optimize()
-        return PRINTER.visit(optimized)
+        return Printer().visit(optimized)
 
     def print(self) -> str:
         self.validate()
-        return PRETTY_PRINTER.visit(self)
+        return Printer(pretty=True).visit(self)
 
     def _optimize(self) -> Query:
         if self.where is not None:
