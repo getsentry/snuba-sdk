@@ -43,8 +43,8 @@ We use `craft <https://github.com/getsentry/craft#python-package-index-pypi>`_ u
 hood to release new versions.
 
 1. Run the `releases` workflow in Github and input the new version you want to release
-2. This creates a PR in the `publish <https://github.com/getsentry/publish>`_ repo
-3. That PR needs to have the `accepted` label added to it
-4. Once that's done, the new library should be added automatically to the `pypi <https://github.com/getsentry/pypi>`_ repo
+2. This creates a PR in the `publish <https://github.com/getsentry/publish>`_ repo, under the issues tab
+3. Wait for the PR to have the `accepted` label added to it (this should be done automatically)
+4. Once that's done, the new library should be added automatically to the `pypi <https://github.com/getsentry/pypi>`_ repo. It's possible that this step can take a while. Feel free to check on https://github.com/getsentry/pypi/pulls
 
 After this the release should be available for Sentry and also external sources.
