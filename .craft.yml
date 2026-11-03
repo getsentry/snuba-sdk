@@ -1,9 +1,13 @@
-minVersion: "0.15.0"
+minVersion: "3.9.0"
 github:
   owner: getsentry
   repo: snuba-sdk
-changelog: CHANGES.rst
-changelogPolicy: auto
+changelog:
+  filePath: CHANGES.rst
+  policy: auto
+versioning:
+  policy: manual
+preReleaseCommand: bash scripts/bump-version.sh
 statusProvider:
   name: github
 artifactProvider:
